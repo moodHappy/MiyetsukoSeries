@@ -10,7 +10,7 @@ OUTPUT_FILE = "index.html"
 def scan_html_files():
     library = {}
     total_files = 0
-    print("🕵️ 图书管理员正在重构 SPA 单页应用架构...")
+    print("🕵️ 图书管理员正在重构 SPA 极简折叠架构...")
     
     for root, dirs, files in os.walk(TARGET_DIR):
         # 排除 git 隐藏文件夹，防止干扰
@@ -78,11 +78,10 @@ def generate_searchable_index():
         print("⚠️ 未扫描到任何 HTML 文件。")
         return
         
-    print(f"✅ 扫描完毕！共归档 {total_files} 篇内容。正在注入动态 SPA 引擎...")
+    print(f"✅ 扫描完毕！共归档 {total_files} 篇内容。正在注入双层折叠引擎...")
     
     json_data = json.dumps(stories_tree, ensure_ascii=False)
     
-    # 采用安全字符串替换，避免任何花括号冲突
     html_template = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -98,6 +97,7 @@ def generate_searchable_index():
             --accent: #2563eb; 
             --accent-glow: rgba(37,99,235,0.08); 
             --border: #e5e7eb; 
+            --sub-bg: #f8fafc;
         }
         body { 
             font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; 
@@ -130,7 +130,7 @@ def generate_searchable_index():
 
         .area-title { font-size: 0.95rem; color: var(--muted); font-weight: 700; margin: 0 0 12px 10px; text-transform: uppercase; letter-spacing: 1.5px; }
 
-        /* 折叠菜单 UI */
+        /* 外层折叠菜单 UI (书籍) */
         details.book-group { background: var(--card); border-radius: 18px; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); overflow: hidden; border: 1px solid var(--border); transition: all 0.3s ease; }
         details.book-group:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.06); border-color: #d1d5db; }
         
@@ -149,7 +149,15 @@ def generate_searchable_index():
         
         .book-content { padding: 5px 20px 20px 20px; background: var(--card); border-top: 1px dashed var(--border); }
 
-        /* 统一条目 UI */
+        /* 内层折叠菜单 UI (季/卷/子文件夹) - 永远折叠 */
+        details.sub-group { background: var(--sub-bg); border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border); overflow: hidden; }
+        details.sub-group:last-child { margin-bottom: 0; }
+        summary.sub-title { padding: 15px 18px; font-size: 0.95rem; font-weight: 700; color: var(--accent); cursor: pointer; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px; list-style: none; user-select: none; }
+        summary.sub-title::-webkit-details-marker { display: none; }
+        summary.sub-title:active { background: #f1f5f9; }
+        .sub-content { padding: 0 15px 15px 15px; }
+
+        /* 统一条目 UI (章节) */
         .story-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-radius: 12px; text-decoration: none; color: var(--text); background: #ffffff; border: 1px solid var(--border); margin-bottom: 8px; transition: all 0.2s ease; cursor: pointer; }
         .story-item:last-child { margin-bottom: 0; }
         .story-item:hover, .story-item:active { border-color: var(--accent); box-shadow: 0 4px 12px var(--accent-glow); transform: translateX(4px); }
@@ -169,9 +177,6 @@ def generate_searchable_index():
         .nav-bar:active { background: #f3f4f6; }
         .nav-bar span { color: var(--accent); font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 6px; }
         
-        .section-title { font-size: 0.85rem; color: var(--accent); font-weight: 700; margin: 25px 0 12px 0; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
-        .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
-
         .no-result { text-align: center; padding: 50px 20px; color: var(--muted); display: none; font-size: 1.1rem; font-weight: 500; }
     </style>
 </head>
@@ -226,10 +231,10 @@ def generate_searchable_index():
                 mainView.classList.remove('active');
                 tocView.classList.add('active');
             }
-            window.scrollTo(0, 0); // 切换视图时回到顶部
+            window.scrollTo(0, 0); 
         }
 
-        // ==== 渲染特定书籍的独立目录 ====
+        // ==== 渲染特定书籍的独立目录 (内部完全折叠) ====
         function openBookToc(bookName) {
             const book = libraryData.find(b => b.book_name === bookName);
             if(!book) return;
@@ -243,12 +248,21 @@ def generate_searchable_index():
                 <p>全卷共收录 ${totalChaps} 个源文件</p>
             `;
             
-            // 渲染章节列表
+            // 渲染内部折叠列表
             let htmlStr = '';
             book.sections.forEach(sec => {
-                if (sec.section_name !== "正文") {
-                    htmlStr += `<div class="section-title">📂 ${sec.section_name}</div>`;
-                }
+                let secNameDisplay = sec.section_name === "正文" ? "📄 正文" : `📂 ${sec.section_name}`;
+                
+                // 强制关闭标签 details (open=false)，实现“永远折叠”
+                htmlStr += `
+                <details class="sub-group">
+                    <summary class="sub-title">
+                        <span>${secNameDisplay}</span>
+                        <span style="font-size:0.8rem; color:var(--muted); font-weight:normal;">${sec.chapters.length} 篇</span>
+                    </summary>
+                    <div class="sub-content">
+                `;
+                
                 sec.chapters.forEach(chap => {
                     htmlStr += `
                     <a href="${chap.url}" class="story-item">
@@ -256,6 +270,8 @@ def generate_searchable_index():
                         <span class="story-arrow">→</span>
                     </a>`;
                 });
+                
+                htmlStr += `</div></details>`;
             });
             document.getElementById('dynamicTocContent').innerHTML = htmlStr;
             
@@ -270,7 +286,7 @@ def generate_searchable_index():
             if(libraryData.length > 0) {
                 const tocGroup = document.createElement('details');
                 tocGroup.className = 'book-group toc-group';
-                tocGroup.open = true; // 默认展开
+                tocGroup.open = true; // 外层导航默认展开
                 
                 const summary = document.createElement('summary');
                 summary.className = 'book-title';
@@ -288,7 +304,7 @@ def generate_searchable_index():
                     const div = document.createElement('div');
                     div.className = 'story-item toc-item';
                     div.innerHTML = '<div class="story-info"><span class="story-title">《' + book.book_name + '》 总目录</span><span class="story-path">包含 ' + chapCount + ' 个源文件</span></div><span class="story-arrow">→</span>';
-                    // 绑定点击事件，触发单页路由
+                    // 点击进入第二层
                     div.onclick = () => openBookToc(book.book_name);
                     content.appendChild(div);
                 });
@@ -304,11 +320,11 @@ def generate_searchable_index():
             divLabel.style.marginTop = "35px";
             treeContainer.appendChild(divLabel);
 
-            // 2. 生成所有【折叠卷宗】
+            // 2. 生成所有【折叠卷宗】(内外双重折叠)
             libraryData.forEach((book) => {
                 const details = document.createElement('details');
                 details.className = 'book-group';
-                details.open = false; // 默认折叠
+                details.open = false; // 外层书籍默认折叠
                 
                 let chapterCount = 0;
                 book.sections.forEach(sec => chapterCount += sec.chapters.length);
@@ -320,24 +336,34 @@ def generate_searchable_index():
 
                 const content = document.createElement('div');
                 content.className = 'book-content';
+                content.style.paddingTop = '15px';
 
                 book.sections.forEach(sec => {
-                    if (sec.section_name !== "正文") {
-                        const secTitle = document.createElement('div');
-                        secTitle.className = 'section-title';
-                        secTitle.innerHTML = '✦ ' + sec.section_name;
-                        content.appendChild(secTitle);
-                    } else {
-                        content.style.paddingTop = '15px';
-                    }
+                    let secNameDisplay = sec.section_name === "正文" ? "📄 正文" : `✦ ${sec.section_name}`;
+                    
+                    // 内层季/卷也做成折叠
+                    const subDetails = document.createElement('details');
+                    subDetails.className = 'sub-group';
+                    subDetails.open = false; // 永远折叠
+                    
+                    const subSummary = document.createElement('summary');
+                    subSummary.className = 'sub-title';
+                    subSummary.innerHTML = `<span>${secNameDisplay}</span><span style="font-size:0.8rem; color:var(--muted); font-weight:normal;">${sec.chapters.length} 篇</span>`;
+                    subDetails.appendChild(subSummary);
+                    
+                    const subContent = document.createElement('div');
+                    subContent.className = 'sub-content';
                     
                     sec.chapters.forEach(chap => {
                         const a = document.createElement('a');
                         a.href = chap.url;
                         a.className = 'story-item';
                         a.innerHTML = '<div class="story-info"><span class="story-title">' + chap.title + '</span></div><span class="story-arrow">→</span>';
-                        content.appendChild(a);
+                        subContent.appendChild(a);
                     });
+                    
+                    subDetails.appendChild(subContent);
+                    content.appendChild(subDetails);
                 });
                 
                 details.appendChild(content);
