@@ -288,7 +288,7 @@ def generate_searchable_index():
             <details class="book-group toc-group" open>
                 <summary class="book-title">
                     <div class="book-icon-wrapper"><span class="book-icon">⭐</span> <span>精选阅读</span></div> 
-                    <span class="book-badge">6 册</span>
+                    <span class="book-badge">8 册</span>
                 </summary>
                 <div class="book-content" style="padding-top: 15px;">
                     
@@ -314,6 +314,14 @@ def generate_searchable_index():
                     </a>
                     <a href="Extras/Shiraishi/美悦子与白石_1782036900000.html" class="story-item">
                         <div class="story-info"><span class="story-title">美悦子与白石</span></div><span class="story-arrow">→</span>
+                    </a>
+
+                    <div class="section-title" style="margin-top: 25px;">✦ 文学经典</div>
+                    <a href="https://moodhappy.github.io/MiyetsukoSeries/Books/Hundred/%E7%99%BE%E5%B9%B4%E5%AD%A4%E7%8B%AC%E7%9B%AE%E5%BD%95_1782298920000.html" class="story-item">
+                        <div class="story-info"><span class="story-title">百年孤独目录</span></div><span class="story-arrow">→</span>
+                    </a>
+                    <a href="https://moodhappy.github.io/MiyetsukoSeries/Books/The%20Little%20Prince/%E5%B0%8F%E7%8E%8B%E5%AD%90%E7%9B%AE%E5%BD%95.html_1782364260000.html" class="story-item">
+                        <div class="story-info"><span class="story-title">小王子目录</span></div><span class="story-arrow">→</span>
                     </a>
 
                 </div>
