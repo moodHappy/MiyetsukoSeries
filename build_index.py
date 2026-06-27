@@ -1,4 +1,4 @@
-import os
+Import os
 import re
 import json
 
@@ -11,26 +11,26 @@ def scan_html_files():
     library = {}
     total_files = 0
     print("🕵️ 图书管理员正在重构 SPA 极简折叠架构，并注入置顶链接...")
-    
+
     for root, dirs, files in os.walk(TARGET_DIR):
         # 排除 git 隐藏文件夹，防止干扰
         if '.git' in dirs:
             dirs.remove('.git')
-            
+
         for file in files:
             if file.endswith(".html") and file != OUTPUT_FILE:
                 file_path = os.path.join(root, file)
                 rel_path = os.path.relpath(file_path, TARGET_DIR).replace('\\', '/')
-                
+
                 parts = rel_path.split('/')
-                
+
                 if len(parts) == 1:
                     book_name = "未分类文稿"
                     section_name = "正文"
                 else:
                     book_name = parts[0]
                     section_name = "/".join(parts[1:-1]) if len(parts) > 2 else "正文"
-                
+
                 title = file.replace(".html", "")
                 try:
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -42,18 +42,18 @@ def scan_html_files():
                                 title = clean_title
                 except Exception:
                     pass
-                
+
                 if book_name not in library:
                     library[book_name] = {}
                 if section_name not in library[book_name]:
                     library[book_name][section_name] = []
-                    
+
                 library[book_name][section_name].append({
                     "title": title,
                     "url": rel_path
                 })
                 total_files += 1
-                
+
     # 结构化排序
     sorted_library = []
     for book in sorted(library.keys()):
@@ -68,20 +68,20 @@ def scan_html_files():
             "book_name": book,
             "sections": sections
         })
-        
+
     return sorted_library, total_files
 
 def generate_searchable_index():
     stories_tree, total_files = scan_html_files()
-    
+
     if not stories_tree:
         print("⚠️ 未扫描到任何 HTML 文件。")
         return
-        
+
     print(f"✅ 扫描完毕！共归档 {total_files} 篇内容。正在注入双层折叠引擎...")
-    
+
     json_data = json.dumps(stories_tree, ensure_ascii=False)
-    
+
     html_template = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -331,7 +331,7 @@ def generate_searchable_index():
 
                 const tocGroup = document.createElement('details');
                 tocGroup.className = 'book-group toc-group';
-                tocGroup.open = true; // 外层导航默认展开
+                tocGroup.open = false; // 外层导航默认展开
                 
                 const summary = document.createElement('summary');
                 summary.className = 'book-title';
