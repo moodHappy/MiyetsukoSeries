@@ -50,13 +50,15 @@
             transition: opacity 0.3s ease;
         }
 
+        /* 升级后的面板样式，支持多行布局 */
         .bg-config-panel {
             display: none;
-            gap: 6px;
+            flex-direction: column;
+            gap: 8px;
             margin-bottom: 8px;
             flex-shrink: 0;
             background: rgba(0, 0, 0, 0.6);
-            padding: 6px;
+            padding: 8px;
             border-radius: 6px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(3px);
@@ -69,7 +71,13 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        #bgUrlInput {
+        .config-row {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .config-row input, .config-row select {
             flex-grow: 1;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -79,9 +87,17 @@
             font-size: 0.8rem;
             outline: none;
             text-shadow: none;
+            min-width: 0; /* 防止撑破 flex 布局 */
         }
-        #bgUrlInput::placeholder { color: rgba(255, 255, 255, 0.5); }
-        #bgSetBtn {
+        
+        .config-row select option {
+            background: #222;
+            color: #fff;
+        }
+
+        .config-row input::placeholder { color: rgba(255, 255, 255, 0.5); }
+        
+        .config-row button {
             background: rgba(0, 0, 0, 0.4);
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -92,8 +108,11 @@
             cursor: pointer;
             transition: background 0.2s;
             text-shadow: none;
+            white-space: nowrap;
         }
-        #bgSetBtn:hover { background: rgba(255, 255, 255, 0.2); }
+        
+        .config-row button:hover { background: rgba(255, 255, 255, 0.2); }
+        .config-row button.btn-danger:hover { background: rgba(255, 50, 50, 0.5); border-color: rgba(255, 100, 100, 0.8); }
 
         .nav-bar { 
             display: flex; 
@@ -198,8 +217,20 @@
     <h1 id="mainTitle" ondblclick="toggleConfigPanel()">美悦子シリーズ ポータル</h1>
 
     <div class="bg-config-panel" id="configPanel">
-        <input type="text" id="bgUrlInput" placeholder="在此粘贴图片直链，点击应用（支持随机图API或外链）">
-        <button id="bgSetBtn" onclick="applyCustomBackground()">应用壁纸</button>
+        <div class="config-row">
+            <select id="bgSelect" onchange="changeSelectedWallpaper()"></select>
+            <button class="btn-danger" onclick="deleteWallpaper()">删除</button>
+        </div>
+        <div class="config-row">
+            <input type="text" id="bgNameInput" placeholder="名称 (如: 星空)" style="flex: 0.4;">
+            <input type="text" id="bgUrlInput" placeholder="在此粘贴图片直链" style="flex: 0.6;">
+            <button onclick="addWallpaper()">添加</button>
+        </div>
+        <div class="config-row">
+            <button onclick="exportWallpapers()" style="flex: 1;">导出配置</button>
+            <button onclick="document.getElementById('importInput').click()" style="flex: 1;">导入配置</button>
+            <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importWallpapers(event)">
+        </div>
     </div>
 
     <div class="nav-bar">
@@ -273,7 +304,7 @@
 
         // 双指触屏彻底隐藏/显示文字逻辑
         let touchStartPoints = [];
-        
+
         window.addEventListener('touchstart', function(e) {
             touchStartPoints = e.touches;
         }, { passive: false });
@@ -287,52 +318,177 @@
 
         // 渲染或更新背景图的函数
         function updateBackground(imgUrl) {
+            // 如果链接里没有参数，加上时间戳防缓存。如果已有参数，原样使用。
+            let finalUrl = imgUrl;
+            if (!imgUrl.includes('?')) {
+                finalUrl += '?t=' + new Date().getTime();
+            }
             document.body.style.backgroundImage = `
                 linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02) 76%, transparent 77%, transparent), 
                 linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02) 76%, transparent 77%, transparent),
-                url('${imgUrl}')
+                url('${finalUrl}')
             `;
         }
 
-        // 绑定输入框应用自定义背景，并利用 localStorage 持久化存储
-        function applyCustomBackground() {
-            let url = document.getElementById('bgUrlInput').value.trim();
+        // --- 升级的壁纸管理器逻辑 ---
+        let wallpapers = [];
+        let currentIndex = -1;
+
+        // 初始化加载数据
+        function initWallpaperManager() {
+            const savedData = localStorage.getItem('miyetsuko_wallpapers_list');
+            if (savedData) {
+                try {
+                    wallpapers = JSON.parse(savedData);
+                } catch (e) {
+                    wallpapers = [];
+                }
+            }
+
+            // 如果为空，提供一个默认配置兜底
+            if (wallpapers.length === 0) {
+                wallpapers.push({
+                    name: "默认随机图",
+                    url: "https://picsum.photos/1920/1080?random=101"
+                });
+            }
+
+            const savedIndex = localStorage.getItem('miyetsuko_wallpaper_index');
+            if (savedIndex !== null && savedIndex < wallpapers.length && savedIndex >= 0) {
+                currentIndex = parseInt(savedIndex);
+            } else {
+                currentIndex = 0;
+            }
+
+            renderSelect();
+            applyCurrentWallpaper();
+        }
+
+        // 渲染下拉菜单
+        function renderSelect() {
+            const select = document.getElementById('bgSelect');
+            select.innerHTML = '';
+            wallpapers.forEach((wp, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = wp.name;
+                if (index === currentIndex) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+
+        // 保存数据到 localStorage
+        function saveData() {
+            localStorage.setItem('miyetsuko_wallpapers_list', JSON.stringify(wallpapers));
+            localStorage.setItem('miyetsuko_wallpaper_index', currentIndex);
+        }
+
+        // 应用当前选中的壁纸
+        function applyCurrentWallpaper() {
+            if (currentIndex >= 0 && currentIndex < wallpapers.length) {
+                updateBackground(wallpapers[currentIndex].url);
+            }
+        }
+
+        // 下拉菜单切换事件
+        function changeSelectedWallpaper() {
+            const select = document.getElementById('bgSelect');
+            currentIndex = parseInt(select.value);
+            saveData();
+            applyCurrentWallpaper();
+        }
+
+        // 添加新壁纸
+        function addWallpaper() {
+            const nameInput = document.getElementById('bgNameInput');
+            const urlInput = document.getElementById('bgUrlInput');
+            const url = urlInput.value.trim();
+            let name = nameInput.value.trim();
+
             if (!url) {
                 alert('请输入有效的图片链接！');
                 return;
             }
-            if (url.includes('?')) {
-                url += '&t=' + new Date().getTime();
-            } else {
-                url += '?t=' + new Date().getTime();
+            if (!name) {
+                name = `壁纸 ${wallpapers.length + 1}`;
             }
+
+            wallpapers.push({ name: name, url: url });
+            currentIndex = wallpapers.length - 1; // 自动选中新添加的
             
-            // 保存至本地存储
-            localStorage.setItem('custom_wallpaper_url', url);
-            updateBackground(url);
+            saveData();
+            renderSelect();
+            applyCurrentWallpaper();
+            
+            nameInput.value = '';
+            urlInput.value = '';
         }
 
-        // 初始化加载背景图：优先读取本地持久化壁纸，若无则使用随机兜底数组
-        function initWallpaper() {
-            const savedWallpaper = localStorage.getItem('custom_wallpaper_url');
-            
-            if (savedWallpaper) {
-                updateBackground(savedWallpaper);
-            } else {
-                const defaultBeautyApis = [
-                    "https://picsum.photos/1920/1080?random=101",
-                    "https://picsum.photos/1920/1080?random=102",
-                    "https://picsum.photos/1920/1080?random=103",
-                    "https://picsum.photos/1920/1080?random=104"
-                ];
-                const randomInitApi = defaultBeautyApis[Math.floor(Math.random() * defaultBeautyApis.length)] + '?t=' + new Date().getTime();
-                updateBackground(randomInitApi);
+        // 删除当前壁纸
+        function deleteWallpaper() {
+            if (wallpapers.length <= 1) {
+                alert('至少保留一张壁纸！');
+                return;
+            }
+            if (confirm(`确定要删除 "${wallpapers[currentIndex].name}" 吗？`)) {
+                wallpapers.splice(currentIndex, 1);
+                // 重置 index
+                currentIndex = currentIndex >= wallpapers.length ? wallpapers.length - 1 : currentIndex;
+                saveData();
+                renderSelect();
+                applyCurrentWallpaper();
             }
         }
-        
-        initWallpaper();
 
-        // 原抽奖模块逻辑
+        // 导出配置
+        function exportWallpapers() {
+            const dataStr = JSON.stringify(wallpapers, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "miyetsuko_wallpapers_backup.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 导入配置
+        function importWallpapers(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData) && importedData.length > 0 && importedData[0].url) {
+                        // 合并数据，将导入的附加到现有列表后
+                        wallpapers = wallpapers.concat(importedData);
+                        currentIndex = wallpapers.length - importedData.length; // 选中导入的第一张
+                        saveData();
+                        renderSelect();
+                        applyCurrentWallpaper();
+                        alert('导入成功！');
+                    } else {
+                        alert('JSON 格式不正确，无法导入。');
+                    }
+                } catch (err) {
+                    alert('文件读取或解析失败。请确保是有效的 JSON 文件。');
+                }
+                // 清空 input，以便能够重复导入同一个文件
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // 执行初始化
+        initWallpaperManager();
+
+        // --- 原抽奖模块逻辑 ---
         const btn = document.getElementById('actionBtn');
         const display = document.getElementById('numberDisplay');
         const links = document.querySelectorAll('.link');
