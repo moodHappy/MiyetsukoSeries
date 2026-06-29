@@ -50,7 +50,7 @@
             transition: opacity 0.3s ease;
         }
 
-        /* 升级后的面板样式，支持多行布局 */
+        /* 配置面板样式 */
         .bg-config-panel {
             display: none;
             flex-direction: column;
@@ -87,7 +87,7 @@
             font-size: 0.8rem;
             outline: none;
             text-shadow: none;
-            min-width: 0; /* 防止撑破 flex 布局 */
+            min-width: 0; 
         }
         
         .config-row select option {
@@ -219,7 +219,7 @@
     <div class="bg-config-panel" id="configPanel">
         <div class="config-row">
             <select id="bgSelect" onchange="changeSelectedWallpaper()"></select>
-            <button class="btn-danger" onclick="deleteWallpaper()">删除</button>
+            <button class="btn-danger" onclick="deleteWallpaper()">删除当前</button>
         </div>
         <div class="config-row">
             <input type="text" id="bgNameInput" placeholder="名称 (如: 星空)" style="flex: 0.4;">
@@ -302,7 +302,6 @@
             }
         }
 
-        // 双指触屏彻底隐藏/显示文字逻辑
         let touchStartPoints = [];
 
         window.addEventListener('touchstart', function(e) {
@@ -316,91 +315,109 @@
             touchStartPoints = [];
         });
 
-        // 渲染或更新背景图的函数
         function updateBackground(imgUrl) {
-            // 如果链接里没有参数，加上时间戳防缓存。如果已有参数，原样使用。
-            let finalUrl = imgUrl;
-            if (!imgUrl.includes('?')) {
-                finalUrl += '?t=' + new Date().getTime();
-            }
             document.body.style.backgroundImage = `
                 linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02) 76%, transparent 77%, transparent), 
                 linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02) 76%, transparent 77%, transparent),
-                url('${finalUrl}')
+                url('${imgUrl}')
             `;
         }
 
-        // --- 升级的壁纸管理器逻辑 ---
-        let wallpapers = [];
-        let currentIndex = -1;
+        let wallpapers = []; // 纯粹只放用户自己的链接
+        let selectionMode = 'user_random'; 
 
-        // 初始化加载数据
         function initWallpaperManager() {
             const savedData = localStorage.getItem('miyetsuko_wallpapers_list');
             if (savedData) {
                 try {
                     wallpapers = JSON.parse(savedData);
+                    // 清理历史遗留在列表里的自带默认图数据，防止污染用户列表
+                    wallpapers = wallpapers.filter(wp => !wp.url.includes("picsum.photos/1920/1080?random=101"));
                 } catch (e) {
                     wallpapers = [];
                 }
             }
 
-            // 如果为空，提供一个默认配置兜底
-            if (wallpapers.length === 0) {
-                wallpapers.push({
-                    name: "默认随机图",
-                    url: "https://picsum.photos/1920/1080?random=101"
-                });
-            }
-
-            const savedIndex = localStorage.getItem('miyetsuko_wallpaper_index');
-            if (savedIndex !== null && savedIndex < wallpapers.length && savedIndex >= 0) {
-                currentIndex = parseInt(savedIndex);
+            const savedMode = localStorage.getItem('miyetsuko_wallpaper_index');
+            
+            // 兼容以前的 random 模式
+            if (savedMode === 'random' || savedMode === 'user_random') {
+                selectionMode = 'user_random';
+            } else if (savedMode === 'default_random') {
+                selectionMode = 'default_random';
             } else {
-                currentIndex = 0;
+                selectionMode = savedMode !== null ? savedMode : 'user_random';
             }
 
             renderSelect();
             applyCurrentWallpaper();
         }
 
-        // 渲染下拉菜单
         function renderSelect() {
             const select = document.getElementById('bgSelect');
             select.innerHTML = '';
+            
+            // 选项1：用户随机图（只在用户自己的列表里随机）
+            const userRandomOpt = document.createElement('option');
+            userRandomOpt.value = 'user_random';
+            userRandomOpt.textContent = '用户随机图';
+            select.appendChild(userRandomOpt);
+
+            // 选项2：默认随机图（只抓取网络图）
+            const defaultRandomOpt = document.createElement('option');
+            defaultRandomOpt.value = 'default_random';
+            defaultRandomOpt.textContent = '默认随机图';
+            select.appendChild(defaultRandomOpt);
+
+            // 剩下的全都是用户私人添加的图
             wallpapers.forEach((wp, index) => {
                 const option = document.createElement('option');
-                option.value = index;
+                option.value = index.toString();
                 option.textContent = wp.name;
-                if (index === currentIndex) {
-                    option.selected = true;
-                }
                 select.appendChild(option);
             });
+
+            // 容错处理：如果记录的 index 找不到了，就跳回用户随机图
+            let optionExists = Array.from(select.options).some(opt => opt.value === selectionMode);
+            if (!optionExists) {
+                selectionMode = 'user_random';
+            }
+            select.value = selectionMode;
         }
 
-        // 保存数据到 localStorage
         function saveData() {
             localStorage.setItem('miyetsuko_wallpapers_list', JSON.stringify(wallpapers));
-            localStorage.setItem('miyetsuko_wallpaper_index', currentIndex);
+            localStorage.setItem('miyetsuko_wallpaper_index', selectionMode);
         }
 
-        // 应用当前选中的壁纸
         function applyCurrentWallpaper() {
-            if (currentIndex >= 0 && currentIndex < wallpapers.length) {
-                updateBackground(wallpapers[currentIndex].url);
+            if (selectionMode === 'default_random') {
+                // 网络图随机机制：打乱时间戳确保每次拿到不一样的 picsum 图
+                updateBackground(`https://picsum.photos/1920/1080?random=${Date.now()}`);
+            } else if (selectionMode === 'user_random') {
+                // 用户链接随机机制
+                if (wallpapers.length > 0) {
+                    const displayIndex = Math.floor(Math.random() * wallpapers.length);
+                    updateBackground(wallpapers[displayIndex].url);
+                } else {
+                    // 如果用户自己什么图都没加，做个优雅的降级
+                    updateBackground(`https://picsum.photos/1920/1080?random=${Date.now()}`);
+                }
+            } else {
+                // 指定某张用户图
+                const idx = parseInt(selectionMode);
+                if (!isNaN(idx) && idx >= 0 && idx < wallpapers.length) {
+                    updateBackground(wallpapers[idx].url);
+                }
             }
         }
 
-        // 下拉菜单切换事件
         function changeSelectedWallpaper() {
-            const select = document.getElementById('bgSelect');
-            currentIndex = parseInt(select.value);
+            selectionMode = document.getElementById('bgSelect').value;
             saveData();
             applyCurrentWallpaper();
         }
 
-        // 添加新壁纸
         function addWallpaper() {
             const nameInput = document.getElementById('bgNameInput');
             const urlInput = document.getElementById('bgUrlInput');
@@ -416,7 +433,9 @@
             }
 
             wallpapers.push({ name: name, url: url });
-            currentIndex = wallpapers.length - 1; // 自动选中新添加的
+            
+            // 添加新壁纸后，直接选中并显示这张新壁纸
+            selectionMode = (wallpapers.length - 1).toString();
             
             saveData();
             renderSelect();
@@ -426,23 +445,26 @@
             urlInput.value = '';
         }
 
-        // 删除当前壁纸
         function deleteWallpaper() {
-            if (wallpapers.length <= 1) {
-                alert('至少保留一张壁纸！');
+            if (selectionMode === 'user_random' || selectionMode === 'default_random') {
+                alert('系统级选项无法删除！');
                 return;
             }
-            if (confirm(`确定要删除 "${wallpapers[currentIndex].name}" 吗？`)) {
-                wallpapers.splice(currentIndex, 1);
-                // 重置 index
-                currentIndex = currentIndex >= wallpapers.length ? wallpapers.length - 1 : currentIndex;
+            
+            let displayIndex = parseInt(selectionMode);
+            if (confirm(`确定要删除壁纸 "${wallpapers[displayIndex].name}" 吗？`)) {
+                // 删除
+                wallpapers.splice(displayIndex, 1);
+                
+                // 删除后自动跳回到“用户随机图”
+                selectionMode = 'user_random';
+                
                 saveData();
                 renderSelect();
                 applyCurrentWallpaper();
             }
         }
 
-        // 导出配置
         function exportWallpapers() {
             const dataStr = JSON.stringify(wallpapers, null, 2);
             const blob = new Blob([dataStr], { type: "application/json" });
@@ -456,7 +478,6 @@
             URL.revokeObjectURL(url);
         }
 
-        // 导入配置
         function importWallpapers(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -465,30 +486,32 @@
             reader.onload = function(e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
-                    if (Array.isArray(importedData) && importedData.length > 0 && importedData[0].url) {
-                        // 合并数据，将导入的附加到现有列表后
-                        wallpapers = wallpapers.concat(importedData);
-                        currentIndex = wallpapers.length - importedData.length; // 选中导入的第一张
+                    // 过滤掉以前旧的默认壁纸备份数据
+                    const cleanImportedData = importedData.filter(wp => !wp.url.includes("picsum.photos/1920/1080?random=101"));
+                    
+                    if (Array.isArray(cleanImportedData) && cleanImportedData.length > 0 && cleanImportedData[0].url) {
+                        wallpapers = wallpapers.concat(cleanImportedData);
+                        
+                        // 导入后跳转到刚导入的第一张壁纸
+                        selectionMode = (wallpapers.length - cleanImportedData.length).toString();
+                        
                         saveData();
                         renderSelect();
                         applyCurrentWallpaper();
                         alert('导入成功！');
                     } else {
-                        alert('JSON 格式不正确，无法导入。');
+                        alert('JSON 格式不正确，或全为系统默认图，无有效数据导入。');
                     }
                 } catch (err) {
                     alert('文件读取或解析失败。请确保是有效的 JSON 文件。');
                 }
-                // 清空 input，以便能够重复导入同一个文件
                 event.target.value = '';
             };
             reader.readAsText(file);
         }
 
-        // 执行初始化
         initWallpaperManager();
 
-        // --- 原抽奖模块逻辑 ---
         const btn = document.getElementById('actionBtn');
         const display = document.getElementById('numberDisplay');
         const links = document.querySelectorAll('.link');
