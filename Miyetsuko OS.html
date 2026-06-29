@@ -9,7 +9,6 @@
             font-family: 'Helvetica Neue', Arial, sans-serif; 
             color: #fff; 
             margin: 0; 
-            padding: 8px 10px; 
             background-image: 
                 linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02) 76%, transparent 77%, transparent), 
                 linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02) 76%, transparent 77%, transparent),
@@ -19,22 +18,27 @@
             background-repeat: repeat, repeat, no-repeat;
             background-attachment: fixed;
             height: 100vh; 
-            box-sizing: border-box; 
-            display: flex; 
-            flex-direction: column; 
             overflow: hidden; 
             transition: background 0.4s ease-in-out;
             text-shadow: 0 0 8px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.8);
         }
 
-        /* 双指触发隐去所有文字和UI的核心控制样式 */
-        body.hide-ui h1, 
-        body.hide-ui .nav-bar, 
-        body.hide-ui .content-area, 
-        body.hide-ui .bg-config-panel {
-            opacity: 0 !important;
-            pointer-events: none !important;
-            transition: opacity 0.3s ease;
+        /* 整个 UI 的容器层，用于实现滑动切换屏幕的效果 */
+        #ui-layer {
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            width: 100%;
+            box-sizing: border-box; 
+            padding: 8px 10px; 
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        /* 第二屏状态：UI向左滑动隐藏，变透明不可点击 */
+        body.show-screen2 #ui-layer {
+            transform: translateX(-100%);
+            opacity: 0;
+            pointer-events: none;
         }
 
         h1 { 
@@ -47,7 +51,6 @@
             flex-shrink: 0;
             letter-spacing: 1px;
             cursor: pointer; 
-            transition: opacity 0.3s ease;
         }
 
         /* 配置面板样式 */
@@ -63,7 +66,6 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(3px);
             animation: fadeIn 0.3s ease-in-out;
-            transition: opacity 0.3s ease;
         }
 
         @keyframes fadeIn {
@@ -120,7 +122,6 @@
             margin-bottom: 8px; 
             flex-shrink: 0; 
             justify-content: center; 
-            transition: opacity 0.3s ease;
         }
         .nav-link { 
             padding: 5px 12px; 
@@ -140,7 +141,6 @@
             gap: 6px; 
             overflow-y: auto; 
             padding-bottom: 2px;
-            transition: opacity 0.3s ease;
         }
 
         .series-section { 
@@ -214,81 +214,83 @@
     </style>
 </head>
 <body>
-    <h1 id="mainTitle" ondblclick="toggleConfigPanel()">美悦子シリーズ ポータル</h1>
+    <div id="ui-layer">
+        <h1 id="mainTitle" ondblclick="toggleConfigPanel()">美悦子シリーズ ポータル</h1>
 
-    <div class="bg-config-panel" id="configPanel">
-        <div class="config-row">
-            <select id="bgSelect" onchange="changeSelectedWallpaper()"></select>
-            <button class="btn-danger" onclick="deleteWallpaper()">删除当前</button>
-        </div>
-        <div class="config-row">
-            <input type="text" id="bgNameInput" placeholder="名称 (如: 星空)" style="flex: 0.4;">
-            <input type="text" id="bgUrlInput" placeholder="在此粘贴图片直链" style="flex: 0.6;">
-            <button onclick="addWallpaper()">添加</button>
-        </div>
-        <div class="config-row">
-            <button onclick="exportWallpapers()" style="flex: 1;">导出配置</button>
-            <button onclick="document.getElementById('importInput').click()" style="flex: 1;">导入配置</button>
-            <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importWallpapers(event)">
-        </div>
-    </div>
-
-    <div class="nav-bar">
-        <a class="nav-link" href="https://moodhappy.github.io/MiyetsukoSeries/">作品一覧</a>
-        <a class="nav-link" href="https://moodhappy.github.io/MiyetsukoSeries/admin.html">管理后台</a>
-    </div>
-
-    <div class="content-area">
-        <div class="series-section">
-            <h2>新鲜玛特シリーズ</h2>
-            <div class="links-grid">
-                <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/FreshMart/FreshMartOrigin/新鲜玛特的疯狂宇宙起源篇_1782015960000.html">起源篇</a>
-                <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/FreshMart/FreshMartOne/新鲜玛特的疯狂宇宙第一卷.html_1782015600000.html">第一巻</a>
-                <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/FreshMart/FreshMartTwo/新鲜玛特的疯狂宇宙第二卷_1781934000000.html">第二巻</a>
+        <div class="bg-config-panel" id="configPanel">
+            <div class="config-row">
+                <select id="bgSelect" onchange="changeSelectedWallpaper()"></select>
+                <button class="btn-danger" onclick="deleteWallpaper()">删除当前</button>
+            </div>
+            <div class="config-row">
+                <input type="text" id="bgNameInput" placeholder="名称 (如: 星空)" style="flex: 0.4;">
+                <input type="text" id="bgUrlInput" placeholder="在此粘贴图片直链" style="flex: 0.6;">
+                <button onclick="addWallpaper()">添加</button>
+            </div>
+            <div class="config-row">
+                <button onclick="exportWallpapers()" style="flex: 1;">导出配置</button>
+                <button onclick="document.getElementById('importInput').click()" style="flex: 1;">导入配置</button>
+                <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importWallpapers(event)">
             </div>
         </div>
 
-        <div class="series-section">
-            <h2>女王の法則シリーズ</h2>
-            <div class="links-grid">
-                <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/QueenRules/女王的法则_1782039780000.html">女王の法則</a>
-                <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Extras/Kenta/美悦子与健太_1782036900000.html">健太篇</a>
-                <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Extras/Shiraishi/美悦子与白石_1782036900000.html">白石篇</a>
-            </div>
+        <div class="nav-bar">
+            <a class="nav-link" href="https://moodhappy.github.io/MiyetsukoSeries/">作品一覧</a>
+            <a class="nav-link" href="https://moodhappy.github.io/MiyetsukoSeries/admin.html">管理后台</a>
         </div>
 
-        <div class="series-section">
-            <h2>書籍シリーズ</h2>
-            <div class="links-grid">
-                <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Books/Hundred/百年孤独目录_1782298920000.html">百年孤独</a>
-                <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Books/The%20Little%20Prince/小王子目录.html_1782364260000.html">小王子</a>
+        <div class="content-area">
+            <div class="series-section">
+                <h2>新鲜玛特シリーズ</h2>
+                <div class="links-grid">
+                    <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/FreshMart/FreshMartOrigin/新鲜玛特的疯狂宇宙起源篇_1782015960000.html">起源篇</a>
+                    <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/FreshMart/FreshMartOne/新鲜玛特的疯狂宇宙第一卷.html_1782015600000.html">第一巻</a>
+                    <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/FreshMart/FreshMartTwo/新鲜玛特的疯狂宇宙第二卷_1781934000000.html">第二巻</a>
+                </div>
             </div>
-        </div>
 
-        <div class="series-section">
-            <h2>自建新闻站</h2>
-            <div class="links-grid">
-                <a class="link" href="https://moodhappy.github.io/OneHundredYearsReading/docs/index.html">OneHundred Years Reading</a>
-                <a class="link" href="https://moodhappy.github.io/Web-Notes-Matrix/docs/index.html">Web Matrix</a>
-                <a class="link" href="https://moodhappy.github.io/bbc-news-archive/docs/index.html">BBC News Archive</a>
-                <a class="link" href="https://moodhappy.github.io/YT-Street-Echoes/docs/index.html">YT Street Echoes</a>
-                <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/style/YouTubeChina24.html">China24</a>
-                <a class="link" href="https://moodhappy.github.io/Echoes-of-History/docs/index.html">Echoes of History</a>
-                <a class="link" href="https://moodhappy.github.io/Daily-Nexus/docs/index.html">Daily Nexus</a>
-                <a class="link" href="https://moodhappy.github.io/DailyFiveWords/docs/index.html">Daily Five Words</a>
+            <div class="series-section">
+                <h2>女王の法則シリーズ</h2>
+                <div class="links-grid">
+                    <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/QueenRules/女王的法则_1782039780000.html">女王の法則</a>
+                    <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Extras/Kenta/美悦子与健太_1782036900000.html">健太篇</a>
+                    <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Extras/Shiraishi/美悦子与白石_1782036900000.html">白石篇</a>
+                </div>
             </div>
-        </div>
 
-        <div class="series-section">
-            <h2>工具箱</h2>
-            <div class="links-grid">
-                <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/style/danmu.html?path=Notes%2Fdanmu%2FTool">工具箱</a>
+            <div class="series-section">
+                <h2>書籍シリーズ</h2>
+                <div class="links-grid">
+                    <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Books/Hundred/百年孤独目录_1782298920000.html">百年孤独</a>
+                    <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Books/The%20Little%20Prince/小王子目录.html_1782364260000.html">小王子</a>
+                </div>
             </div>
-        </div>
 
-        <div class="cyber-panel">
-            <div id="numberDisplay">---</div>
-            <button id="actionBtn">START</button>
+            <div class="series-section">
+                <h2>自建新闻站</h2>
+                <div class="links-grid">
+                    <a class="link" href="https://moodhappy.github.io/OneHundredYearsReading/docs/index.html">OneHundred Years Reading</a>
+                    <a class="link" href="https://moodhappy.github.io/Web-Notes-Matrix/docs/index.html">Web Matrix</a>
+                    <a class="link" href="https://moodhappy.github.io/bbc-news-archive/docs/index.html">BBC News Archive</a>
+                    <a class="link" href="https://moodhappy.github.io/YT-Street-Echoes/docs/index.html">YT Street Echoes</a>
+                    <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/style/YouTubeChina24.html">China24</a>
+                    <a class="link" href="https://moodhappy.github.io/Echoes-of-History/docs/index.html">Echoes of History</a>
+                    <a class="link" href="https://moodhappy.github.io/Daily-Nexus/docs/index.html">Daily Nexus</a>
+                    <a class="link" href="https://moodhappy.github.io/DailyFiveWords/docs/index.html">Daily Five Words</a>
+                </div>
+            </div>
+
+            <div class="series-section">
+                <h2>工具箱</h2>
+                <div class="links-grid">
+                    <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/style/danmu.html?path=Notes%2Fdanmu%2FTool">工具箱</a>
+                </div>
+            </div>
+
+            <div class="cyber-panel">
+                <div id="numberDisplay">---</div>
+                <button id="actionBtn">START</button>
+            </div>
         </div>
     </div>
 
@@ -302,18 +304,33 @@
             }
         }
 
-        let touchStartPoints = [];
+        // --- 左右滑动切换屏幕逻辑 ---
+        let touchStartX = 0;
+        let touchStartY = 0;
 
         window.addEventListener('touchstart', function(e) {
-            touchStartPoints = e.touches;
-        }, { passive: false });
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
 
         window.addEventListener('touchend', function(e) {
-            if (touchStartPoints.length >= 2) {
-                document.body.classList.toggle('hide-ui');
+            let touchEndX = e.changedTouches[0].screenX;
+            let touchEndY = e.changedTouches[0].screenY;
+            
+            let dx = touchEndX - touchStartX;
+            let dy = touchEndY - touchStartY;
+            
+            // 确保是明显的水平滑动（水平移动距离大于垂直，且绝对滑动距离>50防误触）
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                if (dx < 0) {
+                    // 向左滑：显示第二屏（隐藏UI）
+                    document.body.classList.add('show-screen2');
+                } else {
+                    // 向右滑：回到第一屏（显示UI）
+                    document.body.classList.remove('show-screen2');
+                }
             }
-            touchStartPoints = [];
-        });
+        }, { passive: true });
 
         function updateBackground(imgUrl) {
             document.body.style.backgroundImage = `
