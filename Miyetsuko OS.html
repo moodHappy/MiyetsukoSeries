@@ -7,146 +7,200 @@
     <style>
         body { 
             font-family: 'Helvetica Neue', Arial, sans-serif; 
-            color: #1a365d; 
+            color: #fff; 
             margin: 0; 
             padding: 8px 10px; 
-            /* 浅色科技网格背景 */
-            background-color: #f0f4f8; 
             background-image: 
-                linear-gradient(0deg, transparent 24%, rgba(0, 168, 255, 0.08) 25%, rgba(0, 168, 255, 0.08) 26%, transparent 27%, transparent 74%, rgba(0, 168, 255, 0.08) 75%, rgba(0, 168, 255, 0.08) 76%, transparent 77%, transparent), 
-                linear-gradient(90deg, transparent 24%, rgba(0, 168, 255, 0.08) 25%, rgba(0, 168, 255, 0.08) 26%, transparent 27%, transparent 74%, rgba(0, 168, 255, 0.08) 75%, rgba(0, 168, 255, 0.08) 76%, transparent 77%, transparent); 
-            background-size: 30px 30px;
+                linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02) 76%, transparent 77%, transparent), 
+                linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02) 76%, transparent 77%, transparent),
+                url('https://picsum.photos/1920/1080?random=1'); 
+            background-size: 30px 30px, 30px 30px, cover;
+            background-position: center, center, center;
+            background-repeat: repeat, repeat, no-repeat;
+            background-attachment: fixed;
             height: 100vh; 
             box-sizing: border-box; 
             display: flex; 
             flex-direction: column; 
             overflow: hidden; 
+            transition: background 0.4s ease-in-out;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.8);
+        }
+
+        /* 双指触发隐去所有文字和UI的核心控制样式 */
+        body.hide-ui h1, 
+        body.hide-ui .nav-bar, 
+        body.hide-ui .content-area, 
+        body.hide-ui .bg-config-panel {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transition: opacity 0.3s ease;
         }
 
         h1 { 
-            color: #0077b6; 
+            color: #fff; 
             font-size: 1.2rem; 
             margin: 0 0 8px 0; 
             text-align: center; 
-            border-bottom: 2px solid rgba(0, 119, 182, 0.3); 
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2); 
             padding-bottom: 4px; 
             flex-shrink: 0;
-            text-shadow: 0 0 8px rgba(0, 119, 182, 0.2);
             letter-spacing: 1px;
+            cursor: pointer; 
+            transition: opacity 0.3s ease;
         }
 
-        /* 导航栏样式 */
-        .nav-bar { display: flex; gap: 10px; margin-bottom: 8px; flex-shrink: 0; justify-content: center; }
+        .bg-config-panel {
+            display: none;
+            gap: 6px;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(3px);
+            animation: fadeIn 0.3s ease-in-out;
+            transition: opacity 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #bgUrlInput {
+            flex-grow: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 4px 8px;
+            color: #fff;
+            font-size: 0.8rem;
+            outline: none;
+            text-shadow: none;
+        }
+        #bgUrlInput::placeholder { color: rgba(255, 255, 255, 0.5); }
+        #bgSetBtn {
+            background: rgba(0, 0, 0, 0.4);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-shadow: none;
+        }
+        #bgSetBtn:hover { background: rgba(255, 255, 255, 0.2); }
+
+        .nav-bar { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 8px; 
+            flex-shrink: 0; 
+            justify-content: center; 
+            transition: opacity 0.3s ease;
+        }
         .nav-link { 
             padding: 5px 12px; 
-            background: linear-gradient(135deg, #0077b6, #00b4d8); 
+            background: rgba(0, 0, 0, 0.2); 
             color: #fff; 
             text-decoration: none; 
             border-radius: 4px; 
             font-size: 0.8rem; 
             font-weight: bold; 
-            box-shadow: 0 2px 4px rgba(0, 119, 182, 0.3);
-            border: 1px solid #00b4d8;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .content-area { flex-grow: 1; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; padding-bottom: 2px;}
+        .content-area { 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+            overflow-y: auto; 
+            padding-bottom: 2px;
+            transition: opacity 0.3s ease;
+        }
 
         .series-section { 
-            background: rgba(255, 255, 255, 0.85); 
-            padding: 6px 8px; 
+            background: transparent; 
+            padding: 4px 6px; 
             border-radius: 6px; 
-            box-shadow: 0 2px 6px rgba(0, 119, 182, 0.08);
-            border: 1px solid rgba(0, 180, 216, 0.3);
-            backdrop-filter: blur(4px);
+            border: none; 
         }
 
         h2 { 
-            color: #023e8a; 
+            color: #fff; 
             font-size: 0.9rem; 
-            margin: 0 0 5px 0; 
-            border-left: 3px solid #00b4d8; 
+            margin: 0 0 4px 0; 
+            border-left: 3px solid #fff; 
             padding-left: 6px; 
-            background: linear-gradient(90deg, rgba(0, 180, 216, 0.15) 0%, transparent 100%); 
+            background: transparent; 
         }
 
         .links-grid { display: flex; flex-wrap: wrap; gap: 6px; }
 
         .link { 
             display: inline-block; 
-            color: #0077b6; 
+            color: #fff; 
             text-decoration: none; 
             font-weight: bold; 
             font-size: 0.85rem; 
             padding: 4px 8px; 
             border-radius: 4px; 
-            background-color: rgba(240, 248, 255, 0.8); 
-            border: 1px solid #90e0ef; 
+            background-color: rgba(0, 0, 0, 0.3); 
+            border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.1s; 
         }
 
-        /* 抽奖时的科技感样式 */
-        .link.targeting { 
-            background-color: #fff; 
-            color: #00b4d8; 
-            border: 1px dashed #00b4d8; 
-            box-shadow: 0 0 6px rgba(0, 180, 216, 0.5); 
-        }
-        /* 锁定后的醒目样式，避免黑色 */
-        .link.locked { 
-            background-color: #ffde00; 
-            color: #d90429; 
-            border: 1px solid #d90429; 
-            font-weight: 900; 
-            box-shadow: 2px 2px 0 rgba(217, 4, 41, 0.8); 
-        }
+        .link.targeting { background-color: rgba(255, 255, 255, 0.3); color: #fff; border: 1px solid #fff; }
+        .link.locked { background-color: #ffde00; color: #000; border: 1px solid #fff; font-weight: 900; text-shadow: none; }
 
-        /* 底部控制面板（亮色科技风） */
         .cyber-panel { 
-            background-color: rgba(255, 255, 255, 0.9); 
-            border: 2px solid #0077b6; 
+            background-color: rgba(0, 0, 0, 0.3); 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
             border-radius: 6px; 
-            padding: 8px 10px; 
+            padding: 6px 10px; 
             flex-shrink: 0; 
             display: flex; 
             align-items: center; 
             justify-content: space-between; 
-            box-shadow: 0 0 12px rgba(0, 119, 182, 0.2), inset 0 0 8px rgba(0, 180, 216, 0.1); 
         }
 
         #actionBtn { 
-            background: rgba(0, 119, 182, 0.05); 
-            color: #0077b6; 
-            border: 2px solid #0077b6; 
+            background: rgba(0, 0, 0, 0.3); 
+            color: #fff; 
+            border: 1px solid #fff; 
             padding: 6px 18px; 
             font-size: 1.2rem; 
             font-family: 'Courier New', monospace; 
             font-weight: 900; 
             border-radius: 4px; 
             cursor: pointer; 
-            transition: all 0.2s; 
-            box-shadow: 0 0 5px rgba(0, 119, 182, 0.2);
+            text-shadow: none;
         }
         #actionBtn:active { transform: scale(0.95); }
-        #actionBtn.running { 
-            border-color: #ef233c; 
-            color: #ef233c; 
-            background: rgba(239, 35, 60, 0.05);
-            box-shadow: 0 0 5px rgba(239, 35, 60, 0.3);
-        }
+        #actionBtn.running { background: rgba(255, 0, 0, 0.3); border-color: #ff0000; }
 
         #numberDisplay { 
             font-size: 2.2rem; 
             font-family: 'Courier New', monospace; 
             font-weight: 900; 
             letter-spacing: 5px; 
-            color: #0077b6; 
-            text-shadow: 0 0 8px rgba(0, 180, 216, 0.4); 
+            color: #fff; 
             margin-left: 10px; 
         }
     </style>
 </head>
 <body>
-    <h1>美悦子シリーズ ポータル</h1>
+    <h1 id="mainTitle" ondblclick="toggleConfigPanel()">美悦子シリーズ ポータル</h1>
+
+    <div class="bg-config-panel" id="configPanel">
+        <input type="text" id="bgUrlInput" placeholder="在此粘贴图片直链，点击应用（支持随机图API或外链）">
+        <button id="bgSetBtn" onclick="applyCustomBackground()">应用壁纸</button>
+    </div>
 
     <div class="nav-bar">
         <a class="nav-link" href="https://moodhappy.github.io/MiyetsukoSeries/">作品一覧</a>
@@ -183,22 +237,14 @@
         <div class="series-section">
             <h2>自建新闻站</h2>
             <div class="links-grid">
-                                            <a class="link" href="https://moodhappy.github.io/OneHundredYearsReading/docs/index.html">OneHundred Years Reading</a>
-
-                                <a class="link" href="https://moodhappy.github.io/Web-Notes-Matrix/docs/index.html">Web Matrix</a>
-                                
-                                
-
+                <a class="link" href="https://moodhappy.github.io/OneHundredYearsReading/docs/index.html">OneHundred Years Reading</a>
+                <a class="link" href="https://moodhappy.github.io/Web-Notes-Matrix/docs/index.html">Web Matrix</a>
                 <a class="link" href="https://moodhappy.github.io/bbc-news-archive/docs/index.html">BBC News Archive</a>
                 <a class="link" href="https://moodhappy.github.io/YT-Street-Echoes/docs/index.html">YT Street Echoes</a>
                 <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/style/YouTubeChina24.html">China24</a>
                 <a class="link" href="https://moodhappy.github.io/Echoes-of-History/docs/index.html">Echoes of History</a>
                 <a class="link" href="https://moodhappy.github.io/Daily-Nexus/docs/index.html">Daily Nexus</a>
-                                <a class="link" href="https://moodhappy.github.io/DailyFiveWords/docs/index.html">Daily Five Words</a>
-
-
-
-
+                <a class="link" href="https://moodhappy.github.io/DailyFiveWords/docs/index.html">Daily Five Words</a>
             </div>
         </div>
 
@@ -216,6 +262,77 @@
     </div>
 
     <script>
+        function toggleConfigPanel() {
+            const panel = document.getElementById('configPanel');
+            if (panel.style.display === 'none' || panel.style.display === '') {
+                panel.style.display = 'flex';
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+
+        // 双指触屏彻底隐藏/显示文字逻辑
+        let touchStartPoints = [];
+        
+        window.addEventListener('touchstart', function(e) {
+            touchStartPoints = e.touches;
+        }, { passive: false });
+
+        window.addEventListener('touchend', function(e) {
+            if (touchStartPoints.length >= 2) {
+                document.body.classList.toggle('hide-ui');
+            }
+            touchStartPoints = [];
+        });
+
+        // 渲染或更新背景图的函数
+        function updateBackground(imgUrl) {
+            document.body.style.backgroundImage = `
+                linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02) 76%, transparent 77%, transparent), 
+                linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02) 76%, transparent 77%, transparent),
+                url('${imgUrl}')
+            `;
+        }
+
+        // 绑定输入框应用自定义背景，并利用 localStorage 持久化存储
+        function applyCustomBackground() {
+            let url = document.getElementById('bgUrlInput').value.trim();
+            if (!url) {
+                alert('请输入有效的图片链接！');
+                return;
+            }
+            if (url.includes('?')) {
+                url += '&t=' + new Date().getTime();
+            } else {
+                url += '?t=' + new Date().getTime();
+            }
+            
+            // 保存至本地存储
+            localStorage.setItem('custom_wallpaper_url', url);
+            updateBackground(url);
+        }
+
+        // 初始化加载背景图：优先读取本地持久化壁纸，若无则使用随机兜底数组
+        function initWallpaper() {
+            const savedWallpaper = localStorage.getItem('custom_wallpaper_url');
+            
+            if (savedWallpaper) {
+                updateBackground(savedWallpaper);
+            } else {
+                const defaultBeautyApis = [
+                    "https://picsum.photos/1920/1080?random=101",
+                    "https://picsum.photos/1920/1080?random=102",
+                    "https://picsum.photos/1920/1080?random=103",
+                    "https://picsum.photos/1920/1080?random=104"
+                ];
+                const randomInitApi = defaultBeautyApis[Math.floor(Math.random() * defaultBeautyApis.length)] + '?t=' + new Date().getTime();
+                updateBackground(randomInitApi);
+            }
+        }
+        
+        initWallpaper();
+
+        // 原抽奖模块逻辑
         const btn = document.getElementById('actionBtn');
         const display = document.getElementById('numberDisplay');
         const links = document.querySelectorAll('.link');
@@ -245,9 +362,8 @@
                 const minVal = Math.min(...digits);
                 const redIdx = digits.indexOf(minVal); 
 
-                /* 抽取出的高亮数字采用醒目红色，基础颜色采用科技蓝 */
                 display.innerHTML = Array.from(finalNum).map((n, i) => 
-                    `<span style="color:${i === redIdx ? '#ef233c' : '#0077b6'}">${n}</span>`).join('');
+                    `<span style="color:${i === redIdx ? '#ff5555' : '#fff'}">${n}</span>`).join('');
             }
         });
     </script>
