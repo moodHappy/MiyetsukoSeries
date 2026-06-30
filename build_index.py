@@ -475,11 +475,16 @@ def generate_searchable_index():
                             found = true;
                             const a = document.createElement('a');
                             
-                            // 🌟 核心升级：如果匹配到了正文，则利用浏览器原生的 Text Fragments (#:~:text=) 进行精准定位与高亮
+                            // 🌟 核心升级：利用浏览器原生的 Text Fragments 进行精准定位与高亮
                             let finalUrl = chap.url;
                             if (contentMatch) {
                                 // 拼接特殊 hash 实现跳转自动滚动与高亮
                                 finalUrl = chap.url + '#:~:text=' + encodeURIComponent(keyword);
+                                
+                                // ⚠️ 修复移动端失效的核心：强制新标签页打开
+                                // 移动端浏览器在同一个 Tab 内处理这种特殊 hash 时容易失效，新开页面可强制触发浏览器重绘和定位
+                                a.target = "_blank";
+                                a.rel = "noopener noreferrer";
                             }
                             a.href = finalUrl;
                             
@@ -552,7 +557,7 @@ def generate_searchable_index():
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(final_html)
-    print(f"🎉 SPA 单页应用枢纽 {OUTPUT_FILE} 编译完毕！全文检索与原生锚点定位已激活。")
+    print(f"🎉 SPA 单页应用枢纽 {OUTPUT_FILE} 编译完毕！移动端强制定位已激活。")
 
 if __name__ == "__main__":
     generate_searchable_index()
