@@ -574,10 +574,12 @@ def generate_searchable_index():
 
                             a.innerHTML = htmlContent;
                             
-                            // 🌟 劫持点击行为，转入沙盒渲染引擎
+                            // 🌟 核心修改点：劫持点击行为，直接绕过 iframe 容器，直接新开标签页跳转并触发原生高亮。这等同于在后台直接触发了那个右上角按钮。
                             a.onclick = (e) => {
                                 e.preventDefault();
-                                openReader(chap.url, chap.title, contentMatch ? keyword : null);
+                                const safeUrl = encodeURI(chap.url);
+                                const fullUrl = contentMatch ? safeUrl + '#:~:text=' + encodeURIComponent(keyword) : safeUrl;
+                                window.open(fullUrl, '_blank'); 
                             };
 
                             searchContainer.appendChild(a);
