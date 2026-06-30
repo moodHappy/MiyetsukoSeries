@@ -10,7 +10,7 @@ OUTPUT_FILE = "index.html"
 def scan_html_files():
     library = {}
     total_files = 0
-    print("🕵️ 图书管理员正在重构 SPA 极简折叠架构，并注入置顶链接...")
+    print("🕵️ 图书管理员正在重构 SPA 极简折叠架构，并注入全文检索核心...")
 
     for root, dirs, files in os.walk(TARGET_DIR):
         # 排除 git 隐藏文件夹，防止干扰
@@ -32,16 +32,38 @@ def scan_html_files():
                     section_name = "/".join(parts[1:-1]) if len(parts) > 2 else "正文"
 
                 title = file.replace(".html", "")
+                content_text = "" # 用于存储提取的纯文本内容
+
                 try:
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        content = f.read(2048)
-                        title_match = re.search(r'<title>(.*?)</title>', content, re.IGNORECASE)
+                        # 读取完整文件以提取正文
+                        raw_html = f.read()
+                        
+                        # 1. 提取标题
+                        title_match = re.search(r'<title>(.*?)</title>', raw_html, re.IGNORECASE)
                         if title_match:
                             clean_title = title_match.group(1).strip()
                             if clean_title:
                                 title = clean_title
-                except Exception:
-                    pass
+
+                        # 2. 提取正文内容 (定位到 content-container)
+                        content_start = raw_html.find('<div id="content-container">')
+                        if content_start != -1:
+                            # 截取容器之后的所有内容
+                            main_content = raw_html[content_start:]
+                            # 移除所有 HTML 标签，保留纯文本
+                            clean_text = re.sub(r'<[^>]+>', ' ', main_content)
+                            # 清理多余的空格和换行符，压缩体积
+                            content_text = re.sub(r'\s+', ' ', clean_text).strip()
+                        else:
+                            # 兜底方案：如果找不到容器，直接提取 body 内的文本
+                            body_match = re.search(r'<body.*?>(.*?)</body>', raw_html, re.IGNORECASE | re.DOTALL)
+                            if body_match:
+                                clean_text = re.sub(r'<[^>]+>', ' ', body_match.group(1))
+                                content_text = re.sub(r'\s+', ' ', clean_text).strip()
+
+                except Exception as e:
+                    print(f"⚠️ 无法读取文件 {file_path}: {e}")
 
                 if book_name not in library:
                     library[book_name] = {}
@@ -50,7 +72,8 @@ def scan_html_files():
 
                 library[book_name][section_name].append({
                     "title": title,
-                    "url": rel_path
+                    "url": rel_path,
+                    "content": content_text # 注入正文数据
                 })
                 total_files += 1
 
@@ -78,7 +101,7 @@ def generate_searchable_index():
         print("⚠️ 未扫描到任何 HTML 文件。")
         return
 
-    print(f"✅ 扫描完毕！共归档 {total_files} 篇内容。正在注入双层折叠引擎...")
+    print(f"✅ 扫描完毕！共归档 {total_files} 篇内容。正在注入双层折叠与全文检索引擎...")
 
     json_data = json.dumps(stories_tree, ensure_ascii=False)
 
@@ -172,6 +195,10 @@ def generate_searchable_index():
         .story-arrow { color: var(--muted); font-size: 1.2rem; flex-shrink: 0; margin-left: 15px; transition: transform 0.2s; }
         .story-item:hover .story-arrow { transform: translateX(4px); color: var(--accent); }
         
+        /* 全文搜索结果高亮片段 */
+        .search-snippet { font-size: 0.85rem; color: #4b5563; margin-top: 10px; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent); line-height: 1.5; width: 100%; box-sizing: border-box; word-break: break-word; }
+        .snippet-highlight { color: var(--accent); font-weight: bold; background: var(--accent-glow); border-radius: 2px; padding: 0 2px; }
+
         /* ---------------- 独立目录页 (SPA) UI ---------------- */
         .nav-bar { position: sticky; top: 0; z-index: 100; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(229, 231, 235, 0.5); padding: 15px 20px; display: flex; align-items: center; justify-content: flex-start; cursor: pointer; transition: background 0.2s; }
         .nav-bar:active { background: #f3f4f6; }
@@ -193,7 +220,7 @@ def generate_searchable_index():
             </div>
             
             <div class="search-box">
-                <input type="text" id="searchInput" class="search-input" placeholder="输入关键字，瞬间接驳目标区块...">
+                <input type="text" id="searchInput" class="search-input" placeholder="输入关键字，进行全文神经检索...">
             </div>
             
             <div id="treeContainer"></div>
@@ -422,23 +449,69 @@ def generate_searchable_index():
             });
         }
 
-        // ==== 渲染搜索结果 ====
+        // 转义正则表达式特殊字符的安全辅助函数
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
+        }
+
+        // ==== 渲染搜索结果 (支持全文检索与高亮) ====
         function renderFlatSearch(keyword) {
             searchContainer.innerHTML = '';
             let found = false;
             
+            // 安全的正则关键词，避免输入符号导致正则崩溃
+            const safeKeyword = escapeRegExp(keyword);
+            const highlightRegex = new RegExp(`(${safeKeyword})`, 'gi');
+            
             libraryData.forEach(book => {
                 book.sections.forEach(sec => {
                     sec.chapters.forEach(chap => {
-                        if (chap.title.toLowerCase().includes(keyword) || chap.url.toLowerCase().includes(keyword) || book.book_name.toLowerCase().includes(keyword)) {
+                        const titleMatch = chap.title.toLowerCase().includes(keyword);
+                        const urlMatch = chap.url.toLowerCase().includes(keyword);
+                        const bookMatch = book.book_name.toLowerCase().includes(keyword);
+                        // 新增：验证正文是否包含关键字
+                        const contentMatch = chap.content && chap.content.toLowerCase().includes(keyword);
+
+                        if (titleMatch || urlMatch || bookMatch || contentMatch) {
                             found = true;
                             const a = document.createElement('a');
                             a.href = chap.url;
                             a.className = 'story-item';
+                            // 为了容纳底部的摘要片段，更改为纵向排列
+                            a.style.flexDirection = 'column';
+                            a.style.alignItems = 'flex-start';
                             
                             const pathContext = sec.section_name === "正文" ? book.book_name : book.book_name + ' / ' + sec.section_name;
                             
-                            a.innerHTML = '<div class="story-info"><span class="story-title">' + chap.title + '</span><span class="story-path">🛰️ 归属：' + pathContext + '</span></div><span class="story-arrow">→</span>';
+                            // 顶部：标题和归属地
+                            let htmlContent = `
+                            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                                <div class="story-info">
+                                    <span class="story-title">${chap.title}</span>
+                                    <span class="story-path">🛰️ 归属：${pathContext}</span>
+                                </div>
+                                <span class="story-arrow">→</span>
+                            </div>`;
+
+                            // 底部：如果是在正文中搜到的，提取前后文字作为摘要并高亮
+                            if (contentMatch) {
+                                const idx = chap.content.toLowerCase().indexOf(keyword);
+                                // 截取匹配点前后各 35 个字符
+                                const start = Math.max(0, idx - 35);
+                                const end = Math.min(chap.content.length, idx + keyword.length + 35);
+                                
+                                let snippet = chap.content.substring(start, end);
+                                
+                                if (start > 0) snippet = '...' + snippet;
+                                if (end < chap.content.length) snippet = snippet + '...';
+                                
+                                // 高亮关键字
+                                snippet = snippet.replace(highlightRegex, '<span class="snippet-highlight">$1</span>');
+
+                                htmlContent += `<div class="search-snippet">${snippet}</div>`;
+                            }
+
+                            a.innerHTML = htmlContent;
                             searchContainer.appendChild(a);
                         }
                     });
@@ -472,7 +545,7 @@ def generate_searchable_index():
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(final_html)
-    print(f"🎉 SPA 单页应用枢纽 {OUTPUT_FILE} 编译完毕！")
+    print(f"🎉 SPA 单页应用枢纽 {OUTPUT_FILE} 编译完毕！全文检索已激活。")
 
 if __name__ == "__main__":
     generate_searchable_index()
