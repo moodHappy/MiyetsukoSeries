@@ -454,7 +454,7 @@ def generate_searchable_index():
             return string.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
         }
 
-        // ==== 渲染搜索结果 (支持全文检索与高亮) ====
+        // ==== 渲染搜索结果 (支持全文检索、高亮与 Text Fragments 原生跳转定位) ====
         function renderFlatSearch(keyword) {
             searchContainer.innerHTML = '';
             let found = false;
@@ -469,13 +469,20 @@ def generate_searchable_index():
                         const titleMatch = chap.title.toLowerCase().includes(keyword);
                         const urlMatch = chap.url.toLowerCase().includes(keyword);
                         const bookMatch = book.book_name.toLowerCase().includes(keyword);
-                        // 新增：验证正文是否包含关键字
                         const contentMatch = chap.content && chap.content.toLowerCase().includes(keyword);
 
                         if (titleMatch || urlMatch || bookMatch || contentMatch) {
                             found = true;
                             const a = document.createElement('a');
-                            a.href = chap.url;
+                            
+                            // 🌟 核心升级：如果匹配到了正文，则利用浏览器原生的 Text Fragments (#:~:text=) 进行精准定位与高亮
+                            let finalUrl = chap.url;
+                            if (contentMatch) {
+                                // 拼接特殊 hash 实现跳转自动滚动与高亮
+                                finalUrl = chap.url + '#:~:text=' + encodeURIComponent(keyword);
+                            }
+                            a.href = finalUrl;
+                            
                             a.className = 'story-item';
                             // 为了容纳底部的摘要片段，更改为纵向排列
                             a.style.flexDirection = 'column';
@@ -545,7 +552,7 @@ def generate_searchable_index():
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(final_html)
-    print(f"🎉 SPA 单页应用枢纽 {OUTPUT_FILE} 编译完毕！全文检索已激活。")
+    print(f"🎉 SPA 单页应用枢纽 {OUTPUT_FILE} 编译完毕！全文检索与原生锚点定位已激活。")
 
 if __name__ == "__main__":
     generate_searchable_index()
