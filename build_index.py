@@ -10,73 +10,50 @@ OUTPUT_FILE = "index.html"
 def scan_html_files():
     library = {}
     total_files = 0
-    print("🕵️ 图书管理员正在重构 SPA 极简折叠架构，并注入全文检索核心...")
-
+    print("🕵️ 图书管理员正在重构 SPA 单页应用架构...")
+    
     for root, dirs, files in os.walk(TARGET_DIR):
         # 排除 git 隐藏文件夹，防止干扰
         if '.git' in dirs:
             dirs.remove('.git')
-
+            
         for file in files:
             if file.endswith(".html") and file != OUTPUT_FILE:
                 file_path = os.path.join(root, file)
                 rel_path = os.path.relpath(file_path, TARGET_DIR).replace('\\', '/')
-
+                
                 parts = rel_path.split('/')
-
+                
                 if len(parts) == 1:
                     book_name = "未分类文稿"
                     section_name = "正文"
                 else:
                     book_name = parts[0]
                     section_name = "/".join(parts[1:-1]) if len(parts) > 2 else "正文"
-
+                
                 title = file.replace(".html", "")
-                content_text = "" # 用于存储提取的纯文本内容
-
                 try:
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        # 读取完整文件以提取正文
-                        raw_html = f.read()
-                        
-                        # 1. 提取标题
-                        title_match = re.search(r'<title>(.*?)</title>', raw_html, re.IGNORECASE)
+                        content = f.read(2048)
+                        title_match = re.search(r'<title>(.*?)</title>', content, re.IGNORECASE)
                         if title_match:
                             clean_title = title_match.group(1).strip()
                             if clean_title:
                                 title = clean_title
-
-                        # 2. 提取正文内容 (定位到 content-container)
-                        content_start = raw_html.find('<div id="content-container">')
-                        if content_start != -1:
-                            # 截取容器之后的所有内容
-                            main_content = raw_html[content_start:]
-                            # 移除所有 HTML 标签，保留纯文本
-                            clean_text = re.sub(r'<[^>]+>', ' ', main_content)
-                            # 清理多余的空格和换行符，压缩体积
-                            content_text = re.sub(r'\s+', ' ', clean_text).strip()
-                        else:
-                            # 兜底方案：如果找不到容器，直接提取 body 内的文本
-                            body_match = re.search(r'<body.*?>(.*?)</body>', raw_html, re.IGNORECASE | re.DOTALL)
-                            if body_match:
-                                clean_text = re.sub(r'<[^>]+>', ' ', body_match.group(1))
-                                content_text = re.sub(r'\s+', ' ', clean_text).strip()
-
-                except Exception as e:
-                    print(f"⚠️ 无法读取文件 {file_path}: {e}")
-
+                except Exception:
+                    pass
+                
                 if book_name not in library:
                     library[book_name] = {}
                 if section_name not in library[book_name]:
                     library[book_name][section_name] = []
-
+                    
                 library[book_name][section_name].append({
                     "title": title,
-                    "url": rel_path,
-                    "content": content_text # 注入正文数据
+                    "url": rel_path
                 })
                 total_files += 1
-
+                
     # 结构化排序
     sorted_library = []
     for book in sorted(library.keys()):
@@ -91,20 +68,21 @@ def scan_html_files():
             "book_name": book,
             "sections": sections
         })
-
+        
     return sorted_library, total_files
 
 def generate_searchable_index():
     stories_tree, total_files = scan_html_files()
-
+    
     if not stories_tree:
         print("⚠️ 未扫描到任何 HTML 文件。")
         return
-
-    print(f"✅ 扫描完毕！共归档 {total_files} 篇内容。正在注入双层折叠与全文检索引擎...")
-
+        
+    print(f"✅ 扫描完毕！共归档 {total_files} 篇内容。正在注入动态 SPA 引擎...")
+    
     json_data = json.dumps(stories_tree, ensure_ascii=False)
-
+    
+    # 采用安全字符串替换，避免任何花括号冲突
     html_template = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -120,7 +98,6 @@ def generate_searchable_index():
             --accent: #2563eb; 
             --accent-glow: rgba(37,99,235,0.08); 
             --border: #e5e7eb; 
-            --sub-bg: #f8fafc;
         }
         body { 
             font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; 
@@ -153,7 +130,7 @@ def generate_searchable_index():
 
         .area-title { font-size: 0.95rem; color: var(--muted); font-weight: 700; margin: 0 0 12px 10px; text-transform: uppercase; letter-spacing: 1.5px; }
 
-        /* 外层折叠菜单 UI (书籍) */
+        /* 折叠菜单 UI */
         details.book-group { background: var(--card); border-radius: 18px; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); overflow: hidden; border: 1px solid var(--border); transition: all 0.3s ease; }
         details.book-group:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.06); border-color: #d1d5db; }
         
@@ -172,15 +149,7 @@ def generate_searchable_index():
         
         .book-content { padding: 5px 20px 20px 20px; background: var(--card); border-top: 1px dashed var(--border); }
 
-        /* 内层折叠菜单 UI (季/卷/子文件夹) - 永远折叠 */
-        details.sub-group { background: var(--sub-bg); border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border); overflow: hidden; }
-        details.sub-group:last-child { margin-bottom: 0; }
-        summary.sub-title { padding: 15px 18px; font-size: 0.95rem; font-weight: 700; color: var(--accent); cursor: pointer; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px; list-style: none; user-select: none; }
-        summary.sub-title::-webkit-details-marker { display: none; }
-        summary.sub-title:active { background: #f1f5f9; }
-        .sub-content { padding: 0 15px 15px 15px; }
-
-        /* 统一条目 UI (章节) */
+        /* 统一条目 UI */
         .story-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-radius: 12px; text-decoration: none; color: var(--text); background: #ffffff; border: 1px solid var(--border); margin-bottom: 8px; transition: all 0.2s ease; cursor: pointer; }
         .story-item:last-child { margin-bottom: 0; }
         .story-item:hover, .story-item:active { border-color: var(--accent); box-shadow: 0 4px 12px var(--accent-glow); transform: translateX(4px); }
@@ -195,10 +164,6 @@ def generate_searchable_index():
         .story-arrow { color: var(--muted); font-size: 1.2rem; flex-shrink: 0; margin-left: 15px; transition: transform 0.2s; }
         .story-item:hover .story-arrow { transform: translateX(4px); color: var(--accent); }
         
-        /* 全文搜索结果高亮片段 */
-        .search-snippet { font-size: 0.85rem; color: #4b5563; margin-top: 10px; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent); line-height: 1.5; width: 100%; box-sizing: border-box; word-break: break-word; }
-        .snippet-highlight { color: var(--accent); font-weight: bold; background: var(--accent-glow); border-radius: 2px; padding: 0 2px; }
-
         /* ---------------- 独立目录页 (SPA) UI ---------------- */
         .nav-bar { position: sticky; top: 0; z-index: 100; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(229, 231, 235, 0.5); padding: 15px 20px; display: flex; align-items: center; justify-content: flex-start; cursor: pointer; transition: background 0.2s; }
         .nav-bar:active { background: #f3f4f6; }
@@ -220,7 +185,7 @@ def generate_searchable_index():
             </div>
             
             <div class="search-box">
-                <input type="text" id="searchInput" class="search-input" placeholder="输入关键字，进行全文神经检索...">
+                <input type="text" id="searchInput" class="search-input" placeholder="输入关键字，瞬间接驳目标区块...">
             </div>
             
             <div id="treeContainer"></div>
@@ -261,10 +226,10 @@ def generate_searchable_index():
                 mainView.classList.remove('active');
                 tocView.classList.add('active');
             }
-            window.scrollTo(0, 0); 
+            window.scrollTo(0, 0); // 切换视图时回到顶部
         }
 
-        // ==== 渲染特定书籍的独立目录 (内部完全折叠) ====
+        // ==== 渲染特定书籍的独立目录 ====
         function openBookToc(bookName) {
             const book = libraryData.find(b => b.book_name === bookName);
             if(!book) return;
@@ -272,24 +237,18 @@ def generate_searchable_index():
             let totalChaps = 0;
             book.sections.forEach(s => totalChaps += s.chapters.length);
             
+            // 渲染头部
             document.getElementById('dynamicTocHeader').innerHTML = `
                 <h1 style="font-size: 2rem;">《${book.book_name}》</h1>
                 <p>全卷共收录 ${totalChaps} 个源文件</p>
             `;
             
+            // 渲染章节列表
             let htmlStr = '';
             book.sections.forEach(sec => {
-                let secNameDisplay = sec.section_name === "正文" ? "📄 正文" : `📂 ${sec.section_name}`;
-                
-                htmlStr += `
-                <details class="sub-group">
-                    <summary class="sub-title">
-                        <span>${secNameDisplay}</span>
-                        <span style="font-size:0.8rem; color:var(--muted); font-weight:normal;">${sec.chapters.length} 篇</span>
-                    </summary>
-                    <div class="sub-content">
-                `;
-                
+                if (sec.section_name !== "正文") {
+                    htmlStr += `<div class="section-title">📂 ${sec.section_name}</div>`;
+                }
                 sec.chapters.forEach(chap => {
                     htmlStr += `
                     <a href="${chap.url}" class="story-item">
@@ -297,8 +256,6 @@ def generate_searchable_index():
                         <span class="story-arrow">→</span>
                     </a>`;
                 });
-                
-                htmlStr += `</div></details>`;
             });
             document.getElementById('dynamicTocContent').innerHTML = htmlStr;
             
@@ -308,69 +265,16 @@ def generate_searchable_index():
         // ==== 渲染主控台树状结构 ====
         function renderTree() {
             treeContainer.innerHTML = '';
-
-            // --- 0. 顶部注入固定的【精选阅读直达】 ---
-            const pinnedHTML = `
-            <div class="area-title">📌 核心作品直达</div>
-            <details class="book-group toc-group" open>
-                <summary class="book-title">
-                    <div class="book-icon-wrapper"><span class="book-icon">⭐</span> <span>精选阅读</span></div> 
-                    <span class="book-badge">8 册</span>
-                </summary>
-                <div class="book-content" style="padding-top: 15px;">
-                    
-                    <div class="section-title">✦ 新鲜玛特系列</div>
-                    <a href="FreshMart/FreshMartOrigin/新鲜玛特的疯狂宇宙起源篇_1782015960000.html" class="story-item">
-                        <div class="story-info"><span class="story-title">起源篇</span></div><span class="story-arrow">→</span>
-                    </a>
-                    <a href="FreshMart/FreshMartOne/新鲜玛特的疯狂宇宙第一卷.html_1782015600000.html" class="story-item">
-                        <div class="story-info"><span class="story-title">第一卷</span></div><span class="story-arrow">→</span>
-                    </a>
-                    <a href="FreshMart/FreshMartTwo/新鲜玛特的疯狂宇宙第二卷_1781934000000.html" class="story-item">
-                        <div class="story-info"><span class="story-title">第二卷</span></div><span class="story-arrow">→</span>
-                    </a>
-
-                    <div class="section-title" style="margin-top: 25px;">✦ 女王的法则</div>
-                    <a href="QueenRules/女王的法则_1782039780000.html" class="story-item">
-                        <div class="story-info"><span class="story-title">女王的法则</span></div><span class="story-arrow">→</span>
-                    </a>
-
-                    <div class="section-title" style="margin-top: 25px;">✦ 番外篇</div>
-                    <a href="Extras/Kenta/美悦子与健太_1782036900000.html" class="story-item">
-                        <div class="story-info"><span class="story-title">美悦子与健太</span></div><span class="story-arrow">→</span>
-                    </a>
-                    <a href="Extras/Shiraishi/美悦子与白石_1782036900000.html" class="story-item">
-                        <div class="story-info"><span class="story-title">美悦子与白石</span></div><span class="story-arrow">→</span>
-                    </a>
-
-                    <div class="section-title" style="margin-top: 25px;">✦ 文学经典</div>
-                    <a href="https://moodhappy.github.io/MiyetsukoSeries/Books/Hundred/%E7%99%BE%E5%B9%B4%E5%AD%A4%E7%8B%AC%E7%9B%AE%E5%BD%95_1782298920000.html" class="story-item">
-                        <div class="story-info"><span class="story-title">百年孤独</span></div><span class="story-arrow">→</span>
-                    </a>
-                    <a href="https://moodhappy.github.io/MiyetsukoSeries/Books/The%20Little%20Prince/%E5%B0%8F%E7%8E%8B%E5%AD%90%E7%9B%AE%E5%BD%95.html_1782364260000.html" class="story-item">
-                        <div class="story-info"><span class="story-title">小王子</span></div><span class="story-arrow">→</span>
-                    </a>
-
-                </div>
-            </details>
-            `;
-            treeContainer.insertAdjacentHTML('beforeend', pinnedHTML);
             
             // 1. 动态生成【快捷聚合导航】
             if(libraryData.length > 0) {
-                const divLabelNav = document.createElement('div');
-                divLabelNav.className = 'area-title';
-                divLabelNav.innerText = "🧭 全卷聚合导航";
-                divLabelNav.style.marginTop = "35px";
-                treeContainer.appendChild(divLabelNav);
-
                 const tocGroup = document.createElement('details');
                 tocGroup.className = 'book-group toc-group';
-                tocGroup.open = false; // 外层导航默认展开
+                tocGroup.open = true; // 默认展开
                 
                 const summary = document.createElement('summary');
                 summary.className = 'book-title';
-                summary.innerHTML = '<div class="book-icon-wrapper"><span class="book-icon">📚</span> <span>各书目总目录</span></div> <span class="book-badge">' + libraryData.length + ' 册</span>';
+                summary.innerHTML = '<div class="book-icon-wrapper"><span class="book-icon">🧭</span> <span>快捷聚合导航</span></div> <span class="book-badge">' + libraryData.length + ' 册</span>';
                 tocGroup.appendChild(summary);
                 
                 const content = document.createElement('div');
@@ -384,6 +288,7 @@ def generate_searchable_index():
                     const div = document.createElement('div');
                     div.className = 'story-item toc-item';
                     div.innerHTML = '<div class="story-info"><span class="story-title">《' + book.book_name + '》 总目录</span><span class="story-path">包含 ' + chapCount + ' 个源文件</span></div><span class="story-arrow">→</span>';
+                    // 绑定点击事件，触发单页路由
                     div.onclick = () => openBookToc(book.book_name);
                     content.appendChild(div);
                 });
@@ -399,11 +304,11 @@ def generate_searchable_index():
             divLabel.style.marginTop = "35px";
             treeContainer.appendChild(divLabel);
 
-            // 2. 生成所有【折叠卷宗】(内外双重折叠)
+            // 2. 生成所有【折叠卷宗】
             libraryData.forEach((book) => {
                 const details = document.createElement('details');
                 details.className = 'book-group';
-                details.open = false; // 外层书籍默认折叠
+                details.open = false; // 默认折叠
                 
                 let chapterCount = 0;
                 book.sections.forEach(sec => chapterCount += sec.chapters.length);
@@ -415,33 +320,24 @@ def generate_searchable_index():
 
                 const content = document.createElement('div');
                 content.className = 'book-content';
-                content.style.paddingTop = '15px';
 
                 book.sections.forEach(sec => {
-                    let secNameDisplay = sec.section_name === "正文" ? "📄 正文" : `✦ ${sec.section_name}`;
-                    
-                    const subDetails = document.createElement('details');
-                    subDetails.className = 'sub-group';
-                    subDetails.open = false; // 永远折叠
-                    
-                    const subSummary = document.createElement('summary');
-                    subSummary.className = 'sub-title';
-                    subSummary.innerHTML = `<span>${secNameDisplay}</span><span style="font-size:0.8rem; color:var(--muted); font-weight:normal;">${sec.chapters.length} 篇</span>`;
-                    subDetails.appendChild(subSummary);
-                    
-                    const subContent = document.createElement('div');
-                    subContent.className = 'sub-content';
+                    if (sec.section_name !== "正文") {
+                        const secTitle = document.createElement('div');
+                        secTitle.className = 'section-title';
+                        secTitle.innerHTML = '✦ ' + sec.section_name;
+                        content.appendChild(secTitle);
+                    } else {
+                        content.style.paddingTop = '15px';
+                    }
                     
                     sec.chapters.forEach(chap => {
                         const a = document.createElement('a');
                         a.href = chap.url;
                         a.className = 'story-item';
                         a.innerHTML = '<div class="story-info"><span class="story-title">' + chap.title + '</span></div><span class="story-arrow">→</span>';
-                        subContent.appendChild(a);
+                        content.appendChild(a);
                     });
-                    
-                    subDetails.appendChild(subContent);
-                    content.appendChild(subDetails);
                 });
                 
                 details.appendChild(content);
@@ -449,81 +345,23 @@ def generate_searchable_index():
             });
         }
 
-        // 转义正则表达式特殊字符的安全辅助函数
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
-        }
-
-        // ==== 渲染搜索结果 (支持全文检索、高亮与 Text Fragments 原生跳转定位) ====
+        // ==== 渲染搜索结果 ====
         function renderFlatSearch(keyword) {
             searchContainer.innerHTML = '';
             let found = false;
             
-            // 安全的正则关键词，避免输入符号导致正则崩溃
-            const safeKeyword = escapeRegExp(keyword);
-            const highlightRegex = new RegExp(`(${safeKeyword})`, 'gi');
-            
             libraryData.forEach(book => {
                 book.sections.forEach(sec => {
                     sec.chapters.forEach(chap => {
-                        const titleMatch = chap.title.toLowerCase().includes(keyword);
-                        const urlMatch = chap.url.toLowerCase().includes(keyword);
-                        const bookMatch = book.book_name.toLowerCase().includes(keyword);
-                        const contentMatch = chap.content && chap.content.toLowerCase().includes(keyword);
-
-                        if (titleMatch || urlMatch || bookMatch || contentMatch) {
+                        if (chap.title.toLowerCase().includes(keyword) || chap.url.toLowerCase().includes(keyword) || book.book_name.toLowerCase().includes(keyword)) {
                             found = true;
                             const a = document.createElement('a');
-                            
-                            // 🌟 核心升级：利用浏览器原生的 Text Fragments 进行精准定位与高亮
-                            let finalUrl = chap.url;
-                            if (contentMatch) {
-                                // 拼接特殊 hash 实现跳转自动滚动与高亮
-                                finalUrl = chap.url + '#:~:text=' + encodeURIComponent(keyword);
-                                
-                                // ⚠️ 修复移动端失效的核心：强制新标签页打开
-                                // 移动端浏览器在同一个 Tab 内处理这种特殊 hash 时容易失效，新开页面可强制触发浏览器重绘和定位
-                                a.target = "_blank";
-                                a.rel = "noopener noreferrer";
-                            }
-                            a.href = finalUrl;
-                            
+                            a.href = chap.url;
                             a.className = 'story-item';
-                            // 为了容纳底部的摘要片段，更改为纵向排列
-                            a.style.flexDirection = 'column';
-                            a.style.alignItems = 'flex-start';
                             
                             const pathContext = sec.section_name === "正文" ? book.book_name : book.book_name + ' / ' + sec.section_name;
                             
-                            // 顶部：标题和归属地
-                            let htmlContent = `
-                            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                                <div class="story-info">
-                                    <span class="story-title">${chap.title}</span>
-                                    <span class="story-path">🛰️ 归属：${pathContext}</span>
-                                </div>
-                                <span class="story-arrow">→</span>
-                            </div>`;
-
-                            // 底部：如果是在正文中搜到的，提取前后文字作为摘要并高亮
-                            if (contentMatch) {
-                                const idx = chap.content.toLowerCase().indexOf(keyword);
-                                // 截取匹配点前后各 35 个字符
-                                const start = Math.max(0, idx - 35);
-                                const end = Math.min(chap.content.length, idx + keyword.length + 35);
-                                
-                                let snippet = chap.content.substring(start, end);
-                                
-                                if (start > 0) snippet = '...' + snippet;
-                                if (end < chap.content.length) snippet = snippet + '...';
-                                
-                                // 高亮关键字
-                                snippet = snippet.replace(highlightRegex, '<span class="snippet-highlight">$1</span>');
-
-                                htmlContent += `<div class="search-snippet">${snippet}</div>`;
-                            }
-
-                            a.innerHTML = htmlContent;
+                            a.innerHTML = '<div class="story-info"><span class="story-title">' + chap.title + '</span><span class="story-path">🛰️ 归属：' + pathContext + '</span></div><span class="story-arrow">→</span>';
                             searchContainer.appendChild(a);
                         }
                     });
@@ -557,7 +395,7 @@ def generate_searchable_index():
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(final_html)
-    print(f"🎉 SPA 单页应用枢纽 {OUTPUT_FILE} 编译完毕！移动端强制定位已激活。")
+    print(f"🎉 SPA 单页应用枢纽 {OUTPUT_FILE} 编译完毕！")
 
 if __name__ == "__main__":
     generate_searchable_index()
