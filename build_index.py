@@ -11,26 +11,26 @@ def scan_html_files():
     library = {}
     total_files = 0
     print("🕵️ 图书管理员正在重构 SPA 单页应用架构...")
-    
+
     for root, dirs, files in os.walk(TARGET_DIR):
         # 排除 git 隐藏文件夹，防止干扰
         if '.git' in dirs:
             dirs.remove('.git')
-            
+
         for file in files:
             if file.endswith(".html") and file != OUTPUT_FILE:
                 file_path = os.path.join(root, file)
                 rel_path = os.path.relpath(file_path, TARGET_DIR).replace('\\', '/')
-                
+
                 parts = rel_path.split('/')
-                
+
                 if len(parts) == 1:
                     book_name = "未分类文稿"
                     section_name = "正文"
                 else:
                     book_name = parts[0]
                     section_name = "/".join(parts[1:-1]) if len(parts) > 2 else "正文"
-                
+
                 title = file.replace(".html", "")
                 try:
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -42,18 +42,18 @@ def scan_html_files():
                                 title = clean_title
                 except Exception:
                     pass
-                
+
                 if book_name not in library:
                     library[book_name] = {}
                 if section_name not in library[book_name]:
                     library[book_name][section_name] = []
-                    
+
                 library[book_name][section_name].append({
                     "title": title,
                     "url": rel_path
                 })
                 total_files += 1
-                
+
     # 结构化排序
     sorted_library = []
     for book in sorted(library.keys()):
@@ -68,20 +68,20 @@ def scan_html_files():
             "book_name": book,
             "sections": sections
         })
-        
+
     return sorted_library, total_files
 
 def generate_searchable_index():
     stories_tree, total_files = scan_html_files()
-    
+
     if not stories_tree:
         print("⚠️ 未扫描到任何 HTML 文件。")
         return
-        
+
     print(f"✅ 扫描完毕！共归档 {total_files} 篇内容。正在注入动态 SPA 引擎...")
-    
+
     json_data = json.dumps(stories_tree, ensure_ascii=False)
-    
+
     # 采用安全字符串替换，避免任何花括号冲突
     html_template = """<!DOCTYPE html>
 <html lang="zh-CN">
@@ -149,6 +149,15 @@ def generate_searchable_index():
         
         .book-content { padding: 5px 20px 20px 20px; background: var(--card); border-top: 1px dashed var(--border); }
 
+        /* 子文件夹折叠 UI */
+        summary.section-title { font-size: 0.85rem; color: var(--accent); font-weight: 700; margin: 25px 0 12px 0; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; user-select: none; transition: opacity 0.2s; }
+        summary.section-title:hover { opacity: 0.8; }
+        summary.section-title::-webkit-details-marker { display: none; }
+        summary.section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+        .sub-icon { font-size: 0.7rem; transition: transform 0.2s ease; display: inline-block; color: var(--accent); }
+        details[open] > summary.section-title .sub-icon { transform: rotate(90deg); }
+        .sub-content { padding-left: 14px; border-left: 2px solid rgba(37,99,235,0.15); margin-left: 7px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+
         /* 统一条目 UI */
         .story-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-radius: 12px; text-decoration: none; color: var(--text); background: #ffffff; border: 1px solid var(--border); margin-bottom: 8px; transition: all 0.2s ease; cursor: pointer; }
         .story-item:last-child { margin-bottom: 0; }
@@ -169,9 +178,6 @@ def generate_searchable_index():
         .nav-bar:active { background: #f3f4f6; }
         .nav-bar span { color: var(--accent); font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 6px; }
         
-        .section-title { font-size: 0.85rem; color: var(--accent); font-weight: 700; margin: 25px 0 12px 0; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
-        .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
-
         .no-result { text-align: center; padding: 50px 20px; color: var(--muted); display: none; font-size: 1.1rem; font-weight: 500; }
     </style>
 </head>
@@ -243,12 +249,17 @@ def generate_searchable_index():
                 <p>全卷共收录 ${totalChaps} 个源文件</p>
             `;
             
-            // 渲染章节列表
+            // 渲染章节列表 (带有子文件夹折叠功能)
             let htmlStr = '';
             book.sections.forEach(sec => {
                 if (sec.section_name !== "正文") {
-                    htmlStr += `<div class="section-title">📂 ${sec.section_name}</div>`;
+                    htmlStr += `
+                    <details class="sub-group">
+                        <summary class="section-title"><span class="sub-icon">▶</span> ✦ ${sec.section_name}</summary>
+                        <div class="sub-content">
+                    `;
                 }
+                
                 sec.chapters.forEach(chap => {
                     htmlStr += `
                     <a href="${chap.url}" class="story-item">
@@ -256,6 +267,10 @@ def generate_searchable_index():
                         <span class="story-arrow">→</span>
                     </a>`;
                 });
+                
+                if (sec.section_name !== "正文") {
+                    htmlStr += `</div></details>`;
+                }
             });
             document.getElementById('dynamicTocContent').innerHTML = htmlStr;
             
@@ -266,7 +281,7 @@ def generate_searchable_index():
         function renderTree() {
             treeContainer.innerHTML = '';
             
-            // 1. 动态生成【快捷聚合导航】
+            // 1. 动态生成【快捷聚合导航】 (不折叠: open = true)
             if(libraryData.length > 0) {
                 const tocGroup = document.createElement('details');
                 tocGroup.className = 'book-group toc-group';
@@ -304,7 +319,7 @@ def generate_searchable_index():
             divLabel.style.marginTop = "35px";
             treeContainer.appendChild(divLabel);
 
-            // 2. 生成所有【折叠卷宗】
+            // 2. 生成所有【折叠卷宗】 (大目录折叠: open = false)
             libraryData.forEach((book) => {
                 const details = document.createElement('details');
                 details.className = 'book-group';
@@ -321,23 +336,44 @@ def generate_searchable_index():
                 const content = document.createElement('div');
                 content.className = 'book-content';
 
+                // 生成章节及子文件夹
                 book.sections.forEach(sec => {
                     if (sec.section_name !== "正文") {
-                        const secTitle = document.createElement('div');
+                        // 子文件夹：包装为 detail (子目录折叠: open = false)
+                        const subDetails = document.createElement('details');
+                        subDetails.className = 'sub-group';
+                        subDetails.open = false; // 默认折叠子文件夹
+
+                        const secTitle = document.createElement('summary');
                         secTitle.className = 'section-title';
-                        secTitle.innerHTML = '✦ ' + sec.section_name;
-                        content.appendChild(secTitle);
+                        secTitle.innerHTML = '<span class="sub-icon">▶</span> ✦ ' + sec.section_name;
+                        subDetails.appendChild(secTitle);
+
+                        const subContent = document.createElement('div');
+                        subContent.className = 'sub-content';
+
+                        sec.chapters.forEach(chap => {
+                            const a = document.createElement('a');
+                            a.href = chap.url;
+                            a.className = 'story-item';
+                            a.innerHTML = '<div class="story-info"><span class="story-title">' + chap.title + '</span></div><span class="story-arrow">→</span>';
+                            subContent.appendChild(a);
+                        });
+                        
+                        subDetails.appendChild(subContent);
+                        content.appendChild(subDetails);
+                        
                     } else {
+                        // 根正文：直接罗列
                         content.style.paddingTop = '15px';
+                        sec.chapters.forEach(chap => {
+                            const a = document.createElement('a');
+                            a.href = chap.url;
+                            a.className = 'story-item';
+                            a.innerHTML = '<div class="story-info"><span class="story-title">' + chap.title + '</span></div><span class="story-arrow">→</span>';
+                            content.appendChild(a);
+                        });
                     }
-                    
-                    sec.chapters.forEach(chap => {
-                        const a = document.createElement('a');
-                        a.href = chap.url;
-                        a.className = 'story-item';
-                        a.innerHTML = '<div class="story-info"><span class="story-title">' + chap.title + '</span></div><span class="story-arrow">→</span>';
-                        content.appendChild(a);
-                    });
                 });
                 
                 details.appendChild(content);
