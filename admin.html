@@ -44,7 +44,7 @@
         h1 { margin: 0; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: #24292f; }
 
         .header-actions { display: flex; gap: 8px; align-items: center; }
-        
+
         .icon-btn {
             background: #f6f8fa; border: 1px solid var(--border);
             border-radius: 6px; padding: 0 12px; height: 34px; box-sizing: border-box;
@@ -87,7 +87,7 @@
         .drag-handle { padding: 0 12px 0 0; font-size: 18px; color: #d0d7de; cursor: grab; }
         body:not(.sort-mode-custom) .drag-handle { display: none; }
         .selection-mode .drag-handle { display: none; }
-        
+
         .sortable-ghost { opacity: 0.5; background: #e6f6ff !important; border: 1px dashed var(--primary); }
 
         .item-content { flex: 1; min-width: 0; display: flex; align-items: center; }
@@ -127,14 +127,14 @@
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
         .modal { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); max-height: 90vh; display: flex; flex-direction: column; }
         .modal h3 { margin: 0 0 15px 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        
+
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
         .form-group input { width: 100%; padding: 10px; border: 1px solid #d0d7de; border-radius: 6px; box-sizing: border-box; font-size: 14px; font-family: inherit; }
-        
+
         /* 文本编辑器特殊样式 */
         #content-editor { width: 100%; height: 40vh; padding: 10px; border: 1px solid #d0d7de; border-radius: 6px; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.5; resize: vertical; box-sizing: border-box; background: #f6f8fa; }
-        
+
         .btn-group { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
         .btn { padding: 10px 18px; border-radius: 6px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
         .btn-secondary { background: #f3f4f6; color: #24292f; border: 1px solid #d0d7de; }
@@ -149,14 +149,14 @@
 
 <div class="container">
     <header>
-        <h1><span style="cursor:pointer;" onclick="loadPath('')">💻</span> Nexus Admin</h1>
+        <h1><span style="cursor:pointer;" onclick="loadPath('')">💻</span> Nexus</h1>
         <div class="header-actions">
             <select id="sort-select" class="sort-select" onchange="changeSortMode()">
                 <option value="custom">☰ 自定义排序</option>
                 <option value="name_asc">🔤 名称升序</option>
                 <option value="name_desc">🔤 名称降序</option>
             </select>
-            <button id="batch-btn" class="icon-btn" onclick="toggleBatchMode()">✅ 批量操作</button>
+            <button id="batch-btn" class="icon-btn" onclick="toggleBatchMode()">✅</button>
             <button class="icon-btn" onclick="openSettings()">⚙️</button>
         </div>
     </header>
@@ -298,7 +298,7 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const startPath = urlParams.get('path') || ''; // 默认根目录
-        
+
         if(!config.token) {
             openSettings();
             document.getElementById('file-list').innerHTML = '<div class="loading">⚠️ 请先配置 Token 后方可操作</div>';
@@ -326,7 +326,7 @@
 
         try {
             const data = await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${path}`);
-            
+
             if (!Array.isArray(data)) {
                 // 如果是文件，直接打开浏览器新标签页预览
                 window.open(`https://${config.user}.github.io/${config.repo}/${path}`, '_blank');
@@ -347,7 +347,7 @@
                     } catch(e) {}
                     continue; 
                 }
-                
+
                 // 排除不需要管理的文件
                 if (item.name === 'index.html' || item.name === 'admin.html' || item.name.startsWith('.')) continue;
 
@@ -394,7 +394,7 @@
     function renderBreadcrumb(path) {
         const c = document.getElementById('breadcrumb');
         let html = `<a class="breadcrumb-item" onclick="loadPath('')">🗂️ 根目录</a>`;
-        
+
         if (path) {
             const parts = path.split('/');
             let build = '';
@@ -467,7 +467,7 @@
         if (!config.token) return;
         const ul = document.querySelector('#file-list ul');
         const newOrder = Array.from(ul.children).map(li => li.dataset.filename).filter(Boolean);
-        
+
         try {
             const path = currentPath ? currentPath + '/_sort_order.json' : '_sort_order.json';
             const body = { message: "Update manual sort", content: btoa(unescape(encodeURIComponent(JSON.stringify(newOrder, null, 2)))) };
@@ -536,7 +536,7 @@
         currentEditFile = file;
         const btn = document.getElementById('btn-save-content');
         const editor = document.getElementById('content-editor');
-        
+
         document.getElementById('content-file-name').innerText = file.path;
         editor.value = "Fetching content from GitHub...";
         document.getElementById('content-modal').style.display = 'flex';
@@ -555,7 +555,7 @@
     async function execSaveContent() {
         const btn = document.getElementById('btn-save-content');
         const newText = document.getElementById('content-editor').value;
-        
+
         btn.disabled = true; btn.innerText = "上传中...";
         try {
             const contentBase64 = btoa(unescape(encodeURIComponent(newText)));
@@ -599,7 +599,7 @@
             await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${file.path}`, {
                 method: 'DELETE', body: JSON.stringify({ message: `Cleanup after rename`, sha: file.sha })
             });
-            
+
             showToast("✅ 重命名成功", "success");
             closeModal('rename-modal'); toggleBatchMode(); loadPath(currentPath);
         } catch (e) { alert("重命名失败: " + e.message); } 
@@ -615,10 +615,10 @@
     async function execMove() {
         const targetDir = document.getElementById('move-target-path').value.trim().replace(/\/+$/, '');
         if(targetDir === currentPath) return alert("目标路径与当前相同");
-        
+
         const btn = document.getElementById('btn-confirm-move');
         btn.disabled = true; btn.innerText = "正在搬运...";
-        
+
         try {
             for (const file of selectedFilesMap.values()) {
                 const data = await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${file.path}`);
@@ -661,7 +661,7 @@
         document.getElementById('cfg-repo').value = config.repo;
         document.getElementById('cfg-token').value = config.token;
     }
-    
+
     function saveSettings() {
         const newCfg = {
             user: document.getElementById('cfg-user').value.trim() || DEFAULTS.user,
