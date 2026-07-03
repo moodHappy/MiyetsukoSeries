@@ -7,9 +7,7 @@
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
     <style>
-        body { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; max-width: 800px; margin: 0 auto; padding: 50px 24px; font-size: 20px; line-height: 1.8; letter-spacing: 0.05em; background-color: #F0F7F4; color: #2D4035; } 
-        h1 { text-align: left !important; font-size: 28px; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #CDE0D5; padding-bottom: 20px; color: #1A2E22; } 
-        p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
+        body { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; max-width: 800px; margin: 0 auto; padding: 50px 24px; font-size: 20px; line-height: 1.8; letter-spacing: 0.05em; background-color: #FFF7F8; color: #4A3B42; } h1 { text-align: left !important; font-size: 28px; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #F0D8DE; padding-bottom: 20px; color: #6E4A55; } p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
         body { padding-top: 70px !important; transition: padding-top 0.3s cubic-bezier(0.4,0,0.2,1); }
         body.bar-hidden { padding-top: 20px !important; }
         .reader-bar { position: fixed; top: 0; left: 0; right: 0; min-height: 50px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 1px 8px rgba(0,0,0,0.08); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 5px; }
@@ -17,8 +15,11 @@
         .reader-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
         .reader-btn { background: #E5E5EA; color: #1C1C1E; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.2s; }
         .reader-btn:active { transform: scale(0.95); }
-        .content-layer { transition: font-size 0.2s; width: 100%; }
-        
+        #content-container { transition: font-size 0.2s; }
+        .zh-para { transition: filter 0.3s ease, opacity 0.3s ease; }
+        .global-blur-enabled .zh-para { cursor: pointer; }
+        .global-blur-enabled .zh-para.blurred { filter: blur(0.35em); opacity: 0.5; user-select: none; }
+        .global-blur-enabled .zh-para.blurred:hover { filter: blur(0.2em); opacity: 0.7; }
         body.highlights-enabled .tm-word.is-highlight { color: #FF3B30 !important; font-weight: 700; background-color: rgba(255, 59, 48, 0.05); border-radius: 3px; padding: 0 2px; }
         .dict-enabled .tm-word { cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 3px; }
         .dict-enabled .tm-word:hover, .dict-enabled .tm-word[aria-expanded="true"] { background-color: #E3F2FD; color: #1565C0 !important; }
@@ -26,978 +27,388 @@
         .tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before { border-top-color: #ccc; }
         .tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: #ccc; }
         .tippy-content { padding: 8px; }
-        .dict-popup { text-align: left; font-size: 30px; line-height: 1.4; max-width: 90vw; min-width: 280px; color: #333; font-family: -apple-system, sans-serif; }
+        .dict-popup { text-align: left; font-size: 14px; line-height: 1.4; max-width: 280px; min-width: 200px; color: #333; font-family: -apple-system, sans-serif; }
         .dict-header-row { border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
         .dict-word-line { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
-        .dict-head-word { font-weight: bold; color: #D32F2F; font-size: 36px; }
-        .dict-ipa { font-family: sans-serif; color: #666; font-size: 24px; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
+        .dict-head-word { font-weight: bold; color: #D32F2F; font-size: 18px; }
+        .dict-ipa { font-family: sans-serif; color: #666; font-size: 13px; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
         .dict-speaker-btn { display: inline-flex; cursor: pointer; color: #1976D2; padding: 2px; border-radius: 50%; transition: background 0.2s; }
         .dict-speaker-btn:hover { background-color: rgba(25, 118, 210, 0.1); }
-        .dict-speaker-btn svg { width: 28px; height: 28px; pointer-events: none; }
+        .dict-speaker-btn svg { width: 18px; height: 18px; pointer-events: none; }
         .dict-speaker-btn.playing { color: #E91E63; animation: tm-pulse 1s infinite; }
-        .dict-tags-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;}
-        .dict-tag { background: #F0F4F8; color: #476582; font-size: 20px; padding: 4px 8px; border-radius: 6px; border: 1px solid #D9E2EC; font-weight: 500; }
-        .dict-tag.star-tag { color: #F59E0B; background: #FEF3C7; border-color: #FDE68A; letter-spacing: 1px; padding: 4px 6px; }
-        .dict-basic-trans { font-size: 30px; color: #444; margin-top: 6px; }
-        .dict-pos-block { margin-bottom: 6px; }
-        .dict-pos-tag { font-style: italic; color: #1976D2; font-weight: bold; font-size: 24px; margin-right: 6px; }
+        .dict-tags-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;}
+        .dict-tag { background: #F0F4F8; color: #476582; font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #D9E2EC; font-weight: 500; }
+        .dict-tag.star-tag { color: #F59E0B; background: #FEF3C7; border-color: #FDE68A; letter-spacing: 1px; padding: 2px 4px; }
+        .dict-tag.cefr-A1 { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+        .dict-tag.cefr-A2 { background: #E0F2F1; color: #00695C; border-color: #B2DFDB; }
+        .dict-tag.cefr-B1 { background: #FFF8E1; color: #F57F17; border-color: #FFECB3; }
+        .dict-tag.cefr-B2 { background: #FFF3E0; color: #E65100; border-color: #FFE0B2; }
+        .dict-tag.cefr-C1 { background: #FCE4EC; color: #C2185B; border-color: #F8BBD0; }
+        .dict-tag.cefr-C2 { background: #F3E5F5; color: #7B1FA2; border-color: #E1BEE7; }
+        .dict-basic-trans { font-size: 14px; color: #444; margin-top: 4px; }
+        .dict-pos-block { margin-bottom: 4px; }
+        .dict-pos-tag { font-style: italic; color: #1976D2; font-weight: bold; font-size: 12px; margin-right: 4px; }
         .dict-def-list { margin: 0; padding: 0; list-style: none; display: inline; }
         .dict-def-item { display: inline; }
         .dict-def-item::after { content: "; "; color: #999; }
         .dict-def-item:last-child::after { content: ""; }
-        .dict-loading { color: #666; font-style: italic; font-size: 24px; padding: 10px; text-align: center; }
+        .dict-loading { color: #666; font-style: italic; font-size: 13px; padding: 5px; text-align: center; }
         @keyframes tm-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
-        
-        #zh-container { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; }
     </style>
 </head>
-<body class="bar-hidden dict-enabled highlights-enabled">
+<body class="bar-hidden global-blur-enabled dict-enabled highlights-enabled">
     <div class="reader-bar hidden" id="top-bar">
         <div class="reader-controls">
             <button class="reader-btn" onclick="adjustFont(-0.1)">A-</button>
             <button class="reader-btn" onclick="adjustFont(0.1)">A+</button>
-            <button id="sync-btn" class="reader-btn" style="background:#007AFF; color:white;" onclick="toggleSync()">同步: 开</button>
+            <button id="blur-btn" class="reader-btn" style="background:#AF52DE; color:white;" onclick="toggleBlur()">模糊: 开</button>
             <button id="hl-btn" class="reader-btn" style="background:#FF3B30; color:white;" onclick="toggleHighlight()">高亮: 开</button>
             <button id="dict-btn" class="reader-btn" style="background:#34C759; color:white;" onclick="toggleDict()">查词: 开</button>
         </div>
     </div>
-
-    <div id="en-container" class="content-layer">
-        <h1 style="text-align: left !important;">Chapter 4 (EN)</h1>
-        <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">2026/06/24 18:27:57</div>
-        <p>THE NEW HOUSE, white, like a dove, was inaugurated with a dance.</p>
-        <p>&uacute;rsula had got that idea from the afternoon when she saw Rebeca and Amaranta changed into adolescents, and it could almost have been said that the main reason behind the construction was a desire to have a proper place for the girls to receive visitors.</p>
-        <p>In order that nothing would be lacking in splendor she worked like a galley slave as the repairs were under way, so that before they were finished she had ordered costly necessities for the decorations, the table service, and the marvelous invention that was to arouse the astonishment of the town and the jubilation of the young people: the pianola.</p>
-        <p>They delivered it broken down, packed in several boxes that were unloaded along with the Viennese furniture, the Bohemian crystal, the table service from the Indies Company, the tablecloths from Holland, and a rich variety of lamps and candlesticks, hangings and drapes.</p>
-        <p>The import house sent along at its own expense an Italian expert, Pietro Crespi, to assemble and tune the pianola, to instruct the purchasers in its functioning, to teach them how to dance the latest music printed on its six paper rolls.</p>
-        <p>Pietro Crespi was young and blond, the most handsome and well mannered man who had ever been seen in Macondo, so scrupulous in his dress that in spite of the suffocating heat he would work in his brocade vest and heavy coat of dark cloth.</p>
-        <p>Soaked in sweat, keeping a reverent distance from the owners the house, he spent several weeks shut up is the parlor with a dedication much like that of Aureliano in his silverwork.</p>
-        <p>One morning, without opening the door, without calling anyone to witness the miracle, he placed the first roll in the pianola and the tormenting hammering and the constant noise of wooden lathings ceased in a silence that was startled at the order and neatness of the music.</p>
-        <p>They all ran to the parlor.</p>
-        <p>José Arcadio Buend&iacute;a was as if struck by lightning, not because of the beauty of the melody, but because of the automatic working of the keys of the pianola, and he set up Melqu&iacute;ades' camera with the hope of getting a daguerreotype of the invisible player.</p>
-        <p>That day the Italian had lunch them.</p>
-        <p>Rebeca and Amaranta, serving the table, were intimidated by the way in which the angelic man with pale and ringless hands manipulated the utensils.</p>
-        <p>In the living room, next to the parlor, Pietro Crespi taught them how to dance.</p>
-        <p>He showed them the steps without touching them, keeping time with a metronome, under the friendly eye of &uacute;rsula, who did not leave the room for a moment while her daughters had their lesson.</p>
-        <p>Pietro Crespi wore special pants on those days, very elastic and tight, dancing slippers, "You don't have to worry so much," José Arcadio Buend&iacute;a told her.</p>
-        <p>"The man's a fairy."</p>
-        <p>But she did not leave off her vigilance until the apprenticeship was over and the Italian left Macondo.</p>
-        <p>Then they began to organize the party.</p>
-        <p>&uacute;rsula drew up a strict guest list, in which the only ones invited were the descendants the founders, except for the family of Pilar Ternera, who by then had had two more children by unknown fathers.</p>
-        <p>It was truly a highclass list, except that it was determined by feelings friendship, for those favored were not only the oldest friends of José Arcadio Buend&iacute;a's house since before they undertook the exodus and the founding of Macondo, but also their sons and grandsons, who were the constant companions of Aureliano and Arcadio since infancy, and their daughters, who were the only ones who visited the house to embroider with Rebeca and Amaranta.</p>
-        <p>Don Apolinar Moscote, the benevolent ruler whose activity had been reduced to the maintenance from his scanty resources of two policemen armed with wooden clubs, was a figurehead.</p>
-        <p>In older to support the household expenses his daughters had opened a sewing shop, where they made felt flowers as well as guava delicacies, and wrote love notes to order.</p>
-        <p>But in spite of being modest and hard-working, the most beautiful girls in Iowa, and the most skilled at the new dances, they did not manage to be considered for the party.</p>
-        <p>While &uacute;rsula and the girls unpacked furniture, polished silverware, and hung pictures of maidens in boats full of roses, which gave a breath of new life to the naked areas that the masons had built, José Arcadio Buend&iacute;a stopped his pursuit of the image of God, convinced of His nonexistence, and he took the pianola apart in order to decipher its magical secret.</p>
-        <p>Two days before the party, swamped in a shower of leftover keys and hammers, bungling in the midst of a mixup of strings that would unroll in one direction and roll up again in the other, he succeeded in a fashion in putting the instrument back together.</p>
-        <p>There had never been as many surprises and as much dashing about as in those days, but the new pitch lamps were lighted on the designated day and hour.</p>
-        <p>The house was opened, still smelling of resin and damp whitewash, and the children and grandchildren of the founders saw the porch with ferns and begonias, the quiet rooms, the garden saturated with the fragrance of the roses, and they gathered together in the parlor, facing the unknown invention that had been covered with a white sheet.</p>
-        <p>Those who were familiar with the piano, popular in other towns in the swamp, felt a little disheartened, but more bitter was &uacute;rsula's disappointment when she put in the first roll so that Amaranta and Rebeca could begin the dancing and the mechanism did not work.</p>
-        <p>Melqu&iacute;ades, almost blind by then, crumbling with decrepitude, used the arts of his timeless wisdom in an attempt to fix it.</p>
-        <p>Finally José Arcadio Buend&iacute;a managed, by mistake, to move a device that was stuck and the music came out, first in a burst and then in a flow of mixed-up notes.</p>
-        <p>Beating against the strings that had been put in without order or concert and had been tuned temerity, the hammers let go.</p>
-        <p>But the stubborn descendants of the twenty-one intrepid people who plowed through the mountains in search of the sea to the west avoided the reefs of the melodic mix-up and the dancing went on until dawn.</p>
-        <p>Pietro Crespi came back to repair the pianola.</p>
-        <p>Rebeca and Amaranta helped him put the strings in order and helped him with their laughter at the mix-up of the melodies.</p>
-        <p>It was extremely pleasant and so chaste in its way that &uacute;rsula ceased her vigilance.</p>
-        <p>On the eve of his departure a farewell dance for him was improvised with the pianola and with Rebeca he put on a skillful demonstration of modern dance, Arcadio and Amaranta matched them in grace and skill.</p>
-        <p>But the exhibition was interrupted because Pilar Ternera, who was at the door with the onlookers, had a fight, biting and hair pulling, with a woman who had dared to comment that Arcadio had a woman's behind.</p>
-        <p>Toward midnight Pietro Crespi took his leave with a sentimental little speech, and he promised to return very soon.</p>
-        <p>Rebeca accompanied him to the door, and having closed up the house and put out the lamps, she went to her room to weep.</p>
-        <p>It was an inconsolable weeping that lasted for several days, the cause of which was not known even by Amaranta.</p>
-        <p>Her hermetism was not odd.</p>
-        <p>Although she seemed expansive and cordial, she had a solitary character an impenetrable heart.</p>
-        <p>She was a splendid adolescent with long and firm bones, but she still insisted on using the small wooden rocking chair with which she had arrived at the house, reinforced many times and with the arms gone.</p>
-        <p>No one had discovered that even at that age she still had the habit of sucking her finger.</p>
-        <p>That was why she would not lose an opportunity to lock herself in the bathroom and had acquired the habit of sleeping with her face to the wall.</p>
-        <p>On rainy afternoons, embroidering with a group of friends on the begonia porch, she would lose the thread of the conversation and a tear of nostalgia would salt her palate when she saw the strips of damp earth and the piles of mud that the earthworms had pushed up in the garden.</p>
-        <p>Those secret tastes, defeated in the past by oranges and rhubarb, broke out into an irrepressible urge when she began to weep.</p>
-        <p>She went back to eating earth.</p>
-        <p>The first time she did it almost out of curiosity, sure that the bad taste would be the best cure for the temptation.</p>
-        <p>And, in fact, she could not bear the earth in her mouth.</p>
-        <p>But she persevered, overcome by the growing anxiety, and little by little she was getting back her ancestral appetite, the taste primary minerals, the unbridled satisfaction of what was the original food.</p>
-        <p>She would put handfuls of earth in her pockets, and ate them in small bits without being seen, with a confused feeling of pleasure and rage, as she instructed her girl friends in the most difficult needlepoint and spoke about other men, who did not deserve the sacrifice of having one eat the whitewash on the walls because of them.</p>
-        <p>The handfuls of earth made the only man who deserved that show of degradation less remote and more certain, as if the ground that he walked on with his fine patent leatboots in another part the world were transmitting to her the weight and the temperature his blood in a mineral savor that left a harsh aftertaste in her mouth and a sediment of peace in her heart.</p>
-        <p>One afternoon, for no reason, Amparo Moscote asked permission to see the house.</p>
-        <p>Amaranta and Rebeca, disconcerted by the unexpected visit, attended her with a stiff formality.</p>
-        <p>They showed her the remodeled mansion, they had her listen to the rolls on the pianola, and they offered her orange marmalade and crackers.</p>
-        <p>Amparo gave a lesson in dignity, personal charm, and good manners that impressed &uacute;rsula in the few moments that she was present during the visit.</p>
-        <p>After two hours, when the conversation was beginning to wane, Amparo took advantage of Amaranta's distraction and gave Rebeca a letter.</p>
-        <p>She was able to see the name of the Estimable Se?orita Rebeca Buend&iacute;a, written in the same methodical hand, with the same green ink, and the same delicacy of words with which the instructions for the operation of the pianola were written, and she folded the letter with the tips of her fingers and hid it in her bosom, looking at Amparo Moscote with an expression of endless and unconditional gratitude and a silent promise of complicity unto death.</p>
-        <p>The sudden friendship between Amparo Moscote and Rebeca Buend&iacute;a awakened the hopes of Aureliano.</p>
-        <p>The memory of little Remedios had not stopped tormenting him, but he had not found a chance to see her.</p>
-        <p>When he would stroll through town his closest friends, Magn&iacute;fico Visbal and Gerineldo Márquez-the sons of the founders of the same names-he would look for her in the sewing shop with an anxious glance, but he saw only the older sisters.</p>
-        <p>The presence of Amparo Moscote in the house was like a premonition.</p>
-        <p>"She has to come with her," Aureliano would say to himself in a low voice.</p>
-        <p>"She has to come."</p>
-        <p>He repeated it so many times and with such conviction that one afternoon when he was putting together a little gold fish in the work shop, he had the certainty that she had answered his call.</p>
-        <p>Indeed, a short time later he heard the childish voice, when he looked up his heart froze with terror as he saw the girl at the door, dressed in pink organdy and wearing white boots.</p>
-        <p>But Aureliano did not give her time to respond.</p>
-        <p>He picked up the little fish by the chain that came through its mouth and said to her.</p>
-        <p>"Come in."</p>
-        <p>Remedios went over and asked some questions about the fish that Aureliano could not answer because he was seized with a sudden attack of asthma.</p>
-        <p>He wanted to stay beside that lily skin forever, beside those emerald eyes, close to that voice that called him "sir" with every question.</p>
-        <p>showing the same respect that she gave her father.</p>
-        <p>Melqu&iacute;ades was in the corner seated at the desk scribbling indecipherable signs.</p>
-        <p>Aureliano hated him.</p>
-        <p>All he could do was tell Remedios that he was going to give her the little fish and the girl was so startled by the offer that she left the workshop as fast as she could.</p>
-        <p>That afternoon Aureliano lost the hidden patience with which he had waited for a chance to see her.</p>
-        <p>He neglected his work.</p>
-        <p>In several desperate efforts of concentration he willed her to appear but Remedios did not respond.</p>
-        <p>He looked for her in sisters' shop, behind the window shades in her house, in her father's office, but he found her only in the image that saturated his private and terrible solitude.</p>
-        <p>He would spend whole hours with Rebeca in the parlor listening to the music on the pianola.</p>
-        <p>She was listening to it because it was the music with which Pietro Crespi had taught them how to dance.</p>
-        <p>Aureliano listened to it simply because everything, even music, reminded him of Remedios.</p>
-        <p>The house became full of loves Aureliano expressed it in poetry that had no beginning or end.</p>
-        <p>He would write it on the harsh pieces of parchment that Melqu&iacute;ades gave him, on the bathroom walls, on the skin of his arms, and in all of it Remedios would appear transfigured: Remedios in the soporific air two in the afternoon, Remedios in the soft breath of the roses, Remedios in the water-clock secrets of the moths, Remedios in the steaming morning bread, Remedios everywhere and Remedios forever.</p>
-        <p>Rebeca waited for her love at four in the afternoon, embroidering by the window.</p>
-        <p>She knew that the mailman's mule arrived only every two weeks, but she always waited for him, convinced that he was going to arrive on some other day by mistake.</p>
-        <p>It happened quite the opposite: once the mule did not come on the usual day.</p>
-        <p>Mad desperation, Rebeca got up in the middle of the night and ate handfuls of earth in the garden with a suicidal drive, weeping with pain and fury, chewing tender earthworms and chipping her teeth on snail shells.</p>
-        <p>She vomited until dawn.</p>
-        <p>She fell into a state of feverish prostration, lost consciousness, and her heart went into a shameless delirium.</p>
-        <p>&uacute;rsula, scandalized, forced the lock on her trunk and found at the bottom, tied togetpink ribbons, the sixteen perfumed letters and the skeletons of leaves and petals preserved in old books the dried butterflies that turned to powder at the touch.</p>
-        <p>Aureliano was the only one capable of understanding such desolation.</p>
-        <p>That afternoon, while &uacute;rsula was trying to rescue Rebeca from the slough of delirium, he went with Magn&iacute;fico Visbal and Gerineldo Márquez to Catarino's store.</p>
-        <p>The establishment had been expanded with a gallery of wooden rooms where single women who smelled of dead flowers lived.</p>
-        <p>A group made up of an accordion and drums played the songs of Francisco the Man, who had not been seen in Macondo for several years.</p>
-        <p>The three friends drank fermented cane juice.</p>
-        <p>Magn&iacute;fico Gerineldo, contemporaries of Aureliano but more skilled in the ways the world, drank methodically with the women seated on their laps.</p>
-        <p>One of the women, withered and with goldwork on her teeth, gave Aureliano a caress that made him shudder.</p>
-        <p>He rejected her.</p>
-        <p>He had discovered that the more he drank the more he thought about Remedios, but he could bear the torture of his recollections better.</p>
-        <p>He did not know exactly when he began to float.</p>
-        <p>He saw his friends and the women sailing in a radiant glow, without weight or mass, saying words that did not come out of their mouths and making mysterious signals that did not correspond to their expressions.</p>
-        <p>Catarino put a hand on his shoulder and said to him: "It's going on eleven."</p>
-        <p>Aureliano turned his head, saw the enormous disfigured face with a felt flower behind the ear, and then he lost his memory, as during the times of forgetfulness, and he recovered it on a strange dawn and in a room that was completely foreign, where Pilar Ternera stood in her slip, barefoot, her hair down, holding a lamp over him, startled with disbelief.</p>
-        <p>"Aureliano!"</p>
-        <p>Aureliano checked his feet and raised his head.</p>
-        <p>He did not know how he had come there, but he knew what his aim was, because he had carried it hidden since infancy in an inviolable backwater of his heart.</p>
-        <p>"I've come to sleep with you," he said.</p>
-        <p>His clothes were smeared with mud and vomit.</p>
-        <p>Pilar Ternera, who lived alone at that time with her two younger children, did not ask him any questions.</p>
-        <p>She took him to the bed.</p>
-        <p>She cleaned his face with a damp cloth, took of his clothes, and then got completely undressed and lowered the mosquito netting so that her children would not see them if they woke up.</p>
-        <p>She had become tired of waiting for the man who would stay, of the men who left, of the countless men who missed the road to her house, confused by the uncertainty of the cards.</p>
-        <p>During the wait her skin had become wrinkled, her breasts had withered, the coals of her heart had gone out.</p>
-        <p>She felt for Aureliano in the darkness, put her hand on his stomach and kissed him on the neck with a maternal tenderness.</p>
-        <p>"My poor child," she murmured.</p>
-        <p>Aureliano shuddered.</p>
-        <p>With a calm skill, without the slightest misstep, he left his accumulated grief behind and found Remedios changed into a swamp without horizons, smelling of a raw animal and recently ironed clothes.</p>
-        <p>When he came to the surface he was weeping.</p>
-        <p>First they were involuntary and broken sobs.</p>
-        <p>Then he emptied himself out in an unleashed flow, feeling that something swollen and painful had burst inside of him.</p>
-        <p>She waited, snatching his head with the tips fingers, until his body got rid of the dark material that would not let him live.</p>
-        <p>They Pilar Ternera asked him: "Who is it?" And Aureliano told her.</p>
-        <p>She let out a laugh that in other times frightened the doves and that now did not even wake up the children.</p>
-        <p>"You'll have to raise her first," she mocked, but underneath the mockery Aureliano found a reservoir of understanding.</p>
-        <p>When he went out of the room, leaving behind not only his doubts about his virility but also the bitter weight that his heart had borne for so many months, Pilar Ternera made him a spontaneous promise.</p>
-        <p>"I'm going to talk to the girl," she told him, "and you'll see what I'll serve her on the tray."</p>
-        <p>She kept her promise.</p>
-        <p>But it was a bad moment, because the house had lost its peace of former days.</p>
-        <p>When she discovered Rebeca's passion, which was impossible to keep secret because of her shouts, Amaranta suffered an attack of fever.</p>
-        <p>She also suffered from the barb of a lonely love.</p>
-        <p>Shut up in the bathroom, she would release herself from the torment of a hopeless passion by writing feverish letters, which she finally hid in the bottom of her trunk.</p>
-        <p>&uacute;rsula barely had the strength to take care of the two sick girls.</p>
-        <p>She was unable, after prolonged and insidious interrogations, to ascertain the causes of Amaranta's prostration.</p>
-        <p>Finally, in another moment of inspiration, she forced the lock on the trunk and found the letters tied with a pink ribbon, swollen with fresh lilies and still wet with tears, addressed and never sent to Pietro Crespi.</p>
-        <p>Weeping with rage, she cursed the day that it had occurred to her to buy the pianola, she forbade the embroidery lessons and decreed a kind of mourning with no one dead which was to be prolonged until the daughters got over their hopes.</p>
-        <p>Useless was the intervention of José Arcadio Buend&iacute;a, who had modified his first impression Pietro Crespi and admired his ability in the manipulation of musical machines.</p>
-        <p>So that when Pilar Ternera told Aureliano that Remedios had decided on marriage, he could see that the news would only give his parents more trouble.</p>
-        <p>Invited to the parlor for a formal interview, José Arcadio Buend&iacute;a and &uacute;rsula listened stonily to their son's declaration.</p>
-        <p>When he learned the name of the fiancée, however, José Arcadio Buend&iacute;a grew red with indignation.</p>
-        <p>"Love is a disease," he thundered.</p>
-        <p>"With so many pretty and decent girls around, the only thing that occurs to you is to get married to the daughter of our enemy."</p>
-        <p>But &uacute;rsula agreed the choice.</p>
-        <p>She confessed her affection for the seven Moscote sisters.</p>
-        <p>for their beauty, their ability for work, their modesty, and their good manners, and she celebrated her son's prudence.</p>
-        <p>Conquered by his wife's enthusiasm, José Arcadio Buend&iacute;a then laid down one condition: Rebeca, who was the one he wanted, would marry Pietro Crespi.</p>
-        <p>&uacute;rsula would take Amaranta on a trip to the capital of the province when she had time, so that contact with different people would alleviate her disappointment.</p>
-        <p>Rebeca got her health back just as soon as she heard of the agreement, and she wrote her fiancé a jubilant letter that she submitted to her parents' approval and put into the mail without the use of any intermediaries.</p>
-        <p>Amaranta pretended to accept the decision and little by little she recovered from her fevers, but she promised herself that Rebeca would marry only over her dead body.</p>
-        <p>The following Saturday José Arcadio Buend&iacute;a put on his dark suit, his celluloid collar, and the deerskin boots that he had worn for the first time the night of the party, and went to ask for the hand of Remedios Moscote.</p>
-        <p>The magistrate and his wife received him, pleased and worried at the same time, for they did not know the reason for the unexpected visit, and then they thought that he was confused about the name of the intended bride.</p>
-        <p>In order to remove the mistake, the mother woke Remedios up and carried her into the living room, still drowsy from sleep.</p>
-        <p>They asked her if it was true that she had decided to get married, and she answered, whimpering, that she only wanted them to let her sleep.</p>
-        <p>José Arcadio Buend&iacute;a, understanding the distress of the Moscotes, went to clear things up with Aureliano.</p>
-        <p>When he returned, the Moscotes had put on formal clothing, had rearranged the furniture put fresh flowers in the vases, and were waiting in the company of their older daughters.</p>
-        <p>Overwhelmed by the unpleasantness of the occasion and the bothersome hard collar, José Arcadio Buend&iacute;a confirmed the fact that Remedios, indeed, was the chosen one.</p>
-        <p>"It doesn't make sense," Don Apolinar Moscote said with consternation.</p>
-        <p>"We have six other daughters, all unmarried, and at an age where they deserve it, who would be delighted to be the honorable wife of a gentleman as serious and hardworking as your son, and Aurelito lays his eyes precisely on the one who still wets her bed."</p>
-        <p>His wife, a well-preserved woman with afflicted eyelids and expression, scolded his mistake.</p>
-        <p>When they finished the fruit punch, they willingly accepted Aureliano's decision.</p>
-        <p>Except that Se?ora Moscote begged the favor of speaking to &uacute;rsula alone.</p>
-        <p>Intrigued, protesting that they were involving her in men's affairs, but really feeling deep emotion, &uacute;rsula went to visit her the next day.</p>
-        <p>A half hour later she returned with the news that Remedios had not reached puberty.</p>
-        <p>Aureliano did not consider that a serious barrier.</p>
-        <p>He had waited so long that he could wait as long as was necessary until his bride reached the age of conception.</p>
-        <p>The newfound harmony was interrupted by the death of Melqu&iacute;ades.</p>
-        <p>Although it was a foreseeable event, the circumstances were not.</p>
-        <p>A few months after his return, a process aging had taken place in him that was so rapid and critical that soon he was treated as one of those useless great-grandfathers who wander about the bedrooms like shades, dragging their feet, remembering better times aloud, and whom no one bothers about or remembers really until the morning they find them dead in their bed.</p>
-        <p>At first José Arcadio Buend&iacute;a helped him in his work, enthusiastic over the novelty of the daguerreotypes and the predictions of Nostradamus.</p>
-        <p>But little by little he began abandoning him to his solitude, for communication was becoming Increasingly difficult.</p>
-        <p>He was losing his sight and his hearing, he seemed to confuse the people he was speaking to with others he had known in remote epochs of mankind, and he would answer questions with a complex hodgepodge languages.</p>
-        <p>He would walk along groping in the air, although he passed between objects with an inexplicable fluidity, as if be were endowed with some instinct of direction based on an immediate prescience.</p>
-        <p>One day he forgot to put in his false teeth, which at night he left in a glass of water beside his bed, and he never put them in again.</p>
-        <p>When &uacute;rsula undertook the enlargement of the house, she had them build him a special room next to Aureliano's workshop, far from the noise and bustle of the house, with a window flooded with light and a bookcase where she herself put in order the books that were almost destroyed by dust and moths, the flaky stacks of paper covered with indecipherable signs, and the glass with his false teeth, where some aquatic plants with tiny yellow flowers had taken root.</p>
-        <p>The new place seemed to please Melqu&iacute;ades, because he was never seen any more, not even in the dining room, He only went to Aureliano's workshop, where he would spend hours on end scribbling his enigmatic literature on the parchments that he had brought with him and that seemed to have been made out of some dry material that crumpled like puff paste.</p>
-        <p>There he ate the meals that Visitaci&oacute;n brought him twice a day, although in the last days he lost his appetite and fed only on vegetables.</p>
-        <p>He soon acquired the forlorn look that one sees in vegetarians.</p>
-        <p>His skin became covered with a thin moss, similar to that which flourished on the antique vest that he never took off, and his breath exhaled the odor of a sleeping animal.</p>
-        <p>Aureliano ended up forgetting about him, absorbed in the composition of his poems, but on one occasion he thought he understood something of what Melqu&iacute;ades was saying in his groping monologues, and he paid attention.</p>
-        <p>In reality, the only thing that could be isolated in the rocky paragraphs was the insistent hammering on the word equinox, equinox, equinox, and the name of Alexander von Humboldt.</p>
-        <p>Arcadio got a little closer to him when he began to help Aureliano in his silverwork.</p>
-        <p>Melqu&iacute;ades answered that effort at communication at times by giving forth with phrases in Spanish that had very little to do reality.</p>
-        <p>One afternoon, however, he seemed to be illuminated by a sudden emotion.</p>
-        <p>Years later, facing the firing squad, Arcadio would remember the trembling with which Melqu&iacute;ades made him listen to several pages of his impenetrable writing, which course he did not understand, but which when read aloud were like encyclicals being chanted.</p>
-        <p>Then he smiled for the first time in a long while and said in Spanish: "When I die, burn mercury in my room for three days."</p>
-        <p>Arcadio told that to José Arcadio Buend&iacute;a and the latter tried to get more explicit information, but he received only one answer: "I have found immortality."</p>
-        <p>When Melqu&iacute;ades' breathing began to smell, Arcadio took him to bathe in the river on Thursday mornings.</p>
-        <p>He seemed to get better.</p>
-        <p>He would undress and get into the water with the boys, and his mysterious sense of orientation would allow him to avoid the deep and dangerous spots.</p>
-        <p>"We come from the water," he said on a certain occasion.</p>
-        <p>Much time passed in that way without anyone's seeing him in the house except on the night when he made a pathetic effort to fix the pianola, and when he would go to the river with Arcadio, carrying under his arm a gourd and a bar of palm oil soap wrapped in a towel.</p>
-        <p>One Thursday before they called him to go to the river, Aureliano heard him say: "I have died of fever on the dunes of Singapore."</p>
-        <p>That day he went into the water at a bad spot and they did not find him until the following day, a few miles downstream, washed up on a bright bend in the river and with a solitary vulture sitting on his stomach.</p>
-        <p>Over the scandalized protests of &uacute;rsula, who wept with more grief than she had had for her own father, José Arcadio Buend&iacute;a was opposed to their burying him.</p>
-        <p>"He is immortal," he said, "and he himself revealed the formula of his resurrection."</p>
-        <p>He brought out the forgotten water pipe and put a kettle mercury to boil next to the body, which little by little was filling with blue bubbles.</p>
-        <p>Don Apolinar Moscote ventured to remind him that an unburied drowned man was a danger to public health.</p>
-        <p>"None of that, because he's alive," was the answer of José Arcadio Buend&iacute;a, who finished the seventy-two hours with the mercurial incense as the body was already beginning to burst with a livid fluorescence, the soft whistles of which impregnated the house with a pestilential vapor.</p>
-        <p>Only then did he permit them to bury him, not in any ordinary way, but the honors reserved for Macondo's greatest benefactor.</p>
-        <p>It was the first burial and the best-attended one that was ever seen in the town, only surpassed, a century later, by Big Mama's funeral carnival.</p>
-        <p>They buried him in a grave dug in the center of the plot destined for the cemetery, with a stone on which they wrote the only thing they knew about him: MELQU&iacute;ADES.</p>
-        <p>They gave him his nine nights of wake.</p>
-        <p>In the tumult that gathered in the courtyard to drink coffee, tell jokes, and play cards.</p>
-        <p>Amaranta found a chance to confess her love to Pietro Crespi, who a few weeks before had formalized his promise to Rebeca and had set up a store for musical instruments and mechanical toys in the same section where the Arabs had lingered in other times swapping knickknacks for macaws, and which the people called the Street of the Turks.</p>
-        <p>The Italian, whose head covered with patent leather curls aroused in women an irrepressible need to sigh, dealt with Amaranta as with a capricious little girl who was not worth taking seriously.</p>
-        <p>"I have a younger brother," he told her. "He's coming to help me in the store."</p>
-        <p>Amaranta felt humiliated and told Pietro Crespi with a virulent anger that she was prepared to stop her sister's wedding even own dead body had to lie across the door.</p>
-        <p>The Italian was so impressed by the dramatics of the threat that he could not resist the temptation to mention it to Rebeca.</p>
-        <p>That was how Amaranta's trip, always put off by &uacute;rsula's work, was arranged in less than a week.</p>
-        <p>Amaranta put up no resistance, but when she kissed Rebeca goodbye she whispered in her ear:</p>
-        <p>"Don't get your hopes up.</p>
-        <p>Even if they send me to the ends of the earth I'll find some way of stopping you from getting married, even if I have to kill you."</p>
-        <p>With the absence of &uacute;rsula, with the invisible presence of Melqu&iacute;ades, who continued his stealthy shuffling through the rooms, the house seemed enormous and empty.</p>
-        <p>Rebeca took charge of domestic order, while the Indian woman took care of the bakery.</p>
-        <p>At dusk, when Pietro Crespi would arrive, preceded by a cool breath of lavender and always bringing a toy as a gift, his fiancée would receive the visitor in the main parlor with doors and windows open to be safe from any suspicion.</p>
-        <p>It was an unnecessary precaution, for the Italian had shown himself to be so respectful that he did not even touch the hand of the woman who was going to be his wife within the year.</p>
-        <p>Those visits were filling the house with remarkable toys.</p>
-        <p>Mechanical ballerinas, music boxes, acrobatic monkeys, trotting horses, clowns who played the tambourine: the rich and startling mechanical fauna that Pietro Crespi brought dissipated José Arcadio Buend&iacute;a's affliction over the death of Melqu&iacute;ades and carried him back to his old days as an alchemist.</p>
-        <p>He lived at that time in a paradise of disemboweled animals, of mechanisms that had been taken apart in an attempt to perfect them with a system of perpetual motion based upon the principles of the pendulum.</p>
-        <p>Aureliano, for his part, had neglected the workshop in order to teach little Remedios to read and write.</p>
-        <p>At first the child preferred her dolls to the man who would come every afternoon and who was responsi-ble for her being separated from her toys in order to be bathed and dressed and seated in the parlor to receive the visitor.</p>
-        <p>But Aureliano's patience and devotion final-ly won her over, up to the point where she would spend many hours with him studying the meaning of the letters and sketching in a notebook with colored pencils little houses with cows in the corral and round suns with yellow rays that hid behind the hills.</p>
-        <p>"You will not be happy as long as your parents remain unburied."</p>
-        <p>Rebeca shuddered.</p>
-        <p>As in the memory of a dream she saw herself entering the house as a very small girl, with the trunk and the little rocker, a bag whose contents she had never known.</p>
-        <p>She remembered a bald gentleman dressed in linen and with his collar closed by a gold button, who had nothing to do with the king of hearts.</p>
-        <p>She remembered a very young and beautiful woman with warm and perfumed hands, who had nothing in common with the jack of diamonds and his rheumatic hands, who used to put flowers in her hair and take her out walking in the afternoon through a town with green streets.</p>
-        <p>"I don't understand," she said.</p>
-        <p>Pilar Ternera seemed disconcerted:</p>
-        <p>"I don't either, but that's what the cards say."</p>
-        <p>Rebeca was so preoccupied the enigma that she told it to José Arcadio Buend&iacute;a, and he scolded her for believing in the predictions of the cards, but he undertook the silent task of searching closets and trunks, moving furniture and turning over beds and floorboards looking for the bag of bones.</p>
-        <p>He remembered that he had not seen it since the time of the rebuilding.</p>
-        <p>He secretly summoned the masons and one of them revealed that he had walled up the bag in some bedroom because it bothered him in his work.</p>
-        <p>After several days of listening, with their ears against the walls, they perceived the deep cloccloc.</p>
-        <p>They penetrated the wall and there were the bones in the intact bag.</p>
-        <p>They buried it the same day in a grave without a stone next to that of Melqu&iacute;ades, and José Arcadio Buend&iacute;a returned home free of a burden that for a moment had weighed on his conscience as much as the memory of Prudencio Aguilar.</p>
-        <p>When he went through the kitchen he kissed Rebeca on the forehead.</p>
-        <p>The friendship with Rebeca opened up to Pilar Ternera the doors of the house, closed by &uacute;rsula since the birth of Arcadio.</p>
-        <p>She would arrive at any hour of the day, like a flock of goats, and would unleash her feverish energy in the hardest tasks.</p>
-        <p>Sometimes she would go into the workshop and help Arcadio sensitize the daguerreotype plates with an efficiency and a tenderness that ended up by confusing him.</p>
-        <p>That woman bothered him.</p>
-        <p>The tan of her skin, her smell of smoke, the disorder of her laughter in the darkroom distracted his attention and made him bump into things.</p>
-        <p>On a certain occasion Aureliano was there working on his silver, and Pilar Ternera leaned over the table to admire his laborious patience.</p>
-        <p>Suddenly it happened.</p>
-        <p>Aureliano made sure that Arcadio was in the darkroom before raising his eyes and meeting those Pilar Ternera, whose thought was perfectly visible, as if exposed to the light of noon.</p>
-        <p>"Well," Aureliano said. "Tell me what it is."</p>
-        <p>Pilar Ternera bit her lips with a sad smile.</p>
-        <p>"That you'd be good in a war," she said. "Where you put your eye, you put your bullet."</p>
-        <p>Aureliano relaxed with the proof of the omen.</p>
-        <p>He went back to concentrate on his work as if nothing had happened, and his voice took on a restful strength.</p>
-        <p>"I will recognize him," he said. "He'll bear my name."</p>
-        <p>José Arcadio Buend&iacute;a finally got what he was looking for: he connected the mechanism of the clock to a mechanical ballerina, and the toy danced uninterruptedly to the rhythm of her own music for three days.</p>
-        <p>That discovery excited him much more than any of his other harebrained undertakings.</p>
-        <p>He stopped eating.</p>
-        <p>He stopped sleeping.</p>
-        <p>Only the vigilance and care of Rebeca kept him from being dragged off by his imagination into a state of perpetual delirium from which he would not recover.</p>
-        <p>He would spend the nights walking around the room thinking aloud, searching for a way to apply the principles of the pendulum to oxcarts, to harrows, to everything that was useful when put into motion.</p>
-        <p>The fever of insomnia fatigued him so much that one dawn he could not recognize the old man with white hair and uncertain gestures who came into his bedroom.</p>
-        <p>It was Prudencio Aguilar.</p>
-        <p>When he finally identified him, startled that the dead also aged, José Arcadio Buend&iacute;a felt himself shaken by nostalgia.</p>
-        <p>"Prudencio," he exclaimed.</p>
-        <p>"You've come from a long way off!" After many years of death the yearning for the living was so intense, the need for company so pressing, so terrifying the neatness that other death which exists within death, that Prudencio Aguilar had ended up loving his worst enemy.</p>
-        <p>He had spent a great deal of time looking for him.</p>
-        <p>He asked the dead from Riohacha about him, the dead who came from the Upar Valley, those who came from the swamp, and no one could tell him because Macondo was a town that was unknown to the dead until Melqu&iacute;ades arrived and marked it with a small black dot on the motley maps of death.</p>
-        <p>José Arcadio Buend&iacute;a conversed with Prudencio Aguilar until dawn.</p>
-        <p>A few hours later, worn out by the vigil, he went into Aureliano's workshop and asked him: "What day is today?" Aureliano told him that it was Tuesday.</p>
-        <p>"I was thinking the same thing," José Arcadio Buend&iacute;a said, "but suddenly I realized that it's still Monday, like yesterday.</p>
-        <p>Look at the sky, look at the walls, look at the begonias.</p>
-        <p>Today is Monday too."</p>
-        <p>Used to his manias, Aureliano paid no attention to him.</p>
-        <p>On the next day, Wednesday, José Arcadio Buend&iacute;a went back to the workshop.</p>
-        <p>"This is a disaster," he said.</p>
-        <p>"Look at the air, listen to the buzzing of the sun, the same as yesterday and the day before.</p>
-        <p>Today is Monday too."</p>
-        <p>That night Pietro Crespi found him on the porch, weeping for Prudencio Aguilar, for Melqu&iacute;ades, for Rebeca's parents, for his mother and father, for all of those he could remember and who were now alone in death.</p>
-        <p>He gave him a mechanical bear that walked on its hind legs on a tightrope, but he could not distract him from his obsession.</p>
-        <p>He asked him what had happened to the project he had explained to him a few days before about the possibility of building a pendulum machine that would help men to fly and he answered that it was impossible because a pendulum could lift anything into the air but it could not lift itself.</p>
-        <p>On Thursday he appeared in the workshop again with the painful look of plowed ground.</p>
-        <p>"The time machine has broken," he almost sobbed, "&uacute;rsula and Amaranta so far away!" Aureliano scolded him like a child he adopted a contrite air.</p>
-        <p>He spent six hours examining things, trying to find a difference from their appearance on the previous day in the hope of discovering in them some change that would reveal the passage of time.</p>
-        <p>He spent the whole night in bed with his eyes open, calling to Prudencio Aguilar, to Melqu&iacute;ades, to all the dead, so that they would share his distress.</p>
-        <p>But no one came.</p>
-        <p>On Friday.</p>
-        <p>before anyone arose, he watched the appearance of nature again until he did not have the slightest doubt but that it was Monday.</p>
-        <p>Then he grabbed the bar from a door and with the savage violence his uncommon strength he smashed to dust the equipment in the alchemy laboratory, the daguerreotype room, the silver workshop, shouting like a man possessed in some high-sounding and fluent but completely incomprehensible language.</p>
-        <p>He was about to finish off the rest of the house when Aureliano asked the neighbors for help.</p>
-        <p>Ten men were needed to get him down, fourteen to tie him up, twenty to drag him to the chestnut tree in the courtyard, where they left him tied up, barking in the strange language and giving off a green froth at the mouth.</p>
-        <p>When &uacute;rsula and Amaranta returned he was still tied to the trunk of the chestnut tree by his hands feet, soaked with rain and in a state of total innocence.</p>
-        <p>They spoke to him and he looked at them without recognizing them, saying things they did not understand.</p>
-        <p>&uacute;rsula untied his wrists and ankles, lacerated by the pressure of the rope, and left him tied only by the waist.</p>
-        <p>Later on they built him a shelter of palm brandies to protect him from the sun and the rain.</p>
-    </div>
-
-    <div id="zh-container" class="content-layer" style="display: none;">
-        <h1 style="text-align: left !important;">Chapter 4 (ZH)</h1>
-        <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">2026/06/24 18:27:57</div>
-        <p>雪白如鸽子的新家落成时，举办了一场庆祝舞会。</p>
-        <p>乌尔苏拉是在那天下午发现丽贝卡和阿玛兰妲已出落成婷婷少女的一刻萌生这个想法的，甚至可以说，扩建计划的主要目的正是为了让姑娘们有一处体面的地方接待访客。</p>
-        <p>为了完美无缺地实现这一愿望，她在扩建进程中像苦役犯一般劳作，在竣工前就已订购了昂贵的装饰品和生活用具，还添置了一样必将震惊全镇、引发年轻人欢呼的神奇发明—自动钢琴。</p>
-        <p>钢琴分部件装箱运来，一同到货的还有维也纳的家具，波希米亚的玻璃器皿，西印度公司的餐具，荷兰的桌布，以及各式各样的灯具、烛台、花瓶、帷幔和壁毯。</p>
-        <p>进口公司自费派来一名意大利技师皮埃特罗·克雷斯皮，负责安装和调试自动钢琴，指导顾客使用，并教授如何伴着印满六卷纸带的时兴乐曲跳舞。</p>
-        <p>皮埃特罗·克雷斯皮是个金发的年轻人，马孔多的居民还从未见过这样英俊又有教养的男子。</p>
-        <p>他非常注重仪表，酷暑天气仍身着花缎紧身马甲和厚厚的深色呢料上装。</p>
-        <p>他出于礼貌与主人保持适当距离，好几个星期关在客厅里汗流浃背地工作，心无旁骛的状态足可与金银器作坊里的奥雷里亚诺媲美。</p>
-        <p>一天上午，他没有开门，也没有招呼任何人来见证奇迹，就在自动钢琴上装好第一卷纸带，于是烦人的捶打声和板条持续的轰鸣戛然而止，只有明净谐和的乐声开始荡漾。</p>
-        <p>所有人都赶到了客厅。</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚大吃一惊，倒不是因为优美的旋律，而是因为自动钢琴琴键的自行弹奏。</p>
-        <p>他立刻把梅尔基亚德斯的照相机架设在客厅里，期望能够拍到那看不见的演奏者。</p>
-        <p>那天意大利人和他们共进午餐。</p>
-        <p>这个天使般的男子未戴戒指的苍白手指使用起刀叉来如行云流水，令负责斟酒上菜的丽贝卡和阿玛兰妲惊诧不已。</p>
-        <p>在客厅旁的起居室里，皮埃特罗·克雷斯皮教她们跳舞。</p>
-        <p>他用节拍器打着拍子指导舞步，但不触及她们的身体。</p>
-        <p>这一切都受到乌尔苏拉礼貌的监视，她在女儿们上课的过程中一刻不曾离开房间。</p>
-        <p>皮埃特罗·克雷斯皮这些日子脚踏舞鞋，身穿富于弹性又极其贴身的舞蹈长裤。</p>
-        <p>“你用不着这么担心，” 何塞·阿尔卡蒂奥·布恩迪亚对妻子说，“这人是个娘娘腔。”</p>
-        <p>但她不肯放松警惕，直到课程结束，意大利人离开马孔多才罢休。</p>
-        <p>接着他们开始筹备舞会。</p>
-        <p>乌尔苏拉开列出一张经过严格筛选的宾客名单，入选的都是村庄创建者的后代—除去庇拉尔·特尔内拉一家不算，那女人又生了两个父亲不明的孩子。</p>
-        <p>实际上这是门第之选，只不过以友情作为选择标准。</p>
-        <p>那些入选者早在背井离乡创建马孔多之前就是何塞·阿尔卡蒂奥·布恩迪亚家的常客，而且他们的儿孙也是跟奥雷里亚诺和阿尔卡蒂奥一起长大的伙伴，他们的女儿则是唯一可以来家里与丽贝卡和阿玛兰妲一同绣花的姐妹。</p>
-        <p>堂阿波利纳尔·摩斯科特这位仁慈的地方官不过是个摆设，其职责仅限于用微薄的经费供养两名木棒武装起来的警察。</p>
-        <p>为了贴补家用，他的女儿们开了一家缝纫店，业务从制作毡绒花到出售番石榴甜食再到代写情书，不一而足。</p>
-        <p>她们端庄而勤劳，是镇上最美的姑娘，新式舞也跳得最好，却根本没被考虑纳入受邀之列。</p>
-        <p>乌尔苏拉和姑娘们拆包取出家具，擦亮餐具，挂起玫瑰花舟少女图，泥瓦匠刚砌成的房子空空荡荡，到这时才有了一缕新生的气息。</p>
-        <p>与此同时，何塞·阿尔卡蒂奥·布恩迪亚不再追寻上帝的形象，确信其并不存在，转而将自动钢琴开膛破肚，探寻其中蕴藏的秘密魔法。</p>
-        <p>在舞会开始两天前，他面对一堆多出来的弦轴和木槌一筹莫展，刚把一团乱麻似的琴弦从一端捋顺，另一端又卷了起来，最后总算胡乱拼凑复原。</p>
-        <p>那些日子家中空前忙乱，但崭新的煤油灯终究在预定的日期和时刻点燃。</p>
-        <p>家门洞开，空气中树脂和灰浆的气味还未散去，建村元老的儿孙们依次参观了摆放有欧洲蕨和秋海棠的长廊，各个安静的房间，弥漫着玫瑰芬芳的花园，最后来到客厅，簇拥在覆盖着雪白床单的新奇发明周围。</p>
-        <p>自动钢琴在大泽区一些镇子已经流行开来，在别处见识过的人不免有些扫兴，然而最失望的人还是乌尔苏拉。</p>
-        <p>她放好第一卷纸带让阿玛兰妲和丽贝卡领先起舞，但机器却毫无动静。</p>
-        <p>老态龙钟的梅尔基亚德斯几乎已经失明，但仍试图乞灵于自己古老的智慧来修复钢琴。</p>
-        <p>最后何塞·阿尔卡蒂奥·布恩迪亚误打误撞，移动了一处卡住的部件，音符开始断断续续地冒出，随即又以颠倒的顺序涌泻。</p>
-        <p>琴槌敲击在散乱无序又过分绷紧的琴弦上，纷纷脱臼错位。</p>
-        <p>然而，那二十一位当年深入山林西行寻找大海的无畏勇士的后人，执著地绕过错乱乐声的暗礁，翩翩起舞直到天明。</p>
-        <p>皮埃特罗·克雷斯皮重新把自动钢琴组装起来。</p>
-        <p>丽贝卡和阿玛兰妲帮他理顺琴弦，听到那颠倒的华尔兹乐曲时跟他一起连连大笑。</p>
-        <p>见他那样可亲又可靠，乌尔苏拉便取消了监视。</p>
-        <p>在他告别的前夜，家里用修复的自动钢琴临时举行了一场舞会，他和丽贝卡联袂表演了一场美妙的现代舞。</p>
-        <p>阿尔卡蒂奥和阿玛兰妲的舞姿舞技也并不逊色。</p>
-        <p>但表演被迫中断，挤在门口围观人群中的庇拉尔·特尔内拉和另外一个女人又撕又咬打了起来，只因后者胆敢妄言年轻的阿尔卡蒂奥长着女人的屁股。</p>
-        <p>将近午夜时分，皮埃特罗·克雷斯皮满怀感情地发表了简短致辞，并许诺会很快回来。</p>
-        <p>丽贝卡一直送他到门口，随即关闭家门，熄灭灯火，她回到自己房间里恸哭起来。</p>
-        <p>那是一种难以安慰的哭泣，持续了好几天，连阿玛兰妲也不明白其中的缘由。</p>
-        <p>她的守口如瓶并不奇怪。</p>
-        <p>她虽然表面热情坦诚，实际秉性孤僻，从不敞开心扉。</p>
-        <p>她已出落成一位亭亭玉立的少女，身材修长结实，但仍旧喜欢坐在那把和她一起到来的小木头摇椅上，那椅子加固过多次，扶手已经不见了。</p>
-        <p>没人留意她到了这个年龄还是喜欢吸吮手指，她一有机会便把自己关在浴室里，并养成了面朝墙壁睡觉的习惯。</p>
-        <p>雨天的下午，她和女友们待在秋海棠长廊里刺绣，每当看到潮湿的土层和蚯蚓在花园里堆起的小丘，她常常会从交谈中走神，怀念的泪水带着咸味涌上舌尖。</p>
-        <p>她一开始哭泣，当年那些被橘汁和大黄压服的秘密嗜好顿时化为无法抑制的渴望爆发。</p>
-        <p>她又开始吃土。</p>
-        <p>第一次几乎是出于好奇，她确信那糟糕的味道将是摆脱诱惑的最佳药方。</p>
-        <p>她果然无法忍受泥土在嘴里的感觉，但她没有放弃，而是受制于不断增强的渴望，渐渐恢复了旧日的胃口，恢复了对原生矿物的喜爱以及原始食物带来的满足。</p>
-        <p>她将一把把泥土藏进口袋，一边传授女友们最繁难的针法，谈论其他不值得自己为之吃下石灰墙皮的男人，一边趁人不注意一点点吃掉，心中涌起既幸福又愤怒的迷乱感觉。</p>
-        <p>这一把把泥土使那唯一值得她自卑自贱的男人不再遥远也更加真切，仿佛从他脚上精巧的漆皮靴在世界另一处所踏的土地传来矿物的味道，她从中品出了他鲜血的重量和温度，这感觉在她口中猛烈烧灼，在她心里留下安慰。</p>
-        <p>一天下午，安帕萝·摩斯科特无缘无故请求参观新家。</p>
-        <p>阿玛兰妲和丽贝卡对这突如其来的到访不明所以，礼貌而生硬地接待了她。</p>
-        <p>她们向她展示扩建后的家宅，请她听自动钢琴的演奏，为她端上橘子水和小饼干。</p>
-        <p>安帕萝给她们上了一课，诸如什么是端庄大方，什么是仪态可亲，什么是举止得体，给在场不过短短一会儿的乌尔苏拉留下了深刻印象。</p>
-        <p>两小时后，谈话渐渐无味，安帕萝趁阿玛兰妲分神的瞬间将一封信塞给丽贝卡。</p>
-        <p>她只来得及看见“可敬的丽贝卡·布恩迪亚小姐”字样，与自动钢琴说明书上的字体同样工整，以同样的绿色墨水写就，使用同样的绮丽措辞。</p>
-        <p>她立刻用指尖将信折起藏进胸衣，望着安帕萝·摩斯科特的眼神中充满无尽感激，还有结下生死之盟的无声承诺。</p>
-        <p>安帕萝·摩斯科特与丽贝卡·布恩迪亚之间突然萌生的友情燃起了奥雷里亚诺心中的希望。</p>
-        <p>他一直想着蕾梅黛丝，深受折磨，却总找不到机会见面。</p>
-        <p>当他跟最亲密的朋友马格尼菲科·比斯巴勒和赫里内勒多·马尔克斯—建村元老们的儿子，名字与父亲相同—在镇上散步时，曾无数次用渴望的目光在缝纫店中寻找，但看见的只是她的姐姐们。</p>
-        <p>安帕萝·摩斯科特在家中的出现对他而言不啻一个预兆。</p>
-        <p>“她一定会一起来，”奥雷里亚诺低声对自己说，“她一定会来。”</p>
-        <p>他重复了无数次，如此坚信不疑，终于一天下午，他在作坊里组装一条黄金小鱼的时候，感到她回应了自己的呼唤。</p>
-        <p>不一会儿，他果然听到一个童稚的声音，于是抬起头来一看，心脏因惊恐而停止了跳动：小女孩穿着粉红薄纱裙和白色小靴子站在门前。</p>
-        <p>“这里不能进，蕾梅黛丝。”走廊里传来安帕萝·摩斯科特的声音，“人家在干活。”</p>
-        <p>但奥雷里亚诺没等她听从姐姐的话，就举起口中穿着细链的小金鱼，对她说：</p>
-        <p>“进来。”</p>
-        <p>蕾梅黛丝走近问了几个关于小金鱼的问题，奥雷里亚诺无法回答，因为他猝然间喘不过气来。</p>
-        <p>他想永远这样待下去，守着她百合般的肌肤，伴着她翡翠色的眼睛，听她以对待父亲的尊敬，每问一个问题都叫一声“先生”。</p>
-        <p>梅尔基亚德斯坐在角落里的书桌前，画着难以索解的符号。</p>
-        <p>奥雷里亚诺恨他。</p>
-        <p>他做不了别的，只能对蕾梅黛丝说要把小金鱼送给她，结果吓得她飞快地逃出了作坊。</p>
-        <p>那天下午奥雷里亚诺失去了隐藏于心底的耐性，此前他正是靠这种耐性等待见面的机会。</p>
-        <p>他无心干活。</p>
-        <p>他竭力集中精神无数次呼唤，但蕾梅黛丝没有回应。</p>
-        <p>他到她姐姐们的缝纫店寻找她，在她家窗前寻找她，去她父亲的办公室寻找她，但她的身影只出现在他心中，填满了他可怕的孤独。</p>
-        <p>他和丽贝卡在客厅里一坐就是几个小时，听着自动钢琴弹奏华尔兹。</p>
-        <p>丽贝卡这样做是因为皮埃特罗·克雷斯皮曾教她如何伴着那音乐跳舞，奥雷里亚诺这样做则是因为一切，包括音乐在内，都能让他想起蕾梅黛丝。</p>
-        <p>家里充满爱情的气息。</p>
-        <p>奥雷里亚诺寄情于无头无尾的诗行。</p>
-        <p>他把诗句写在梅尔基亚德斯送他的粗糙羊皮纸上，写在浴室的墙壁上，写在自己的手臂上，而所有诗句中都有蕾梅黛丝幻化的身影：蕾梅黛丝在下午两点令人昏昏欲睡的空气中，蕾梅黛丝在玫瑰无声的呼吸中，蕾梅黛丝在蠹虫如沙漏般的暗地蛀蚀中，蕾梅黛丝在清晨面包的热气中，蕾梅黛丝无所不在，蕾梅黛丝无时或缺。</p>
-        <p>丽贝卡每天下午四点待在窗边绣花，等待情书的到来。</p>
-        <p>明明知道运送邮件的骡子每十五天才来一次，她依然天天等候，相信他们会算错时间，任何一天都有可能到来。</p>
-        <p>然而事与愿违，有一次到了预定的日期，骡子却没有出现。</p>
-        <p>丽贝卡绝望得发疯，半夜爬起来，自戕般饥渴地吞下一把把花园里的泥土。</p>
-        <p>她又痛苦又愤怒地哭泣，咀嚼着柔软的蚯蚓，咬碎蜗牛的硬壳崩裂牙齿，又呕吐直到天亮。</p>
-        <p>她陷入一种迷狂的衰弱状态，失去意识，在毫不知耻的呓语中吐露心声。</p>
-        <p>乌尔苏拉惊诧之下撬开她的衣箱，在箱底发现了用玫瑰色丝带系好的十六封香气四溢的信件，夹在旧书里的枯叶和花瓣，以及一碰就化为粉末的蝴蝶标本。</p>
-        <p>只有奥雷里亚诺能理解这样的创痛。</p>
-        <p>那天下午，当乌尔苏拉试图将丽贝卡从迷狂中拯救出来时，他跟马格尼菲科·比斯巴勒和赫里内勒多·马尔克斯去了卡塔利诺的店里。</p>
-        <p>那里扩建了一排木板房，里面所住的单身女人散发出萎谢花朵的气味。</p>
-        <p>一支由手风琴和鼓组成的乐队演奏着好汉弗朗西斯科的歌谣，他已有好几年没在马孔多出现。</p>
-        <p>三位好友喝着甘蔗酒。</p>
-        <p>马格尼菲科和赫里内勒多同奥雷里亚诺年纪相仿，但比他更通晓世事，轮流和坐在大腿上的女人喝酒。</p>
-        <p>其中一个镶着金牙、神色憔悴的女人的爱抚令他浑身震颤，但他拒绝了她。</p>
-        <p>他发现喝得越多就越发想念蕾梅黛丝，不过也更能忍耐思念带来的折磨。</p>
-        <p>他不知自己从何时开始飘了起来。</p>
-        <p>他看见朋友们和那些女人在耀眼的闪光中浮游，没有体积没有重量，他们所说的言语未经双唇，他们神秘的手势与表情彼此疏离。</p>
-        <p>卡塔利诺一只手搭在他背上，对他说：“快十一点啦。”</p>
-        <p>奥雷里亚诺回过头去，就看到了那张畸形的大脸，耳边还插着一朵毡绒花。</p>
-        <p>他随即失去了记忆，好像当初得了失忆症那样，直到另一个早晨才恢复，他身处完全陌生的房间，一旁站着穿着衬裙、赤着双脚、蓬头散发的庇拉尔·特尔内拉，她拿着一盏灯照着他，一脸难以置信的神情。</p>
-        <p>“奥雷里亚诺！”</p>
-        <p>奥雷里亚诺站稳脚，抬起头。他不知自己是怎样来到这里的，但知道目的为何，因为那正是他从童年起一直深藏心底的隐秘。</p>
-        <p>“我是来跟您睡觉的。”他说。</p>
-        <p>他的衣服上满是污泥和呕吐的痕迹。</p>
-        <p>庇拉尔·特尔内拉那时候和两个孩子生活在一起，她没有问他什么，把他引到床前。</p>
-        <p>她用打湿的丝瓜瓤给他擦脸，为他脱了衣服，自己也赤裸身体，然后放下蚊帐，免得孩子们万一醒来看到。</p>
-        <p>她已经厌倦了等待留下的男人，离开的男人，无数因纸牌的模糊指引迷了路没能赶到她家的男人。</p>
-        <p>在等待中她的皮肤起了皱褶，乳房被掏空，心里的余烬熄灭。</p>
-        <p>她在黑暗中摸索着奥雷里亚诺，把手放在他的肚子上，带着母性的温柔亲吻他的脖子。</p>
-        <p>“我可怜的小宝宝。”</p>
-        <p>她喃喃道。</p>
-        <p>奥雷里亚诺颤抖起来。</p>
-        <p>他平稳老练、毫无滞碍地越过痛苦的峭壁，发现蕾梅黛丝变成了无边的沼泽，闻起来好像幼兽和新熨好的衣服。</p>
-        <p>渡过难关之后，他哭了起来。</p>
-        <p>一开始是几声不由自主、断断续续的抽泣，随后泪如泉涌，他感觉心中苦痛的块垒迸裂了。</p>
-        <p>她等待着，用指肚摩挲他的头发，直到他的身体倾空那令他无法活下去的黑暗。</p>
-        <p>然后庇拉尔·特尔内拉问他：“她是谁？”奥雷里亚诺告诉了她。</p>
-        <p>她笑了，只是昔日足以惊飞鸽群的笑声如今甚至不会把孩子们吵醒。</p>
-        <p>“你得先把她养大。”</p>
-        <p>她开玩笑说。</p>
-        <p>但在玩笑背后，奥雷里亚诺感受到了理解。</p>
-        <p>他离开房间的时候，不仅抛下了不解人事时的惶惑，也卸下了几个月来折磨内心的重负。</p>
-        <p>庇拉尔·特尔内拉当下给了他一个承诺。</p>
-        <p>“我去跟那女孩说。”她说，“等着我把她端在盘子里送给你。”</p>
-        <p>她做到了。</p>
-        <p>只是时机不对，因为家里已经失去往日的平静。</p>
-        <p>丽贝卡那般喊叫已经无法保守秘密，阿玛兰妲发现了她的痴恋后开始发烧。</p>
-        <p>她也在为没有回应的爱情而饱受折磨。</p>
-        <p>她把自己关在浴室里，写下一封封狂热的信，以摆脱没有希望的激情带来的折磨，然后把信深藏在衣箱内。</p>
-        <p>乌尔苏拉同时照顾两个病人，几乎忙不过来。</p>
-        <p>她费尽心机长时间询问，也没能问出阿玛兰妲委靡的缘由。</p>
-        <p>最终，她又灵机一动，撬开衣箱，便发现了用玫瑰色丝带系好的信，信内塞满新鲜的百合花瓣，信上泪痕未干，封封都写给皮埃特罗·克雷斯皮，但从未寄出。</p>
-        <p>乌尔苏拉眼含愤怒的泪水，诅咒自己动念购买自动钢琴的那个时刻，并取消了刺绣课程，下令进入没有死人的丧期，直到女儿们死心断念为止。</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚已经改变对皮埃特罗·克雷斯皮最初的看法，十分欣赏他对音乐器械的灵活掌握，于是试图干预，却无济于事。</p>
-        <p>庇拉尔·特尔内拉告诉奥雷里亚诺，蕾梅黛丝已经作好结婚的准备，他意识到这个消息会给父母带来新的痛苦。</p>
-        <p>但他还是选择面对现实。</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚和乌尔苏拉被郑重其事地请到客厅，漠然听着儿子的宣告。</p>
-        <p>但听到那未婚妻的名字时，何塞·阿尔卡蒂奥·布恩迪亚气红了脸。</p>
-        <p>“爱情是瘟疫！”他咆哮着，“有那么多漂亮又正派的女孩，你偏偏要娶敌人的女儿。”</p>
-        <p>乌尔苏拉却赞成儿子的选择。</p>
-        <p>她坦承自己对摩斯科特家七姐妹的好感，说她们漂亮、能干、端庄又有教养，称赞儿子有眼光。</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚面对妻子的热情让了步，但提出一个条件：作为交换，丽贝卡要嫁给皮埃特罗·克雷斯皮。</p>
-        <p>乌尔苏拉等到能腾出时间时，会带阿玛兰妲去省城观光，让她多和外人接触以淡忘自己的失落。</p>
-        <p>丽贝卡听到这个结果，立时恢复了健康，给未婚夫写了一封欢喜万分的信，经父母过目后亲自送到邮局投递。</p>
-        <p>阿玛兰妲假意接受了这一决定，渐渐退了烧，但在心中暗暗发誓，丽贝卡想要结婚除非从她的尸体上跨过去。</p>
-        <p>接下来的那个星期六，何塞·阿尔卡蒂奥·布恩迪亚身着舞会那晚才穿过一次的深色呢料正装，系上赛璐珞硬领，套上岩羚皮靴，去蕾梅黛丝·摩斯科特家提亲。</p>
-        <p>里正和他妻子半是欣喜半是困惑地接待了他，不知道他这次突然来访的目的，稍后又都认为他记错了提亲的对象。</p>
-        <p>为了澄清误会，做母亲的叫醒蕾梅黛丝，把她抱进客厅，那孩子还一副睡眼惺忪的样子。</p>
-        <p>父母问她是否已作出嫁人的决定，她哭哭啼啼地回答只想继续睡觉。</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚理解了摩斯科特夫妇的困惑，便去找奥雷里亚诺确认。</p>
-        <p>等他回来的时候，摩斯科特夫妇已经换上正装，重新布置了家具，在花瓶里插上鲜花，六个大女儿也陪在一旁等待。</p>
-        <p>尽管场面尴尬，硬领也让他很不舒服，何塞·阿尔卡蒂奥·布恩迪亚还是肯定，蕾梅黛丝就是儿子选中的人。</p>
-        <p>“这没有道理，”堂阿波利纳尔·摩斯科特有些不快，“我们还有六个女儿，都是单身，年龄也合适，非常愿意成为您儿子这样正派又勤劳的男士的伴侣，可奥雷里亚诺偏偏相中了还在尿床的那一个。”</p>
-        <p>他妻子是个保养得很好的女人，从眼神到姿态都带着悲伤，她责备了丈夫的无礼。</p>
-        <p>喝过果汁后，他们欣然接受了奥雷里亚诺的决定。</p>
-        <p>不过摩斯科特太太请求单独与乌尔苏拉谈一次。</p>
-        <p>乌尔苏拉很吃惊，抱怨让自己搅进了男人们的事情，但实际上又兴奋又害怕，次日便登门拜访。</p>
-        <p>半小时后，她带回了蕾梅黛丝还没到青春期的消息。</p>
-        <p>奥雷里亚诺并不认为这是什么无法逾越的障碍。</p>
-        <p>他已经等了那么久，如果有必要还可以等下去，直到未婚妻达到生育的年龄。</p>
-        <p>恢复不久的平静又被打破，这一次是梅尔基亚德斯的死。</p>
-        <p>尽管这结果已在意料之中，但他死亡的情形却是人们事先所想象不到的。</p>
-        <p>他归来后没几个月，便经历了一个急剧衰老的过程，很快就被归为那类无用的老翁，他们像幽灵般在卧室间步履蹒跚地游荡，高声追怀美好岁月却无人理睬，直到某天清晨死在床上才被人想起。</p>
-        <p>起初，何塞·阿尔卡蒂奥·布恩迪亚出于对新奇的银版照相术和诺查丹玛斯预言的热情，还常常帮他的忙。</p>
-        <p>但随着时间流逝，两人之间的交流日益困难，他最终被丢下孤独一人。</p>
-        <p>他的视力和听力都在衰退，似乎把对话者混同于他在人类历史早期所结识的人物，回答他人问题时混乱使用多种语言。</p>
-        <p>一天他忘了戴上夜里放在床边水杯里的假牙，从此索性不戴。</p>
-        <p>乌尔苏拉着手扩建家宅的时候，特意为他盖了一个房间，紧挨着奥雷里亚诺的作坊，远离家中的忙乱喧闹，有一扇阳光充沛的窗子和一个书架。</p>
-        <p>她亲自把尘侵蛾蛀几近损毁的书籍、写满难解符号的脆薄纸张和装假牙的杯子一一摆上书架，那杯子里已经长出水生植物，开着纤小的黄花。</p>
-        <p>梅尔基亚德斯似乎很喜欢这个新居，因为从此再没见他出屋，甚至在饭厅也不见他的踪影。</p>
-        <p>他只去奥雷里亚诺的作坊，一待就是几个小时，在随身携带的羊皮纸上涂写谜一般的文字，那纸好像由某种干燥的材料所制，像千层饼似的裂开。</p>
-        <p>他就在那里吃下比西塔西翁每天两次送去的食物，但最后那段日子他没了胃口，只吃蔬菜过活。</p>
-        <p>很快他就显出素食者特有的孤清模样。</p>
-        <p>他的皮肤上覆着一层柔软的苔藓，与那件不分季节永不离身的坎肩上滋生的相仿，他的呼吸间散发出熟睡动物的臭气。</p>
-        <p>奥雷里亚诺最终忘了他的存在，沉浸在自己的诗行里，但有一次感觉听懂了他低沉独白中的只言片语，便留了心。</p>
-        <p>实际上，他滔滔不绝说出的艰深话语中唯一能够辨别出来的，只是像锤击般不断重复的一个词“二分点二分点二分点”，还有一个名字“亚历山大·冯·洪堡”。</p>
-        <p>阿尔卡蒂奥开始帮奥雷里亚诺做金银器活计的时候，曾尝试稍稍接近他。</p>
-        <p>梅尔基亚德斯回应了这一沟通努力，不时吐出几个和现实毫不相干的卡斯蒂利亚语句子。</p>
-        <p>然而一天下午，他好像突然间激情骤至，神采焕发。</p>
-        <p>多年以后，面对行刑队，阿尔卡蒂奥将回想起梅尔基亚德斯为他朗读那一页页不可理解的文字时的颤抖，他自然是听不懂，但那铿锵的音调听起来仿佛教皇通谕的吟唱。</p>
-        <p>随后，他很久以来第一次露出笑容，用西班牙语说道：“等我死的时候，请在我房间里烧上三天水银。”</p>
-        <p>阿尔卡蒂奥告诉了何塞·阿尔卡蒂奥·布恩迪亚，后者试图获取更具体的信息，却只得到一句回答：“我已经达到永生。”</p>
-        <p>每当梅尔基亚德斯的呼气发臭，阿尔卡蒂奥便在星期四的上午带他去河里洗澡。</p>
-        <p>他看来好了些。</p>
-        <p>他脱下衣服，和年轻人一起没到水里，凭着神秘的方向感绕过深凹和危险地带。</p>
-        <p>“我们是水做的。”</p>
-        <p>他有一次这么说道。</p>
-        <p>就这样过了很长时间，没人在家里见过他，除了那天晚上他令人感动地努力修理自动钢琴，以及他腋下夹着用毛巾包好的加拉巴木果壳瓢和油椰肥皂跟阿尔卡蒂奥去河里洗澡的时候。</p>
-        <p>一个星期四，在叫他去河边之前，奥雷里亚诺听见他说：“我已经发热病死在新加坡的沙洲上。”</p>
-        <p>那天他下水时弄错了路线，直到第二天早上才在下游几公里的地方被找到，尸身搁浅在一处明晃晃的河湾里，一只孤零零的秃鹫落在他肚子上。</p>
-        <p>乌尔苏拉哭得比自己父亲去世时还伤心。</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚不顾她的惊诧和反对，拒绝为他下葬。</p>
-        <p>“他永生不死，”他说，“他自己给出了复活的配方。”</p>
-        <p>他重新燃起遗忘多时的炼金炉，放上一锅水银煮沸，一旁的尸体渐渐充满蓝色的泡沫。</p>
-        <p>堂阿波利纳尔·摩斯科特鼓起勇气提醒他，溺死者不安葬的话会危害公共卫生。</p>
-        <p>“哪儿的话，他根本没死。”</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚如此回答。</p>
-        <p>熏香一般的水银烧煮已经持续七十二小时，尸体上开始迸裂出青紫色的花朵，伴随着轻微的爆响，家里充满恶臭。</p>
-        <p>到了这个时候，他才同意下葬，但拒绝草率行事，而要用隆重的礼仪对待这位马孔多最大的恩人。</p>
-        <p>这是镇上第一次也是参与人数最多的葬礼，一个世纪后格兰德大妈的葬礼或可与之媲美。</p>
-        <p>他们将他葬在为公墓预留的空地中央，筑起一座坟墓，墓碑上铭刻着他们对他的唯一所知：梅尔基亚德斯。</p>
-        <p>他们为他守灵九个夜晚。</p>
-        <p>大家聚在庭院里喝咖啡、讲笑话、玩纸牌，阿玛兰妲趁着这混乱找到一个机会向皮埃特罗·克雷斯皮表白自己的爱情，后者几个星期前刚与丽贝卡正式订下婚约，并且开办了一家乐器和发条玩具店，就在当年阿拉伯人常常流连并用廉价的小玩意儿交换金刚鹦鹉的地方，也就是人们口中的土耳其人大街。</p>
-        <p>意大利人那一头闪亮的鬈发常引得女人们情不自禁地赞叹，他觉得阿玛兰妲不过是个任性的小姑娘，没有把她的话当真。</p>
-        <p>“我有个弟弟，”他对她说，“他很快会来店里给我帮忙。”</p>
-        <p>阿玛兰妲感到受了侮辱，带着刻骨的怨恨告诉皮埃特罗·克雷斯皮，她下定决心要阻止姐姐的婚礼，就算横尸门前也在所不惜。</p>
-        <p>意大利人对如此骇人的威胁大感震惊，忍不住告诉了丽贝卡。</p>
-        <p>于是，因乌尔苏拉的繁忙一再推迟的旅行，在不到一个星期内就安排妥当。</p>
-        <p>阿玛兰妲没有反对，但在与丽贝卡吻别的一刻，在她耳边轻轻说道：</p>
-        <p>“你别做梦了。就算把我赶到天边，我也能想办法让你结不成婚，哪怕要杀了你也不在乎。”</p>
-        <p>乌尔苏拉的离开，以及梅尔基亚德斯无形的存在——他继续悄无声息地在房间里游荡——使家里显得分外空旷。</p>
-        <p>丽贝卡接管了日常家务，印第安女人负责照管面包房。</p>
-        <p>每到傍晚，皮埃特罗·克雷斯皮就在一阵薰衣草的香风中到来，总带上一件玩具做礼物，他的未婚妻则在客厅里接待他，并敞开所有门窗以免引起风言风语。</p>
-        <p>这种谨慎不免显得多余，因为意大利人已充分表明他的正派可靠，他甚至连姑娘的手都没有碰过，尽管她年内就将成为他的妻子。</p>
-        <p>这样的来访很快使家里摆满了神奇的玩具。</p>
-        <p>上了弦就能翩翩起舞的跳舞女郎，八音盒，奔跑的马儿，耍杂技的猴子，敲鼓的小丑，各种令人惊异的机械动物，皮埃特罗·克雷斯皮带来的这些玩具驱散了何塞·阿尔卡蒂奥·布恩迪亚心头悼念梅尔基亚德斯去世的悲痛，他又回到了过去那个钻研炼金术的时期。</p>
-        <p>他生活在满是开膛破肚的动物、大卸八块的机件的天堂里，试图利用钟摆原理设计一套永动系统，使这些玩具趋于完善。</p>
-        <p>奥雷里亚诺已经无心干活，专门教导小蕾梅黛丝读写。</p>
-        <p>起初小女孩宁愿和自己的娃娃一起玩，全怪那个天天下午都来的男人，家里人总要她放下游戏，给她洗澡更衣，然后让她坐在客厅里接待他。</p>
-        <p>但奥雷里亚诺的耐心和诚意最终赢得了她的好感，她甘愿好几个小时和他待在一起学习词语的含义，用彩色铅笔在本子上画小房子、畜栏里的奶牛、散发黄色光芒落到山背后的圆太阳。</p>
-        <p>只有丽贝卡受了阿玛兰妲的威胁一直闷闷不乐。</p>
-        <p>她了解妹妹的性格，了解她的高傲，因她刻毒的怨恨而担惊受怕。</p>
-        <p>她连续几个小时躲在浴室里吸吮手指，竭尽全力抗拒吃土的诱惑。</p>
-        <p>为了摆脱心头的忧虑，她请庇拉尔·特尔内拉为自己推算未来。</p>
-        <p>说了些模棱两可的套话之后，庇拉尔·特尔内拉给出了预言：</p>
-        <p>“只有等你父母入土为安，你才会幸福。”</p>
-        <p>丽贝卡一阵颤抖。</p>
-        <p>她记起好像在梦里，看见还是小女孩的自己走进家门，带着衣箱、小木头摇椅和一个口袋，而她一直不知道口袋里面装的什么。</p>
-        <p>她记起一位秃顶的先生，他身着亚麻衣裳，领口别着一粒金扣，但与金杯国王毫无相似之处。</p>
-        <p>她记起一位非常年轻美貌的女士，双手温和芬芳，与金元仆侍那双似乎患了风湿病的手相去甚远，那女士曾在她发间簪上鲜花，下午带她在一个绿色街巷的城镇中散步。</p>
-        <p>“我不明白。”她说。</p>
-        <p>庇拉尔·特尔内拉同样困惑。</p>
-        <p>“我也不明白，但牌上就是这么说的。”</p>
-        <p>丽贝卡被这解不开的谜团搅得忧心忡忡，便告诉了何塞·阿尔卡蒂奥·布恩迪亚。</p>
-        <p>他责怪她竟然相信纸牌的预言，自己却在暗中翻遍衣柜和衣箱，挪开家具，掀起床板和地板，四处寻找那个骨殖袋。</p>
-        <p>他想起自从房子扩建以后就再没见过，便偷偷找来那些泥瓦匠，其中一个承认，当时嫌那袋子碍事就把它砌在了夹壁里。</p>
-        <p>他们耳朵贴在墙上四处侦听，听了好几天终于听到了低沉的咯啦咯啦声，于是凿开墙壁，发现骨殖仍完好无损地保存在袋中。</p>
-        <p>当天他们便把骨殖安葬在一个没有墓碑的坟茔里，就在梅尔基亚德斯的坟墓旁。</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚回到家，心里卸下了如同对普鲁邓希奥·阿基拉尔的回忆一样的良心重负。</p>
-        <p>经过厨房的时候，他吻了一下丽贝卡的额头。</p>
-        <p>“别胡思乱想了，”他说，“你会幸福的。”</p>
-        <p>与丽贝卡结下的友谊为庇拉尔·特尔内拉重新敞开了家门，而那扇门自从阿尔卡蒂奥出生后乌尔苏拉就不曾为她打开过。</p>
-        <p>她随时随刻都会登门，闹出的动静活像一群山羊，并以狂热的干劲做着最繁重的家务。</p>
-        <p>有时她会走进作坊帮阿尔卡蒂奥敏化照相版，手脚利落，温情脉脉，却给他造成困惑。</p>
-        <p>这女人令他不知所措。</p>
-        <p>她肌肤的热度，她身上的烟味，她在暗室里无拘无束的笑声，都令他心神不定脚下磕绊。</p>
-        <p>有一次，奥雷里亚诺正在打造金银器，庇拉尔·特尔内拉就倚在桌上观赏他耐心地干活。事情发生在突然之间。奥雷里亚诺确认阿尔卡蒂奥在暗室里，才抬起头迎上庇拉尔·特尔内拉的视线，她的想法毫无掩饰，仿佛暴露在正午的阳光下。</p>
-        <p>“好吧，”奥雷里亚诺说，“告诉我是怎么回事。”</p>
-        <p>庇拉尔·特尔内拉咬着嘴唇，露出一丝悲伤的笑容。</p>
-        <p>“你适合打仗，”她说，“百发百中呢。”</p>
-        <p>预感得到了证实，奥雷里亚诺心下一阵轻松。他继续埋头干活，仿佛什么也没发生，声音里多了几分安稳和镇定。</p>
-        <p>“我认了，”他说，“就叫我的名字。”</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚终于如愿以偿：他把钟表的机件安在上弦的跳舞女郎身上，于是那个玩具在自己的音乐伴奏中一刻不歇地跳了三天。</p>
-        <p>这一发明带给他的兴奋超过了以前所有的疯狂举动。</p>
-        <p>他不再吃饭，不再睡觉。</p>
-        <p>少了乌尔苏拉的照料和监督，他任凭想象将自己带到一种永恒的谵妄状态，从此再也没有恢复。</p>
-        <p>他整夜在房间里来回踱步，高声自语，寻找方法将钟摆原理应用到牛车上，应用到犁铧上，推广到一切有用的运动物体上。</p>
-        <p>失眠引起的狂热令他筋疲力尽，以至于一天凌晨，当那个头发花白、行动迟缓的老人走进他的卧室，他一时竟没认出来。</p>
-        <p>那是普鲁邓希奥·阿基拉尔。</p>
-        <p>最终，他还是想了起来，惊讶于死人也会变老。</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚不禁怀念起往昔，一阵心潮澎湃。</p>
-        <p>“普鲁邓希奥，”他高声喊道，“你怎么跑这么远来这儿了！”死去多年以后，普鲁邓希奥·阿基拉尔对活人的怀念如此强烈，对友伴的需求如此迫切，对存在于死亡之中的另一种死亡的迫近又是如此惧怕，最终对他最大的冤家对头萌生出眷恋。</p>
-        <p>他找了很久。</p>
-        <p>他向里奥阿查的死人们问起他，向从巴耶杜帕尔、从大泽区来的死人们问起他，但没人知道。</p>
-        <p>马孔多对亡灵来说是一处未知之地，直到梅尔基亚德斯死后，在五颜六色的死亡地图上用一个黑点标出。</p>
-        <p>何塞·阿尔卡蒂奥·布恩迪亚与普鲁邓希奥·阿基拉尔一直聊到天亮。</p>
-        <p>没过几小时，他在熬夜后的疲惫不堪中走进奥雷里亚诺的作坊，问道：“今天星期几？”奥雷里亚诺告诉他是星期二。</p>
-        <p>“我想也是，”何塞·阿尔卡蒂奥·布恩迪亚说，“可我忽然又觉得还是星期一，跟昨天一样。</p>
-        <p>你看那天，看那墙，看那秋海棠。</p>
-        <p>今天还是星期一。”</p>
-        <p>奥雷里亚诺已经习惯他的种种古怪，没有理会。</p>
-        <p>第二天，星期三，他又来到作坊。</p>
-        <p>“真糟糕，”他说，“你看那风，听那太阳嗡嗡响，跟昨天前天都一样。</p>
-        <p>今天还是星期一。”</p>
-        <p>那天晚上皮埃特罗·克雷斯皮在长廊里碰见他，见他正以老人那种毫不雅观的方式哭号，为普鲁邓希奥·阿基拉尔，为梅尔基亚德斯，为丽贝卡的父母，为他自己的父母，为所有他能想起在死亡中孤独无依的人哭号。</p>
-        <p>皮埃特罗·克雷斯皮送给他一只上了弦就能用两脚走钢丝的小熊，但没能转移他的注意力。</p>
-        <p>又问他前些日子提出的利用钟摆原理建造机器载人飞行的计划进展如何，他回答说那不可能，因为钟摆能让任何东西飞起来，却无法使自己腾空。</p>
-        <p>星期四他又出现在作坊里，一副大祸临头的痛苦神情。</p>
-        <p>“时间这个机器散架了，”他几乎哭了出来，“而乌尔苏拉和阿玛兰妲还在那么远的地方！”奥雷里亚诺像对待小孩一样训斥了他，他显出顺从的样子。</p>
-        <p>他花了六个小时观察各种事物，试图找出一分一毫与前一天的不同之处，期待发现某种变化能证明时间的流逝。</p>
-        <p>他整夜睁着眼躺在床上，呼唤普鲁邓希奥·阿基拉尔、梅尔基亚德斯以及所有的死人来分担他的忧虑。</p>
-        <p>但没人出现。</p>
-        <p>星期五，他在谁都还没起床时又去观察外界的状况，最后彻底确认了仍是星期一。</p>
-        <p>于是他抽出一根门闩，以超常的力量和野蛮的劲头将所有炼金设备、银版照相装置、金银器作坊都砸个稀烂，像中了邪似的高喊着一种流利高亢却无人能懂的语言。</p>
-        <p>他准备将家里其他地方也如此捣毁，这时奥雷里亚诺向邻居求助。</p>
-        <p>将他按倒在地用了十个人，捆绑起来用了十四个人，拖到院中的栗树那里用了二十个人。</p>
-        <p>他被绑在树上，用奇怪的语言喊叫着，嘴里吐出绿色的泡沫。</p>
-        <p>乌尔苏拉和阿玛兰妲返家的时候，他的手脚仍被捆在栗树树干上，全身被雨水淋透，一副天真无辜的样子。</p>
-        <p>她们和他说话，他看着却认不出对面是谁，说了些没人能懂的话。</p>
-        <p>乌尔苏拉为他松开被绳索勒伤已经溃烂的手腕脚踝，只在腰上留下捆绳。</p>
-        <p>后来又用棕榈叶搭了顶棚，为他遮阳蔽雨。</p>
-    </div>
-
+    <div id="content-container">
+    <h1 style="text-align: left !important;">Chapter 4</h1>
+    <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">发布时间：2026/7/3 13:50:28</div>
+    <p>The new house, white, like a dove, was inaugurated with a dance. Úrsula had got that idea from the afternoon when she saw Rebeca and Amaranta changed into adolescents, and it could almost have been said that the main reason behind the construction was a desire to have a proper place for the girls to receive visitors.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">新居粉饰得白如雪鸽，在舞蹈中举行了落成仪式。乌尔苏拉是在那个下午看到丽贝卡和阿玛兰塔已长成亭亭玉立的少女，才萌生了这个主意，几乎可以说，建造新居的主要原因是希望女儿们能有个合适的地方接待宾客。</p>
+    <p>In order that nothing would be lacking in splendor she worked like a galley slave as the repairs were under way, so that before they were finished she had ordered costly necessities for the decorations, the table service, and the marvelous invention that was to arouse the astonishment of the town and the jubilation of the young people: the pianola.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">为确保十全十美，在修建过程中她像奴隶苦役一样辛勤地工作。完工之前，她订购了昂贵的必需装饰品、餐桌服务以及足以令全镇惊愕和年轻人为之欢呼的奇妙发明：自动钢琴。</p>
+    <p>They delivered it broken down, packed in several boxes that were unloaded along with the Viennese furniture, the Bohemian crystal, the table service from the Indies Company, the tablecloths from Holland, and a rich variety of lamps and candlesticks, hangings and drapes. The import house sent along at its own expense an Italian expert, Pietro Crespi, to assemble and tune the pianola, to instruct the purchasers in its functioning, and to teach them how to dance the latest music printed on its six paper rolls.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他们将其分解递送，装在多个箱子里，一同卸载下来的还有维也纳家具，波西米亚水晶制品，印度公司的餐桌服务，荷兰的桌布和各式各样的灯、烛台、帷幔、帷帘。进口公司自费派遣了一个意大利专家——皮埃特罗·克雷斯皮，负责组装调试钢琴，指导买家如何使用，并教授如何伴着六卷纸带上的新潮音乐跳舞。</p>
+    <p>Pietro Crespi was young and blond, the most handsome and well mannered man who had ever been seen in Macondo, so scrupulous in his dress that in spite of the suffocating heat he would work in his brocade vest and heavy coat of dark cloth. Soaked in sweat, keeping a reverent distance from the owners of the house, he spent several weeks shut up is the parlor with a dedication much like that of Aureliano in his silverwork.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">皮埃特罗·克雷斯皮是个金发碧眼的年轻人，也是在马孔多见过最英俊又彬彬有礼的男人。他非常注重仪表，尽管天气窒息般燥热，他工作时仍然穿着锦缎背心和厚厚的深色呢子上衣，满头大汗，与房主保持着恭敬的距离，好几周把自己关在客厅，无私奉献地工作，就像奥雷里亚诺对待他的银制工艺品。</p>
+    <p>One morning, without opening the door, without calling anyone to witness the miracle, he placed the first roll in the pianola and the tormenting hammering and the constant noise of wooden lathings ceased in a silence that was startled at the order and neatness of the music. They all ran to the parlor.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一天早上，没有开门，也没有召集人见证此刻奇迹，他在自动钢琴上装好第一卷纸带，恼人的捶打声和木板条持续的噪声戛然而止，纯净有序的音乐响起，人们都纷纷跑来客厅。</p>
+    <p>José Arcadio Buendía was as if struck by lightning, not because of the beauty of the melody, but because of the automatic working of the keys of the pianola, and he set up Melquíades' camera with the hope of getting a daguerreotype of the invisible player.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥·布恩迪亚好似被闪电击中，不是因为旋律之优美，而是因为琴键在自动弹奏。他架起梅尔基亚德斯的照相机，希望拍到这位隐形演奏者的照片。</p>
+    <p>That day the Italian had lunch with them. Rebeca and Amaranta, serving the table, were intimidated by the way in which the angelic man with pale and ringless hands manipulated the utensils. In the living room, next to the parlor, Pietro Crespi taught them how to dance. He showed them the steps without touching them, keeping time with a metronome, under the friendly eye of Úrsula, who did not leave the room for a moment while her daughters had their lesson.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">那天这位意大利人与他们共进午餐。在餐桌旁服务的丽贝卡和阿玛兰塔惊诧于这个天使般的男人尚未戴戒指的苍白双手操作刀叉的方式。在客厅旁边的起居室，皮埃特罗·克雷斯皮教她们跳舞。跟随着节拍器，在身体不触碰到她们的情况下向她们展示舞步。乌尔苏拉友好地监视着，女儿上课期间，她未曾一刻离开过房间。</p>
+    <p>Pietro Crespi wore special pants on those days, very elastic and tight, and dancing slippers, "You don't have to worry so much," José Arcadio Buendía told her. "The man's a fairy." But she did not leave off her vigilance until the apprenticeship was over and the Italian left Macondo.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">皮埃特罗·克雷斯皮那时穿着舞鞋和特殊的裤子，非常的紧身有弹性。何塞·阿尔卡蒂奥·布恩迪亚告诉乌尔苏拉，“这人是个同性恋。”但她没有放松警惕，直到学徒期结束，意大利人离开了马孔多才作罢。</p>
+    <p>Then they began to organize the party. Úrsula drew up a strict guest list, in which the only ones invited were the descendants of the founders, except for the family of Pilar Ternera, who by then had two more children by unknown fathers.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">接着他们开始组织宴会。乌尔苏拉制定了一份严格的来宾名单，受邀的只有马孔多创建者的后代，除了皮拉尔·特尔内拉一家，这个女人又生个两个生父不明的孩子。</p>
+    <p>It was truly a highclass list, except that it was determined by feelings of friendship, for those favored were not only the oldest friends of José Arcadio Buendía's house since before they undertook the exodus and the founding of Macondo, but also their sons and grandsons, who were the constant companions of Aureliano and Arcadio since infancy, and their daughters, who were the only ones who visited the house to embroider with Rebeca and Amaranta.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这是一份真正的高等级名单，只不过是通过友情来决定的，因为受邀者不仅在背井离乡到此建立马孔多之前就已经是何塞·阿尔卡蒂奥·布恩迪亚家的老朋友了，而且他们的儿孙们跟奥雷里亚诺和阿尔卡蒂奥从小就是伙伴，他们的女儿也是唯一可以来她家与丽贝卡和阿玛兰塔一同绣花的。</p>
+    <p>Don Apolinar Moscote, the benevolent ruler whose activity had been reduced to the maintenance from his scanty resources of two policemen armed with wooden clubs, was a figurehead. In older to support the household expenses his daughters had opened a sewing shop, where they made felt flowers as well as guava delicacies, and wrote love notes to order. But in spite of being modest and hard-working, the most beautiful girls in Iowa, and the most skilled at the new dances, they did not manage to be considered for the party.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">仁慈的镇长堂·阿波利纳尔·摩斯科特的职责被削减到仅限于用微薄的经费供养两名用木棒武装的警察，不过是有名无实。为了养家糊口，他的女儿们开了一家裁缝铺，她们制作毡花和番石榴食品，以及代人写情书。但是尽管她们谦逊勤劳，是镇上最漂亮的姑娘，新式舞蹈也非常的熟练，依旧没有被考虑邀请参加宴会。</p>
+    <p>While Úrsula and the girls unpacked furniture, polished silverware, and hung pictures of maidens in boats full of roses, which gave a breath of new life to the naked areas that the masons had built, José Arcadio Buendía stopped his pursuit of the image of God, convinced of His nonexistence, and he took the pianola apart in order to decipher its magical secret.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">乌尔苏拉和女孩子们取出家具，擦亮银器，挂起玫瑰花舟载少女图，这给泥瓦匠刚建造的毛坯房带来新的生机。何塞·阿尔卡蒂奥·布恩迪亚已停止了对上帝影像的追踪，并且认为上帝是不存在的。他拆开自动钢琴，期望破译其神奇奥秘。</p>
+    <p>Two days before the party, swamped in a shower of leftover keys and hammers, bungling in the midst of a mixup of strings that would unroll in one direction and roll up again in the other, he succeeded in a fashion in putting the instrument back together. There had never been as many surprises and as much dashing about as in those days, but the new pitch lamps were lighted on the designated day and hour.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">宴会的前两天，他被埋没在一大堆螺钉和木槌里，在杂乱的弦线中瞎忙活，弦线刚从一端把它们伸直，立刻又从另一端卷了起来，好不容易才把钢琴重新装配好。何塞·阿尔卡蒂奥·布恩迪亚从未有过如此多的惊喜和活力，但是新柏油灯在规定好的日期被点亮。</p>
+    <p>The house was opened, still smelling of resin and damp whitewash, and the children and grandchildren of the founders saw the porch with ferns and begonias, the quiet rooms, the garden saturated with the fragrance of the roses, and they gathered together in the parlor, facing the unknown invention that had been covered with a white sheet.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">房子敞开着，仍然能闻到树脂和粉刷湿气的气息。马孔多建立者的子孙们参观着摆着蕨类和秋海棠的长廊，幽静的房间，弥漫着玫瑰芬芳的花园，最后他们聚集到了客厅，簇拥在覆盖着白色床单的未知发明周围。</p>
+    <p>Those who were familiar with the piano, popular in other towns in the swamp, felt a little disheartened, but more bitter was Úrsula's disappointment when she put in the first roll so that Amaranta and Rebeca could begin the dancing and the mechanism did not work. Melquíades, almost blind by then, crumbling with decrepitude, used the arts of his timeless wisdom in an attempt to fix it. Finally José Arcadio Buendía managed, by mistake, to move a device that was stuck and the music came out, first in a burst and then in a flow of mixed-up notes.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">自动钢琴在沼泽区的其他城镇已经开始流行，熟悉自动钢琴的人们有些失望，但是让乌尔苏拉更加失望的是，她放上第一卷纸带，以便阿玛兰塔和丽贝卡能随之起舞，但是自动钢琴并没有反应。梅尔基亚德斯那时几乎已经看不见了，衰老不堪，企图使用他那古老的智慧修复它。最后何塞·阿尔卡蒂奥·布恩迪亚误打误撞地移动了一个被卡住的设备，音乐便出来了，起初是突然响起，接着是一串混乱的音符。</p>
+    <p>Beating against the strings that had been put in without order or concert and had been tuned with temerity, the hammers let go. But the stubborn descendants of the twenty-one intrepid people who plowed through the mountains in search of the sea to the west avoided the reefs of the melodic mix-up and the dancing went on until dawn.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">木槌敲击被随意调节过的凌乱琴弦后，纷纷开始松动。然而，二十一位翻山越岭向西寻找大海的勇士的顽固后代们，避开了旋律的杂乱礁石，起舞到天明。</p>
+    <p>Pietro Crespi came back to repair the pianola. Rebeca and Amaranta helped him put the strings in order and helped him with their laughter at the mix-up of the melodies. It was extremely pleasant and so chaste in its way that Úrsula ceased her vigilance.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">皮埃特罗·克雷斯皮回来修理自动钢琴了。丽贝卡和阿玛兰塔帮他理顺琴弦，旋律中混杂着她们的笑声。场面如此的愉悦有礼节，于是乌尔苏拉便放下了警觉。</p>
+    <p>On the eve of his departure a farewell dance for him was improvised with the pianola and with Rebeca he put on a skillful demonstration of modern dance, Arcadio and Amaranta matched them in grace and skill. But the exhibition was interrupted because Pilar Ternera, who was at the door with the onlookers, had a fight, biting and hair pulling, with a woman who had dared to comment that Arcadio had a woman's behind.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">离开前夕，在自动钢琴的伴奏下为其准备了一场告别舞会。他和丽贝卡联袂表演了一段美妙的现代舞，阿尔卡蒂奥与阿玛兰塔在优雅与技巧上和他们不相上下。但是表演因为皮拉尔·特尔内拉而被中断，她在门口与围观者打了起来，又是咬又是拉扯头发，只因有个女人竟然妄言阿尔卡蒂奥长着女人的屁股。</p>
+    <p>Toward midnight Pietro Crespi took his leave with a sentimental little speech, and he promised to return very soon. Rebeca accompanied him to the door, and having closed up the house and put out the lamps, she went to her room to weep. It was an inconsolable weeping that lasted for several days, the cause of which was not known even by Amaranta. Her hermetism was not odd. Although she seemed expansive and cordial, she had a solitary character an impenetrable heart.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">午夜时分，皮埃特罗·克雷斯皮带着伤感的简短发言离开了马孔多，他承诺很快就会回来。丽贝卡送他到门口，随后关上门，熄灭了灯，在自己的房间哭泣。悲痛欲绝的持续了好几天，其原因甚至阿玛兰塔都无从知晓。她的守口如瓶并不奇怪，尽管她看上去友善而亲切，实际却性格孤僻，内心不可捉摸。</p>
+    <p>She was a splendid adolescent with long and firm bones, but she still insisted on using the small wooden rocking chair with which she had arrived at the house, reinforced many times and with the arms gone. No one had discovered that even at that age she still had the habit of sucking her finger. That was why she would not lose an opportunity to lock herself in the bathroom and had acquired the habit of sleeping with her face to the wall.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她是一个出色的少女，身材修长，体格结实，但她仍然喜欢坐在和她一起到来的小木头摇椅上，摇椅加固了很多次，扶手都没了。没有人发现即使在这个年龄，他任然有吮吸手指的习惯。这就是为什么她从不会错失把自己锁在浴室的机会，还养成了面对着墙壁睡觉的习惯。</p>
+    <p>On rainy afternoons, embroidering with a group of friends on the begonia porch, she would lose the thread of the conversation and a tear of nostalgia would salt her palate when she saw the strips of damp earth and the piles of mud that the earthworms had pushed up in the garden. Those secret tastes, defeated in the past by oranges and rhubarb, broke out into an irrepressible urge when she began to weep. She went back to eating earth. The first time she did it almost out of curiosity, sure that the bad taste would be the best cure for the temptation.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一个雨天的下午，她和一群朋友们在秋海棠长廊刺绣。每当看到花园里潮湿的泥土和蚯蚓堆起的土堆，她总会从交谈中走神，怀旧的泪水带着咸味划过嘴角。她开始哭泣，这隐秘的味道曾经被橙汁和大黄打败，她又开始吃土了。第一次几乎是出于好奇，并确信这糟糕的味道是摆脱诱惑最好的疗法。</p>
+    <p>And, in fact, she could not bear the earth in her mouth. But she persevered, overcome by the growing anxiety, and little by little she was getting back her ancestral appetite, the taste primary minerals, the unbridled satisfaction of what was the original food. She would put handfuls of earth in her pockets, and ate them in small bits without being seen, with a confused feeling of pleasure and rage, as she instructed her girl friends in the most difficult needlepoint and spoke about other men, who did not deserve the sacrifice of having one eat the whitewash on the walls because of them.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">事实上，她无法忍受嘴中泥土的味道，但仍然坚持着，最后被日益增长的焦虑打败，逐渐地恢复了以往的食欲，对矿物质的喜爱，无限满足于原始食物。她将一把土兜在口袋里，然后趁人不注意以一种愉悦又愤怒的感觉，一点一点地吃掉，一边教授朋友们最复杂的针绣，一边讨论那些男人，不值得因为他们而放弃吃墙石灰。</p>
+    <p>The handfuls of earth made the only man who deserved that show of degradation less remote and more certain, as if the ground that he walked on with his fine patent leather boots in another part the world were transmitting to her the weight and the temperature his blood in a mineral savor that left a harsh aftertaste in her mouth and a sediment of peace in her heart. One afternoon, for no reason, Amparo Moscote asked permission to see the house. Amaranta and Rebeca, disconcerted by the unexpected visit, attended her with a stiff formality. They showed her the remodeled mansion, they had her listen to the rolls on the pianola, and they offered her orange marmalade and crackers.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这一把泥土使得那唯一让她堕落的男人近在咫尺，真真切切，仿佛从他脚上精巧的漆皮靴在世界另一处所踏的土地传来矿物的味道，传递出了他的体重和血液的温热，这感觉在她口中留下强烈的余味，内心沉淀平和。一天下午，安帕罗·摩斯科特无缘无故请求参观新房子，阿玛兰塔和丽贝卡因突如其来的造访感到困惑不安，以拘谨的礼节接待了她。她们向她介绍了装修后的宅第，邀请她听自动钢琴的演奏，还为她提供了橘子酱和饼干。</p>
+    <p>Amparo gave a lesson in dignity, personal charm, and good manners that impressed Úrsula in the few moments that she was present during the visit. After two hours, when the conversation was beginning to wane, Amparo took advantage of Amaranta's distraction and gave Rebeca a letter. She was able to see the name of the Estimable Señorita Rebeca Buendía, written in the same methodical hand, with the same green ink, and the same delicacy of words with which the instructions for the operation of the pianola were written, and she folded the letter with the tips of her fingers and hid it in her bosom, looking at Amparo Moscote with an expression of endless and unconditional gratitude and a silent promise of complicity unto death.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">安帕罗给她们上了一堂关于体面、个人魅力以及礼仪的课程，给在场才一会儿的乌尔苏拉留下深刻印象。两小时后，谈话逐渐减弱，安帕罗趁着阿玛兰塔走神之际，偷偷地将一封信塞给了丽贝卡。她看到称呼写着“尊敬的丽贝卡·布恩迪亚小姐”，使用与自动钢琴操作指南上同样的精致字体，以及同样的绿色墨水，文辞雅致。她用指尖折起信件藏在怀里，眼中充满着无尽的感激之情望着安帕罗·摩斯科特，两人悄悄地结下了生死之友的盟约。</p>
+    <p>The sudden friendship between Amparo Moscote and Rebeca Buendía awakened the hopes of Aureliano. The memory of little Remedios had not stopped tormenting him, but he had not found a chance to see her. When he would stroll through town his closest friends, Magnífico Visbal and Gerineldo Márquez-the sons of the founders of the same names-he would look for her in the sewing shop with an anxious glance, but he saw only the older sisters.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">安帕罗·摩斯科特和丽贝卡·布恩迪亚之间突然的友谊唤醒了奥雷里亚诺的希望，对小蕾梅黛丝的念念不忘无时无刻不折磨着他，却一直没有机会见她。当他跟最亲密的朋友马可尼菲克·维斯巴尔和杰里内尔多·马尔克斯——马孔多创始人的儿子们，父子同名，一起在镇上闲逛，他在裁缝铺里急切地搜寻着她，但只看到了她的姐姐们。</p>
+    <p>The presence of Amparo Moscote in the house was like a premonition. "She has to come with her," Aureliano would say to himself in a low voice. "She has to come." He repeated it so many times and with such conviction that one afternoon when he was putting together a little gold fish in the work shop, he had the certainty that she had answered his call. Indeed, a short time later he heard the childish voice, when he looked up his heart froze with terror as he saw the girl at the door, dressed in pink organdy and wearing white boots.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">家里安帕罗·摩斯科特的光临像是一个预兆。“她一定会跟她一起来，”奥雷里亚诺低声地自言自语。“她一定会跟她一起来。”他怀着坚定的信念重复着无数次。终于一天下午，他在作坊里组装一条小金鱼时，感觉到她回应了自己的呼唤。的确不久后他听到了她幼稚的声音，抬头便看到那个女孩站在门口，穿着粉色丝纱和白色靴子，心脏因惊恐而凝固。</p>
+    <p>"You can't go in there, Remedios, " Amparo Moscote said from the hall. "They're working."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“你不能进去，蕾梅黛丝，”从走廊传来安帕罗·摩斯科特的声音，“他们在工作。”</p>
+    <p>But Aureliano did not give her time to respond. He picked up the little fish by the chain that came through its mouth and said to her：</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">但是奥雷里亚诺没有给她反应的时间，他抓起一条口中串着链子的小金鱼对她说：</p>
+    <p>"Come in."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“进来吧。”</p>
+    <p>Remedios went over and asked some questions about the fish that Aureliano could not answer because he was seized with a sudden attack of asthma. He wanted to stay beside that lily skin forever, beside those emerald eyes, close to that voice that called him "sir" with every question. showing the same respect that she gave her father.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">蕾梅黛丝走了过去，问了一些关于小金鱼的问题，奥雷里亚诺没能回答，因为他猝然间喘不过气来。她那百合般的皮肤和绿宝石般的眼睛，他想永远这样待在她旁边，聆听她每问一个问题都叫他一声“先生”，像尊敬自己父亲一样尊敬他。</p>
+    <p>Melquíades was in the corner seated at the desk scribbling indecipherable signs. Aureliano hated him. All he could do was tell Remedios that he was going to give her the little fish and the girl was so startled by the offer that she left the workshop as fast as she could. That afternoon Aureliano lost the hidden patience with which he had waited for a chance to see her.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">梅尔基亚德斯坐在角落里的书桌上，信手画着无人能懂的符号。奥雷里亚诺讨厌他，他能做的就是告诉蕾梅黛丝要把小金鱼送给她，蕾梅黛丝被他的提议吓得飞快地离开了作坊。那天下午，奥雷里亚诺失去了隐藏于心苦苦等待机会去见她的耐心。</p>
+    <p>He neglected his work. In several desperate efforts of concentration he willed her to appear but Remedios did not respond. He looked for her in sisters' shop, behind the window shades in her house, in her father's office, but he found her only in the image that saturated his private and terrible solitude.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他无心工作，几次竭尽全力地专注，他希望她出现，但是蕾梅黛丝没有回应。他在她姐姐们的店里寻找她，在她家窗前寻找她，在她父亲的办公室寻找她，但他只能在印象中找到她，填满了他隐秘而可怕的孤独。</p>
+    <p>He would spend whole hours with Rebeca in the parlor listening to the music on the pianola. She was listening to it because it was the music with which Pietro Crespi had taught them how to dance. Aureliano listened to it simply because everything, even music, reminded him of Remedios.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他整整一个小时和丽贝卡坐在客厅，聆听自动钢琴弹奏的音乐。丽贝卡这么做是因为这首音乐是皮埃特罗·克雷斯皮教她们如何跳舞的音乐，而奥雷里亚诺这么做仅仅是因为一切，甚至音乐，都会让他想起蕾梅黛丝。</p>
+    <p>The house became full of loves Aureliano expressed it in poetry that had no beginning or end. He would write it on the harsh pieces of parchment that Melquíades gave him, on the bathroom walls, on the skin of his arms, and in all of it Remedios would appear transfigured: Remedios in the soporific air two in the afternoon, Remedios in the soft breath of the roses, Remedios in the water-clock secrets of the moths, Remedios in the steaming morning bread, Remedios everywhere and Remedios forever.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">家里变得充满了爱的气息，奥雷里亚诺借助于无头无尾的诗歌表达爱意，他把诗写在梅尔基亚德斯送给他的粗糙的羊皮纸上，写在浴室的墙上，写在手臂的皮肤上，所有的诗句里蕾梅黛丝都会改容换貌的出现：蕾梅黛丝出现在下午两点令人昏昏欲睡的空气中，蕾梅黛丝出现在玫瑰花的柔和气息中，蕾梅黛丝出现在隐秘的蛀虫蛀蚀后的沙漏中，蕾梅黛丝出现在清晨腾腾的面包热气中，蕾梅黛丝无时无刻，无处不在。</p>
+    <p>Rebeca waited for her love at four in the afternoon, embroidering by the window. She knew that the mailman's mule arrived only every two weeks, but she always waited for him, convinced that he was going to arrive on some other day by mistake. It happened quite the opposite: once the mule did not come on the usual day. Mad desperation, Rebeca got up in the middle of the night and ate handfuls of earth in the garden with a suicidal drive, weeping with pain and fury, chewing tender earthworms and chipping her teeth on snail shells. She vomited until dawn.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">下午四点丽贝卡在窗前绣花，等待着她的情书。她知道邮递员的骡子每两周来一次，但她依旧每天等待着，并坚信他们会出现差错，任何一天都有可能到达。然而事与愿违，如期的日子骡子并没有到达，丽贝卡疯狂且绝望，半夜爬起床，在自杀倾向的驱使下，一抔一抔地吃花园里的泥土，痛苦愤怒地哭泣，咀嚼着柔软的蚯蚓，蜗牛壳磕坏了她的牙齿，呕吐到天亮。</p>
+    <p>She fell into a state of feverish prostration, lost consciousness, and her heart went into a shameless delirium. Úrsula, scandalized, forced the lock on her trunk and found at the bottom, tied together with pink ribbons, the sixteen perfumed letters and the skeletons of leaves and petals preserved in old books the dried butterflies that turned to powder at the touch.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她陷入一种焦虑不安的虚脱状态，神志不清，肆无忌惮地胡言乱语。大为震惊的乌尔苏拉强行撬开了她的行李箱，发现了藏在箱底扎着粉色丝带的十六封芬芳馥郁的信件，以及保存在旧书中完整的叶子和花瓣，以及一碰就碎的蝴蝶标本。</p>
+    <p>Aureliano was the only one capable of understanding such desolation. That afternoon, while Úrsula was trying to rescue Rebeca from the slough of delirium, he went with Magnífico Visbal and Gerineldo Márquez to Catarino's store. The establishment had been expanded with a gallery of wooden rooms where single women who smelled of dead flowers lived.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">奥雷里亚诺是唯一一个能够理解这种忧伤的人。那天下午，在乌尔苏拉试图将丽贝卡从神志不清的苦难深渊中解救出来的时候，他与马可尼菲克·维斯巴尔和杰里内尔多·马尔克斯去了卡塔林诺的店里。该旅馆已经被扩展为一排的木制房间，里面居住的单身女子散发着凋谢的花朵气味。</p>
+    <p>A group made up of an accordion and drums played the songs of Francisco the Man, who had not been seen in Macondo for several years. The three friends drank fermented cane juice. Magnífico Gerineldo, contemporaries of Aureliano but more skilled in the ways of the world, drank methodically with the women seated on their laps. One of the women, withered and with goldwork on her teeth, gave Aureliano a caress that made him shudder.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一个由手风琴和鼓组成的乐团正在演奏好汉弗朗西斯科的歌谣，他已经多年不曾出现在马孔多了。好友三人喝着酿制甘蔗汁，马可尼菲克与杰里内尔多跟奥雷里亚诺虽是同龄人，却更精通于处世之道，纵有女人坐在腿上依旧有条不紊地喝着酒。其中一个女人形容枯槁，嘴里镶着金牙，抚摸着奥雷里亚诺，使他一阵战栗。</p>
+    <p>He rejected her. He had discovered that the more he drank the more he thought about Remedios, but he could bear the torture of his recollections better. He did not know exactly when he began to float. He saw his friends and the women sailing in a radiant glow, without weight or mass, saying words that did not come out of their mouths and making mysterious signals that did not correspond to their expressions.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他拒绝了她，他发现酒喝得越多，就越想念蕾梅黛丝，但似乎也能够承受住回忆的煎熬。不知何时他开始觉得自己轻飘飘的，看见朋友们和女人在耀眼的灯光中轻盈朦胧地晃动，他们所说的话，仿佛不是从他们嘴里发出来的，以及和他们表情不相契合的奇怪手势。</p>
+    <p>Catarino put a hand on his shoulder and said to him: "It's going on eleven." Aureliano turned his head, saw the enormous disfigured face with a felt flower behind the ear, and then he lost his memory, as during the times of forgetfulness, and he recovered it on a strange dawn and in a room that was completely foreign, where Pilar Ternera stood in her slip, barefoot, her hair down, holding a lamp over him, startled with disbelief.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">卡塔林诺把手搭在他的肩上，对他说：“快十一点了。”奥雷里亚诺扭过头，看见一张又大又丑的脸，耳朵后别着一只毡花，随后就像失忆症时期那样失去了意识，昏迷过去。再次醒来时已是清晨，身处一个完全陌生的房间。皮拉尔·特尔内拉穿着衬衫，光着脚，披头散发，在他头顶举着台灯，难以置信地尖叫了一声：</p>
+    <p>"Aureliano!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“是你，奥雷里亚诺！”</p>
+    <p>Aureliano checked his feet and raised his head. He did not know how he had come there, but he knew what his aim was, because he had carried it hidden since infancy in an inviolable backwater of his heart.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">奥雷里亚诺稳了稳脚跟，抬起头，他不知道自己怎么到这的，但他清楚自己的目的，因为他从小就把这个目的深藏在内心深处。</p>
+    <p>"I've come to sleep with you," he said.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我是来和你睡觉的，”他说。</p>
+    <p>His clothes were smeared with mud and vomit. Pilar Ternera, who lived alone at that time with her two younger children, did not ask him any questions. She took him to the bed. She cleaned his face with a damp cloth, took of his clothes, and then got completely undressed and lowered the mosquito netting so that her children would not see them if they woke up.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他的衣服上沾满了泥土和呕吐物。皮拉尔·特尔内拉此时独自和两个孩子生活在一起，她什么也没问，把他带到床上，用湿布清洗他的脸，脱掉他的衣服，然后自己也脱得一干二净，她放下蚊帐，免得孩子醒来看见他们。</p>
+    <p>She had become tired of waiting for the man who would stay, of the men who left, of the countless men who missed the road to her house, confused by the uncertainty of the cards. During the wait her skin had become wrinkled, her breasts had withered, the coals of her heart had gone out.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她已经厌倦了等待，等待留下的男人，等待离开的男人，等待无数因纸牌飘忽不定的预测而迷失归程的男人。无尽的等待中，他的皮肤泛起了皱纹，乳房干瘪萎缩，心中的焰火渐渐熄灭。</p>
+    <p>She felt for Aureliano in the darkness, put her hand on his stomach and kissed him on the neck with a maternal tenderness. "My poor child," she murmured. Aureliano shuddered. With a calm skill, without the slightest misstep, he left his accumulated grief behind and found Remedios changed into a swamp without horizons, smelling of a raw animal and recently ironed clothes. When he came to the surface he was weeping.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">黑暗中她抚摸着奥雷里亚诺，把手放在他的肚子上，母亲般慈爱地亲吻着他的脖子。“我可怜的孩子，”她喃喃道。奥雷里亚诺颤抖起来，他以沉着冷静、毫无过失的技巧，将自己蓄积已久的悲伤抛诸脑后，发现蕾梅黛丝变成了无边无际的沼泽，闻起来有股原始动物和刚熨烫好的衣服的气息。当他浮出水面时，他哭了起来。</p>
+    <p>First they were involuntary and broken sobs. Then he emptied himself out in an unleashed flow, feeling that something swollen and painful had burst inside of him. She waited, snatching his head with the tips fingers, until his body got rid of the dark material that would not let him live. Then Pilar Ternera asked him: "Who is it?" And Aureliano told her. She let out a laugh that in other times frightened the doves and that now did not even wake up the children.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">开始是不由自主地抽泣，接着便泪如雨下，体内的郁结和痛苦土本瓦解。她等待着，用指尖按摩他的头，直到他摆脱体内使其痛不欲生的未知物质。皮拉尔·特尔内拉问他：“她是谁？”奥雷里亚诺知无不言。她放声大笑，以前足以惊飞鸽群的笑声，现在甚至都没有吵醒孩子们。</p>
+    <p>"You'll have to raise her first," she mocked, but underneath the mockery Aureliano found a reservoir of understanding. When he went out of the room, leaving behind not only his doubts about his virility but also the bitter weight that his heart had borne for so many months, Pilar Ternera made him a spontaneous promise.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她嘲笑道：“你首先得抚养她长大。”嘲笑之余，奥雷里亚诺找到了理解的源泉。当他走出房间时，不仅打消了对自己性能力的怀疑，还放下了心头长达数月的重负。皮拉尔·特尔内拉给了他一个承诺。</p>
+    <p>"I'm going to talk to the girl," she told him, "and you'll see what I'll serve her on the tray."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我去跟那女孩谈谈，”她告诉他，“你将看到我会为她竭诚服务。”</p>
+    <p>She kept her promise. But it was a bad moment, because the house had lost its peace of former days. When she discovered Rebeca's passion, which was impossible to keep secret because of her shouts, Amaranta suffered an attack of fever. She also suffered from the barb of a lonely love. Shut up in the bathroom, she would release herself from the torment of a hopeless passion by writing feverish letters, which she finally hid in the bottom of her trunk.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她信守诺言，只是时机不对，因为家里已经失去了往日的宁静。丽贝卡强烈的爱意，因为她情不自禁地呼喊不胫而走，阿玛兰塔因此生病发烧了。孤独的爱情犹如丽贝卡心中的倒刺，她把自己关在浴室，写着深情的书信，借此摆脱绝望爱情的折磨，然后把书信藏在行李箱的箱底。</p>
+    <p>Úrsula barely had the strength to take care of the two sick girls. She was unable, after prolonged and insidious interrogations, to ascertain the causes of Amaranta's prostration. Finally, in another moment of inspiration, she forced the lock on the trunk and found the letters tied with a pink ribbon, swollen with fresh lilies and still wet with tears, addressed and never sent to Pietro Crespi.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">乌尔苏拉几乎没有精力同时照顾两个生病的女孩，长时间旁敲侧击地盘问，依旧无法查明阿玛兰塔日渐虚弱的原因。最后突然灵机一动，她撬开了丽贝卡的行李箱，发现了系着粉色丝带的信件，信中塞满新鲜的百合花，信上泪痕未干，却始终没有寄给皮埃特罗·克雷斯皮。</p>
+    <p>Weeping with rage, she cursed the day that it had occurred to her to buy the pianola, she forbade the embroidery lessons and decreed a kind of mourning with no one dead which was to be prolonged until the daughters got over their hopes. Useless was the intervention of José Arcadio Buendía, who had modified his first impression Pietro Crespi and admired his ability in the manipulation of musical machines.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">乌尔苏拉饱含愤怒的泪水，在心里咒骂自己那天为什么要买自动钢琴。她取消了刺绣课程，决定无限期进入服丧期，即使没有人去世，直到女儿们断了她们的念想。何塞·阿尔卡蒂奥·布恩迪亚对皮埃特罗·克雷斯皮的最初印象有所改观，欣赏他操作音乐机器上的才能，试图干预，却无济于事。</p>
+    <p>So that when Pilar Ternera told Aureliano that Remedios had decided on marriage, he could see that the news would only give his parents more trouble. Invited to the parlor for a formal interview, José Arcadio Buendía and Úrsula listened stonily to their son's declaration. When he learned the name of the fiancée, however, José Arcadio Buendía grew red with indignation. "Love is a disease," he thundered. "With so many pretty and decent girls around, the only thing that occurs to you is to get married to the daughter of our enemy."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">因此，当皮拉尔·特尔内拉告诉奥雷里亚诺：蕾梅黛丝已经决定结婚时，他知道这个消息只会给父母带来更多的麻烦。何塞·阿尔卡蒂奥·布恩迪亚和乌尔苏拉被邀请到客厅做了一个正式的面谈，冷漠地听着儿子的声明。当听到未婚妻的名字时，何塞·阿尔卡蒂奥·布恩迪亚勃然变色，“爱情是瘟疫，”他喊道。“周围有那么多端庄贤淑的女孩，你却偏偏要娶敌人的女儿。”</p>
+    <p>But Úrsula agreed the choice. She confessed her affection for the seven Moscote sisters. for their beauty, their ability for work, their modesty, and their good manners, and she celebrated her son's prudence. Conquered by his wife's enthusiasm, José Arcadio Buendía then laid down one condition: Rebeca, who was the one he wanted, would marry Pietro Crespi. Úrsula would take Amaranta on a trip to the capital of the province when she had time, so that contact with different people would alleviate her disappointment.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">然而乌尔苏拉十分赞许儿子的抉择，承认自己对摩斯科特家七姐妹有好感。因为她们漂亮，能干，谦逊，彬彬有礼。称赞儿子有眼光。何塞·阿尔卡蒂奥·布恩迪亚难却妻子的热情，只提了一个条件：他希望丽贝卡可以嫁给皮埃特罗·克雷斯皮。乌尔苏拉将抽个空带着阿玛兰塔去省会旅旅游，接触接触不同的人，以减轻她内心的失望之情。</p>
+    <p>Rebeca got her health back just as soon as she heard of the agreement, and she wrote her fiancé a jubilant letter that she submitted to her parents' approval and put into the mail without the use of any intermediaries. Amaranta pretended to accept the decision and little by little she recovered from her fevers, but she promised herself that Rebeca would marry only over her dead body.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">丽贝卡一听到这个商定，身体立马便好转了。在父母的同意下，她写信将这个好消息告诉了她的未婚夫，并且没有任何人干预直接就寄给了他。阿玛兰塔假装接受了这个决定，逐渐从发烧中康复，但她暗暗发誓：丽贝卡想要结婚，除非从自己的尸体上踏过去。</p>
+    <p>The following Saturday José Arcadio Buendía put on his dark suit, his celluloid collar, and the deerskin boots that he had worn for the first time the night of the party, and went to ask for the hand of Remedios Moscote. The magistrate and his wife received him, pleased and worried at the same time, for they did not know the reason for the unexpected visit, and then they thought that he was confused about the name of the intended bride.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">接下来的星期六，何塞·阿尔卡蒂奥·布恩迪亚套上他的黑色西装，戴上赛璐珞衣领，穿上宴会那夜第一次穿的鹿皮靴，便去找蕾梅黛丝·摩斯科特为儿子提亲。镇长和他的妻子既高兴又不安，一起接待了他，不知道他意外到访的原因，然后他们认为他弄混了新娘的名字。</p>
+    <p>In order to remove the mistake, the mother woke Remedios up and carried her into the living room, still drowsy from sleep. They asked her if it was true that she had decided to get married, and she answered, whimpering, that she only wanted them to let her sleep. José Arcadio Buendía, understanding the distress of the Moscotes, went to clear things up with Aureliano. When he returned, the Moscotes had put on formal clothing, had rearranged the furniture put fresh flowers in the vases, and were waiting in the company of their older daughters.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">为了消除误解，母亲叫醒了蕾梅黛丝，并把她带到客厅，仍然是一副睡眼惺忪的样子。他们问她是否真的决定要结婚，她抽搭着说她只想睡觉。何塞·阿尔卡蒂奥·布恩迪亚理解摩斯科特夫妇的忧虑，便去找奥雷里亚诺把事情弄清楚。当他返回来的时候，莫斯科特夫妇已经穿好了正装，重新布置了家具，在花瓶中插上了鲜花，他们的大女儿也一起陪同等候。</p>
+    <p>Overwhelmed by the unpleasantness of the occasion and the bothersome hard collar, José Arcadio Buendía confirmed the fact that Remedios, indeed, was the chosen one. "It doesn't make sense," Don Apolinar Moscote said with consternation. "We have six other daughters, all unmarried, and at an age where they deserve it, who would be delighted to be the honorable wife of a gentleman as serious and hardworking as your son, and Aureliano to lays his eyes precisely on the one who still wets her bed." His wife, a well-preserved woman with afflicted eyelids and expression, scolded his mistake.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">尴尬的场合以及恼人的坚硬衣领让何塞·阿尔卡蒂奥·布恩迪亚不知所措，但他坚信一个事实：蕾梅黛丝的确是奥雷里亚诺所选之人。“这没有道理啊，”堂·阿波利纳尔·摩斯科特不安地说着。“我还有另外六个女儿，都到了适婚年龄，尚未婚配，她们很高兴成为像您儿子这样勤劳又稳重的绅士的妻子，而奥雷里亚诺偏偏要将目光投向仍然还在尿床的那一个。”她的妻子是一个保养得很好的女人，眼神和表情中带着一丝悲伤，训斥了丈夫的无礼。</p>
+    <p>When they finished the fruit punch, they willingly accepted Aureliano's decision. Except that Señora Moscote begged the favor of speaking to Úrsula alone. Intrigued, protesting that they were involving her in men's affairs, but really feeling deep emotion, Úrsula went to visit her the next day. A half hour later she returned with the news that Remedios had not reached puberty. Aureliano did not consider that a serious barrier. He had waited so long that he could wait as long as was necessary until his bride reached the age of conception.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他们喝完果汁饮料，欣然地接受了奥雷里亚诺的决定，不过摩斯科特太太请求与乌尔苏拉单独谈谈。乌尔苏拉很感兴趣，又抗议他们将自己卷入了男人们的事情。但真情流露，第二天便去拜访她，半个小时后她带着蕾梅黛丝还未到青春期的消息回来了，但奥雷里亚诺并不认为这是一个严峻的障碍。他已经等待了很久，如果有必要他可以一直等下去，直到新娘达到可以怀孕的年龄。</p>
+    <p>The newfound harmony was interrupted by the death of Melquíades. Although it was a foreseeable event, the circumstances were not. A few months after his return, a process aging had taken place in him that was so rapid and critical that soon he was treated as one of those useless great-grandfathers who wander about the bedrooms like shades, dragging their feet, remembering better times aloud, and whom no one bothers about or remembers really until the morning they find them dead in their bed.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">短暂的宁静被梅尔基亚德斯的去世打破了。尽管预料之中，但情况并非如此。他回来几个月后，经历了一次急剧而严重的衰老过程，很快就被视为不中用的曾祖父辈中的一员，他们像幽灵一样拖着步子在卧室中游荡，大声追忆美好时光，依旧无人理睬或者想起他，直到清晨他们才发现他死在了床上。</p>
+    <p>At first José Arcadio Buendía helped him in his work, enthusiastic over the novelty of the daguerreotypes and the predictions of Nostradamus. But little by little he began abandoning him to his solitude, for communication was becoming Increasingly difficult. He was losing his sight and his hearing, he seemed to confuse the people he was speaking to with others he had known in remote epochs of mankind, and he would answer questions with a complex hodgepodge languages.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">起初，何塞·阿尔卡蒂奥·布恩迪亚在其工作上给予帮助，对达盖尔银版照片的新奇和诺查丹玛斯的预言充满了热情。由于交流日益困难，他渐渐的被疏远，孤独一身。耳聋眼花，似乎把跟他聊天的人当成他理解的远古时代的人类，回答问题时使用复杂的混合语言。</p>
+    <p>He would walk along groping in the air, although he passed between objects with an inexplicable fluidity, as if be were endowed with some instinct of direction based on an immediate prescience. One day he forgot to put in his false teeth, which at night he left in a glass of water beside his bed, and he never put them in again. When Úrsula undertook the enlargement of the house, she had them build him a special room next to Aureliano's workshop, far from the noise and bustle of the house, with a window flooded with light and a bookcase where she herself put in order the books that were almost destroyed by dust and moths, the flaky stacks of paper covered with indecipherable signs, and the glass with his false teeth, where some aquatic plants with tiny yellow flowers had taken root.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他摸索着前行，尽管在物体间穿梭自由，仿佛被赋予了某种基于即时预知的方向感。有一天，他忘记戴上晚上放在床边水杯里的假牙，之后便再也没有戴过它。当时乌尔苏拉扩建房屋，她命令工匠在奥雷里亚诺的作坊旁边为梅尔基亚德斯建了一间单独的房间，远离家里的喧嚣与叨扰。一个阳光充沛的窗户，还有一个书架，上面排列着乌尔苏拉整理的被灰尘和蠹虫破坏得几乎残败不堪的书籍，一堆画满了难以辨别的符号的薄纸片和装着假牙的杯子，杯子里长出了水生植物，开着黄色的小花。</p>
+    <p>The new place seemed to please Melquíades, because he was never seen any more, not even in the dining room, He only went to Aureliano's workshop, where he would spend hours on end scribbling his enigmatic literature on the parchments that he had brought with him and that seemed to have been made out of some dry material that crumpled like puff paste. There he ate the meals that Visitación brought him twice a day, although in the last days he lost his appetite and fed only on vegetables.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">新居所甚得其心，因为之后就再也没有看见过他了，即使在餐厅。他只去奥雷里亚诺的作坊，在那里他花上数小时在随身携带的羊皮纸上写着神秘的文字，羊皮纸由某些干燥的材料制成，皱得像千层酥面团。他在那吃由维希塔西恩每天两次送去的食物，最后几天他食欲不振，只吃蔬菜。</p>
+    <p>He soon acquired the forlorn look that one sees in vegetarians. His skin became covered with a thin moss, similar to that which flourished on the antique vest that he never took off, and his breath exhaled the odor of a sleeping animal. Aureliano ended up forgetting about him, absorbed in the composition of his poems, but on one occasion he thought he understood something of what Melquíades was saying in his groping monologues, and he paid attention.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">很快他便显现出素食者特有的孤独凄凉的模样，皮肤上长满了一层薄薄的苔藓，与身上那件从未脱下的老旧坎肩上滋生的相仿。鼻息中散发出沉睡动物的气味。奥雷里亚诺最终忽略了他的存在，专心致志于他的诗作，但有一次他感觉理解了梅尔基亚德斯在摸索行走时的只言片语，便留心倾听。</p>
+    <p>In reality, the only thing that could be isolated in the rocky paragraphs was the insistent hammering on the word equinox, equinox, equinox, and the name of Alexander von Humboldt. Arcadio got a little closer to him when he began to help Aureliano in his silverwork. Melquíades answered that effort at communication at times by giving forth with phrases in Spanish that had very little to do reality. One afternoon, however, he seemed to be illuminated by a sudden emotion.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">实际上，唯一能听清的是他在话语间不停地推敲一个叫“二分点”的词语和一个叫“亚历山大·冯·洪堡”的名字。当阿尔卡蒂奥来作坊帮助奥雷里亚诺做银制工艺品时，和他甚是亲近，有时与人交流，他会对外用一些生活中不常用的西班牙短语回答问题。然而一个下午，梅尔基亚德斯突然激动起来。</p>
+    <p>Years later, facing the firing squad, Arcadio would remember the trembling with which Melquíades made him listen to several pages of his impenetrable writing, which course he did not understand, but which when read aloud were like encyclicals being chanted. Then he smiled for the first time in a long while and said in Spanish: "When I die, burn mercury in my room for three days." Arcadio told that to José Arcadio Buendía and the latter tried to get more explicit information, but he received only one answer: "I have found immortality." When Melquíades' breathing began to smell, Arcadio took him to bathe in the river on Thursday mornings.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">多年后，面对行刑队，阿尔卡蒂奥将会想起梅尔基亚德斯浑身颤抖，给他念了几页晦涩难懂的文字。虽然他听不明白，但是梅尔基亚德斯的大声朗读就像高唱教皇通谕。之后很长时间以来他第一次笑了，并用西班牙语说：“我死后，在我的房间烧上三天的水银。”阿尔卡蒂奥将此事告诉了何塞·阿尔卡蒂奥·布恩迪亚，何塞·阿尔卡蒂奥·布恩迪亚试图获取更多明确的信息，但他只得到一个回答：“我将永生。”当梅尔基亚德斯的呼吸开始发臭，星期四的早晨阿尔卡蒂奥带他去河边洗澡。</p>
+    <p>He seemed to get better. He would undress and get into the water with the boys, and his mysterious sense of orientation would allow him to avoid the deep and dangerous spots. "We come from the water," he said on a certain occasion. Much time passed in that way without anyone's seeing him in the house except on the night when he made a pathetic effort to fix the pianola, and when he would go to the river with Arcadio, carrying under his arm a gourd and a bar of palm oil soap wrapped in a towel.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他似乎有些好转，脱下衣服和男孩们一起下水嬉戏，他的神秘方向感使其避开深水区和危险地带。有一次他说：“我们起源于水。”过了很久没有人在房间里看见他，除了徒然耗费精力去修理自动钢琴的那个晚上，还有那次他与阿尔卡蒂奥去河边，腋下夹着一个葫芦瓢，毛巾里裹着一块棕榈油肥皂。</p>
+    <p>One Thursday before they called him to go to the river, Aureliano heard him say: "I have died of fever on the dunes of Singapore." That day he went into the water at a bad spot and they did not find him until the following day, a few miles downstream, washed up on a bright bend in the river and with a solitary vulture sitting on his stomach. Over the scandalized protests of Úrsula, who wept with more grief than she had had for her own father, José Arcadio Buendía was opposed to their burying him. "He is immortal," he said, "and he himself revealed the formula of his resurrection."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">在阿尔卡蒂奥带他去河边之前的一个星期四，奥雷里亚诺听他说：“在新加坡的沙丘上，我已死于热病。”那天他进入危险水域，直到第二天人们才找到他，尸体被河水冲刷到下游几英里处一个明亮的河湾上，一只孤零零的秃鹫立在他的肚子上。乌尔苏拉哭得比自己的父亲死了还难受，何塞·阿尔卡蒂奥·布恩迪亚不顾她的愤然抗议，拒绝将其下葬，他说：“他是不朽之身，他本人已经透露了复活的方法。”</p>
+    <p>He brought out the forgotten water pipe and put a kettle mercury to boil next to the body, which little by little was filling with blue bubbles. Don Apolinar Moscote ventured to remind him that an unburied drowned man was a danger to public health. "None of that, because he's alive," was the answer of José Arcadio Buendía, who completed the seventy-two hours of mercurial sahumerio when the body began to burst into a livid bloom, whose faint whistles permeated the house of a steam pestilential.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他拿出被遗忘的水管，将一锅水银放在尸体旁煮沸，尸体正一点一点地冒着蓝色水泡。堂·阿波利纳尔·摩斯科特不揣冒昧地提醒他：淹死的人不埋葬会危害公共卫生。何塞·阿尔卡蒂奥·布恩迪亚回答说：“不会的，因为他还活着。”此时水银已经焚烧了七十二个小时，尸体上开始爆裂，像开出淡紫色花朵般，发出细微的丝丝声，瘟疫蒸汽弥漫整个屋子。</p>
+    <p>Only then did he permit them to bury him, not in any ordinary way, but the honors reserved for Macondo's greatest benefactor. It was the first burial and the best-attended one that was ever seen in the town, only surpassed, a century later, by Big Mama's funeral carnival. They buried him in a grave dug in the center of the plot destined for the cemetery, with a stone on which they wrote the only thing they knew about him: MELQUíADES. They gave him his nine nights of wake. In the tumult that gathered in the courtyard to drink coffee, tell jokes, and play cards.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">直到此时他才同意将其下葬，但不可草率了事，马孔多最大的恩人理应受到尊重。这是镇上有史以来第一次也是参加人数最多的一次葬礼，也只有一个世纪之后格兰德大妈的葬礼能与之匹敌。他们将他埋在公墓的中央，石碑上写着他们对他的唯一所知：梅尔基亚德斯。他们为他守灵九个晚上，在喧嚣不已的院子里喝咖啡、讲笑话以及玩纸牌。</p>
+    <p>Amaranta found a chance to confess her love to Pietro Crespi, who a few weeks before had formalized his promise to Rebeca and had set up a store for musical instruments and mechanical toys in the same section where the Arabs had lingered in other times swapping knickknacks for macaws, and which the people called the Street of the Turks. The Italian, whose head covered with patent leather curls aroused in women an irrepressible need to sigh, dealt with Amaranta as with a capricious little girl who was not worth taking seriously.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">阿玛兰塔借机向皮埃特罗·克雷斯皮示爱，几周之前，他已经履行了对丽贝卡的承诺，并在当年阿拉伯人逗留时用小饰品交换金刚鹦鹉的地方，开了一家售卖乐器和机械玩具的店铺，人们称那条街为土耳其大街。这个意大利人一头的漆皮卷发在女人间引起情不自禁地感叹，他认为阿玛兰塔是个任性的小姑娘，便没有把她的话当真。</p>
+    <p>"I have a younger brother," he told her. "He's coming to help me in the store."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我有个弟弟，”他对她说，“他马上就要来我的店里帮忙。”</p>
+    <p>Amaranta felt humiliated and told Pietro Crespi with a virulent anger that she was prepared to stop her sister's wedding even own dead body had to lie across the door. The Italian was so impressed by the dramatics of the threat that he could not resist the temptation to mention it to Rebeca. That was how Amaranta's trip, always put off by Úrsula's work, was arranged in less than a week. Amaranta put up no resistance, but when she kissed Rebeca goodbye she whispered in her ear:</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">阿玛兰塔感觉自己受到了羞辱，极其愤怒地告诉皮埃特罗·克雷斯皮，她将会阻止姐姐的婚事，不惜横尸家门口。这个意大利人对如此骇人的威胁大为震惊，忍不住告诉了丽贝卡。这就是为什么阿玛兰塔的旅行总因乌尔苏拉的工作而一再推迟，却在一周内被安排妥帖。阿玛兰塔没有抵抗，当她吻别丽贝卡时，在其耳旁低语：</p>
+    <p>"Don't get your hopes up. Even if they send me to the ends of the earth I'll find some way of stopping you from getting married, even if I have to kill you."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“不要抱太大希望，即使他们把我送到天涯海角，我也一定能找到方法阻止你结婚，哪怕是杀了你。”</p>
+    <p>With the absence of Úrsula, with the invisible presence of Melquíades, who continued his stealthy shuffling through the rooms, the house seemed enormous and empty. Rebeca took charge of domestic order, while the Indian woman took care of the bakery. At dusk, when Pietro Crespi would arrive, preceded by a cool breath of lavender and always bringing a toy as a gift, his fiancée would receive the visitor in the main parlor with doors and windows open to be safe from any suspicion.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">乌尔苏拉不在家，以及梅尔基亚德斯无形的存在——他仍悄无声息地拖着步子在房间游荡，家里显得非常的空旷。丽贝卡负责日常家务，印第安女人负责面包房。每到傍晚时分，皮埃特罗·克雷斯皮踏着一阵薰衣草香气而来，总带着一件玩具作为礼物。他的未婚妻在客厅接待他，门窗是开着的，以免外人说闲话。</p>
+    <p>It was an unnecessary precaution, for the Italian had shown himself to be so respectful that he did not even touch the hand of the woman who was going to be his wife within the year. Those visits were filling the house with remarkable toys. Mechanical ballerinas, music boxes, acrobatic monkeys, trotting horses, clowns who played the tambourine: the rich and startling mechanical fauna that Pietro Crespi brought dissipated José Arcadio Buendía's affliction over the death of Melquíades and carried him back to his old days as an alchemist.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这似乎是不必要的预防措施，因为意大利人表现出了很高的恭敬。尽管年内她将成为自己的妻子，也仍然没有牵过她的手。隔三差五的拜访使得家里摆满了漂亮的玩具，有机械芭蕾舞演员、音乐盒、杂技猴、跑马、摇铃鼓的小丑，皮埃特罗·克雷斯皮带来的这些琳琅满目的玩具驱散了何塞·阿尔卡蒂奥·布恩迪亚因梅尔基亚德斯的去世带来的悲痛，把他带回了旧日研究炼金术的时光。</p>
+    <p>He lived at that time in a paradise of disemboweled animals, of mechanisms that had been taken apart in an attempt to perfect them with a system of perpetual motion based upon the principles of the pendulum. Aureliano, for his part, had neglected the workshop in order to teach little Remedios to read and write. At first the child preferred her dolls to the man who would come every afternoon and who was responsible for her being separated from her toys in order to be bathed and dressed and seated in the parlor to receive the visitor.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">那时他生活在满是解体的机械动物玩具的天堂，试图通过基于钟摆原理的永动机系统完善它们。奥雷里亚诺则放下了作坊里的工作，专心教授小蕾梅黛丝读书写字。起初这个孩子相较于这个男人更喜欢自己的洋娃娃，他每天下午来到她家，把她从玩具中抱出来，给她洗澡穿衣服，让她坐在客厅接待客人。</p>
+    <p>But Aureliano's patience and devotion finally won her over, up to the point where she would spend many hours with him studying the meaning of the letters and sketching in a notebook with colored pencils little houses with cows in the corral and round suns with yellow rays that hid behind the hills.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">但是奥雷里亚诺的耐心与奉献最终赢得了她的好感，她愿意花好几个小时跟着他学习词义，用彩色铅笔在笔记本上勾画小房子，畜栏里关着奶牛，圆圆的落日散发着黄色的光芒，即将沉入山丘。</p>
+    <p>Only Rebeca was unhappy, because of Amaranta's threat. She knew her sister's character, the haughtiness of her spirit, and she was frightened by the virulence of her anger. She would spend whole hours sucking her finger in the bathroom, holding herself back with an exhausting iron will so as not to eat earth. In search of some relief for her uncertainty, she called Pilar Ternera to read her future. After a string of conventional vagaries, Pilar Ternera predicted:</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">由于阿玛兰塔的威胁，丽贝卡一直闷闷不乐。她了解妹妹高傲的性格，害怕她恶毒的愤怒。她好几个小时在浴室不停地吮吸着手指，竭尽全力遏制自己吃土的欲望。为了摆脱自己的忧虑，她找到皮拉尔·特尔内拉为自己预测未来。照例说了些奇思遐想后，皮拉尔·特尔内拉预言：</p>
+    <p>"You will not be happy as long as your parents remain unburied."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“只有你的父母入土为安，你才会幸福。”</p>
+    <p>Rebeca shuddered. As in the memory of a dream she saw herself entering the house as a very small girl, with the trunk and the little rocker, a bag whose contents she had never known. She remembered a bald gentleman dressed in linen and with his collar closed by a gold button, who had nothing to do with the king of hearts. She remembered a very young and beautiful woman with warm and perfumed hands, who had nothing in common with the jack of diamonds and his rheumatic hands, who used to put flowers in her hair and take her out walking in the afternoon through a town with green streets.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">丽贝卡不寒而栗，如梦如幻的记忆里，她看到自己还是个小女孩的时候来到这个家，带着行李箱和小摇椅，和一个里面从来都不知道装着什么东西的袋子。她回忆起了一个穿着亚麻布的光头绅士，衣领扣着一个金色扣子，但与“红心国王”无关。她也回忆起了一个年轻又美丽的女人，她的手温暖又芳香，与“方块杰克”以及他的风湿手相去甚远。她曾在头发上别着鲜花，下午带着丽贝卡出去，在绿色街道的镇子上散步。</p>
+    <p>"I don't understand," she said.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我不明白，”她说。</p>
+    <p>Pilar Ternera seemed disconcerted:</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">皮拉尔·特尔内拉同样困惑:</p>
+    <p>"I don't either, but that's what the cards say."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我也不明白，但纸牌上是这么说的。”</p>
+    <p>Rebeca was so preoccupied the enigma that she told it to José Arcadio Buendía, and he scolded her for believing in the predictions of the cards, but he undertook the silent task of searching closets and trunks, moving furniture and turning over beds and floorboards looking for the bag of bones. He remembered that he had not seen it since the time of the rebuilding. He secretly summoned the masons and one of them revealed that he had walled up the bag in some bedroom because it bothered him in his work.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">丽贝卡为此忧心忡忡，并将此事告诉了何塞·阿尔卡蒂奥·布恩迪亚，他责骂丽贝卡竟然相信纸牌的预言，自己却偷偷地搜寻壁橱和衣箱，移开家具，掀开床铺和地板，寻找装有骨头的袋子。他记得自从房屋重建以后就再也没有见过它。他悄悄地找回了泥水匠，其中一人透露他将那个袋子砌进了某个卧室的墙中，因为那东西妨碍到了他的工作。</p>
+    <p>After several days of listening, with their ears against the walls, they perceived the deep cloc-cloc. They penetrated the wall and there were the bones in the intact bag. They buried it the same day in a grave without a stone next to that of Melquíades, and José Arcadio Buendía returned home free of a burden that for a moment had weighed on his conscience as much as the memory of Prudencio Aguilar. When he went through the kitchen he kissed Rebeca on the forehead.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">接下来的几天，他们将耳朵贴在墙上倾听，终于察觉到了深沉的咳咯声。他们挖开墙壁，原封不动地找到了骨头所在的袋子。当天便将其埋入坟墓，立上石碑，紧挨在梅尔基亚德斯旁边。何塞·阿尔卡蒂奥·布恩迪亚回到家，一瞬间卸下如同记忆中对普鲁登西奥·阿吉拉尔一样的良心重负。经过厨房时，他亲吻了丽贝卡的额头。</p>
+    <p>"Get those bad thoughts out of your head," he told her. "You're going to be happy."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“抛下心中的邪念，“他对她说，”你会幸福的。”</p>
+    <p>The friendship with Rebeca opened up to Pilar Ternera the doors of the house, closed by Úrsula since the birth of Arcadio. She would arrive at any hour of the day, like a flock of goats, and would unleash her feverish energy in the hardest tasks. Sometimes she would go into the workshop and help Arcadio sensitize the daguerreotype plates with an efficiency and a tenderness that ended up by confusing him. That woman bothered him. The tan of her skin, her smell of smoke, the disorder of her laughter in the darkroom distracted his attention and made him bump into things.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">与丽贝卡的友谊为皮拉尔·特尔内拉重新打开了家里的大门，自从阿尔卡蒂奥出生，乌尔苏拉就再也没为她打开过。她一个人就象一群山羊，随时都可能会来，非常卖力地干着苦力活。有时他会进入作坊，勤快又温柔地帮助阿尔卡蒂奥使达盖尔板感光。这让阿尔卡蒂奥非常的费解，这个女人打扰到了他。她的皮肤黝黑，满身的烟臭味，暗室里她杂乱的笑声分散了他的注意力，一不留神就磕碰到东西。</p>
+    <p>On a certain occasion Aureliano was there working on his silver, and Pilar Ternera leaned over the table to admire his laborious patience. Suddenly it happened. Aureliano made sure that Arcadio was in the darkroom before raising his eyes and meeting those Pilar Ternera, whose thought was perfectly visible, as if exposed to the light of noon.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">有次，奥雷里亚诺正在做他的银器，皮拉尔·特尔内拉俯身在桌子上，仰慕他在工作上的吃苦耐劳。事情总是突然发生的。奥雷里亚诺确认阿尔卡蒂奥在暗室，他抬眼与她眼神相遇，她的心思显而易见，如同身处正午阳光下那般明朗。</p>
+    <p>"Well," Aureliano said. "Tell me what it is."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“好吧，”奥雷利亚诺说，“有什么事。”</p>
+    <p>Pilar Ternera bit her lips with a sad smile.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">皮拉尔·特尔内拉带着一丝苦笑地咬着嘴唇。</p>
+    <p>"That you'd be good in a war," she said. "Where you put your eye, you put your bullet."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“你擅长打战，”她说，“弹无虚发。”</p>
+    <p>Aureliano relaxed with the proof of the omen. He went back to concentrate on his work as if nothing had happened, and his voice took on a restful strength.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">奥雷里亚诺放松了下来，自己的预感已经应验。他回过头继续专心工作，像什么是都没有发生一样，他的声音平静又坚定。</p>
+    <p>"I will recognize him," he said. "He'll bear my name."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">"我承认他，"他说。"他就取我的名字吧。"</p>
+    <p>José Arcadio Buendía finally got what he was looking for: he connected the mechanism of the clock to a mechanical ballerina, and the toy danced uninterruptedly to the rhythm of her own music for three days. That discovery excited him much more than any of his other harebrained undertakings. He stopped eating. He stopped sleeping. Without Ursula's vigilance and care, he let himself be dragged by his imagination into a state of perpetual delirium from which he would not recover again.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥·布恩迪亚最终找到了自己想要的东西：他将时钟的机械装置和机械芭蕾舞演员连在一起，玩具在音乐伴奏下不停地舞蹈了三天，这一发现使他比其他任何荒唐的事业都更加兴奋。他觉也不睡，饭也不吃，没有了乌尔苏拉的警惕和关心，幻想联翩，永远陷入了神志失常的状态，再也不能恢复。</p>
+    <p>He would spend the nights walking around the room thinking aloud, searching for a way to apply the principles of the pendulum to oxcarts, to harrows, to everything that was useful when put into motion. The fever of insomnia fatigued him so much that one dawn he could not recognize the old man with white hair and uncertain gestures who came into his bedroom. It was Prudencio Aguilar. When he finally identified him, startled that the dead also aged, José Arcadio Buendía felt himself shaken by nostalgia.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他整晚在房间里踱来踱去，放声思考，想方设法要将钟摆原理运用到牛车、耙地和一切有益的东西上。失眠使其疲惫不堪，以至于一天早晨一个双手颤抖的白发老人走进卧室也没认出来，原来这个老人是普鲁登西奥·阿吉拉尔。当何塞·阿尔卡蒂奥·布恩迪亚最终认出他时，震惊于死者的年龄，怀旧之情油然而生。</p>
+    <p>"Prudencio," he exclaimed. "You've come from a long way off!" After many years of death the yearning for the living was so intense, the need for company so pressing, so terrifying the neatness that other death which exists within death, that Prudencio Aguilar had ended up loving his worst enemy. He had spent a great deal of time looking for him. He asked the dead from Riohacha about him, the dead who came from the Upar Valley, those who came from the swamp, and no one could tell him because Macondo was a town that was unknown to the dead until Melquíades arrived and marked it with a small black dot on the motley maps of death.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“普鲁登西奥，”他惊呼。“这么远你怎么来了。”死去多年，依然强烈地怀念活人生活，需要陪伴，对于存在于死亡之中的另一种死亡又是如此的惧怕。普鲁登西奥·阿吉拉尔最终对自己的死对头产生了眷恋之情，他找他找了好长时间，他向来自奥阿查、乌帕谷和沼泽区的死者询问他的情况，无一知晓。因为马孔多对于死者是个未知的小镇，直到梅尔基亚德斯死后，在斑驳混杂的死亡地图上画了一个小小的黑点标记了他的所在。</p>
+    <p>José Arcadio Buendía conversed with Prudencio Aguilar until dawn. A few hours later, worn out by the vigil, he went into Aureliano's workshop and asked him: "What day is today?" Aureliano told him that it was Tuesday. "I was thinking the same thing," José Arcadio Buendía said, "but suddenly I realized that it's still Monday, like yesterday. Look at the sky, look at the walls, look at the begonias. Today is Monday too." Used to his manias, Aureliano paid no attention to him.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥·布恩迪亚和普鲁登西奥·阿吉拉尔交谈到天亮。几小时后，在熬夜后的疲惫不堪中他走进奥雷里亚诺的作坊，问他：“今天星期几？”奥雷里亚诺告诉他是星期二。“我想也是，”何塞·阿尔卡蒂奥·布恩迪亚说，“可是我忽然觉得今天仍然是星期一，跟昨天一样。你看那天空，看那墙壁，看那秋海棠，今天还是星期一。”父亲的狂躁症奥雷里亚诺已经习以为常，并没有理会他。</p>
+    <p>On the next day, Wednesday, José Arcadio Buendía went back to the workshop. "This is a disaster," he said. "Look at the air, listen to the buzzing of the sun, the same as yesterday and the day before. Today is Monday too." That night Pietro Crespi found him on the porch, weeping for Prudencio Aguilar, for Melquíades, for Rebeca's parents, for his mother and father, for all of those he could remember and who were now alone in death. He gave him a mechanical bear that walked on its hind legs on a tightrope, but he could not distract him from his obsession.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">第二天，也就是星期三，何塞·阿尔卡蒂奥·布恩迪亚又来到了作坊里。“真是一场灾难啊，”他说。“看那天空，听那太阳的嗡嗡声，跟昨天和前天一样，今天还是星期一。”晚上皮埃特罗·克雷斯皮发现他在长廊里哭泣，为了普鲁登西奥·阿吉拉尔，为了梅尔基亚德斯，为了丽贝卡的父母，为了他的父母，为了所有他能想起的孤独灵魂。皮埃特罗·克雷斯给了他一个脚踩钢丝的机械小熊，但没能分散他的注意力。</p>
+    <p>He asked him what had happened to the project he had explained to him a few days before about the possibility of building a pendulum machine that would help men to fly and he answered that it was impossible because a pendulum could lift anything into the air but it could not lift itself. On Thursday he appeared in the workshop again with the painful look of plowed ground. "The time machine has broken," he almost sobbed, "Úrsula and Amaranta so far away!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">接着又问他前几天提出的利用钟摆原理实现人飞行的计划怎么样了，他回答说没有可能，因为钟摆可以将任何东西举到空中，却不能举起自己。星期四，他带着痛苦的表情又出现在作坊里。“时间机器坏了，”他几近哽咽，“乌尔苏拉和阿玛兰塔离我们如此遥远！”</p>
+    <p>Aureliano scolded him like a child he adopted a contrite air. He spent six hours examining things, trying to find a difference from their appearance on the previous day in the hope of discovering in them some change that would reveal the passage of time. He spent the whole night in bed with his eyes open, calling to Prudencio Aguilar, to Melquíades, to all the dead, so that they would share his distress. But no one came.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">奥雷里亚诺责骂他像个孩子一样，他深感懊悔。他花了六个小时检查周边事物，试图找到它们和前一天的不同之处，期望发现些许变化以证明时间的流逝。他整夜睁着眼睛躺在床上，呼唤普鲁登西奥·阿吉拉尔、梅尔基亚德斯以及所有的死者，期许他们能分担他的忧愁，但并没有谁出现。</p>
+    <p>On Friday. before anyone arose, he watched the appearance of nature again until he did not have the slightest doubt but that it was Monday. Then he grabbed the bar from a door and with the savage violence his uncommon strength he smashed to dust the equipment in the alchemy laboratory, the daguerreotype room, the silver workshop, shouting like a man possessed in some high-sounding and fluent but completely incomprehensible language.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">星期五，在其他人起床之前，他再次观察自然现象，最终他没有丝毫怀疑，确定仍然是星期一。于是他抄起门闩，用野蛮的暴力手段和惊人的力量砸毁了炼金术实验室、银板照相室、银器作坊中的设备。疯狂地高声叫喊，说着流利却晦涩难懂的语言。</p>
+    <p>He was about to finish off the rest of the house when Aureliano asked the neighbors for help. Ten men were needed to get him down, fourteen to tie him up, twenty to drag him to the chestnut tree in the courtyard, where they left him tied up, barking in the strange language and giving off a green froth at the mouth.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">当奥雷里亚诺向邻居求助时，他快将家里砸干净了。十个人合力将他放倒，又十四个人将他捆了起来，最后二十个人将他拖到院子里，绑在栗树上。他用奇怪的语言叫喊，嘴里吐着绿色的泡沫。</p>
+    <p>When Úrsula and Amaranta returned he was still tied to the trunk of the chestnut tree by his hands feet, soaked with rain and in a state of total innocence. They spoke to him and he looked at them without recognizing them, saying things they did not understand. Úrsula untied his wrists and ankles, lacerated by the pressure of the rope, and left him tied only by the waist. Later on they built him a shelter of palm brandies to protect him from the sun and the rain.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">当乌尔苏拉和阿玛兰塔回到家时，他的手脚仍然被捆在栗树的树干上，全身被雨水淋透，一副全然无辜的样子。她们与他说话，他看着她们却再也不认识，说的话她们也听不懂。乌尔苏拉解开被绳索勒伤的手腕和脚踝，只在腰间将其捆住。后来她们用棕榈叶为他搭了一个庇护所，保护他免受日晒雨淋。</p>    </div>
     <script>
-        const STORAGE_KEY = 'bio_reader_prefs_sync_' + location.pathname.replace(/[^a-zA-Z0-9]/g, '');
-        let prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { 
-            font: 1.0, dictEnabled: true, barHidden: true, highlightEnabled: true, 
-            syncEnabled: true, currentLang: 'en', posEN: 0, posZH: 0 
-        };
-
-        const bar = document.getElementById('top-bar');
-        const enC = document.getElementById('en-container');
-        const zhC = document.getElementById('zh-container');
-        const dictBtn = document.getElementById('dict-btn');
-        const hlBtn = document.getElementById('hl-btn');
-        const syncBtn = document.getElementById('sync-btn');
-
+        var STORAGE_KEY = 'bio_reader_prefs_' + location.pathname.replace(/[^a-zA-Z0-9]/g, '');
+        var prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { font: 1.0, dictEnabled: true, barHidden: true, highlightEnabled: true, blurEnabled: true };
+        var bar = document.getElementById('top-bar');
+        var content = document.getElementById('content-container');
+        var dictBtn = document.getElementById('dict-btn');
+        var hlBtn = document.getElementById('hl-btn');
+        var blurBtn = document.getElementById('blur-btn');
         function applyPrefs() {
-            enC.style.fontSize = prefs.font + 'em';
-            zhC.style.fontSize = prefs.font + 'em';
-            
-            if (prefs.barHidden) { bar.classList.add('hidden'); document.body.classList.add('bar-hidden'); } 
-            else { bar.classList.remove('hidden'); document.body.classList.remove('bar-hidden'); }
-
-            if (prefs.dictEnabled) {
-                document.body.classList.add('dict-enabled');
-                dictBtn.innerText = "查词: 开"; dictBtn.style.background = "#34C759"; dictBtn.style.color = "#fff";
-            } else {
-                document.body.classList.remove('dict-enabled');
-                dictBtn.innerText = "查词: 关"; dictBtn.style.background = "#E5E5EA"; dictBtn.style.color = "#1C1C1E";
-            }
-            if (prefs.highlightEnabled) {
-                document.body.classList.add('highlights-enabled');
-                hlBtn.innerText = "高亮: 开"; hlBtn.style.background = "#FF3B30"; hlBtn.style.color = "#fff";
-            } else {
-                document.body.classList.remove('highlights-enabled');
-                hlBtn.innerText = "高亮: 关"; hlBtn.style.background = "#E5E5EA"; hlBtn.style.color = "#1C1C1E";
-            }
-            if (prefs.syncEnabled) {
-                syncBtn.innerText = "同步: 开"; syncBtn.style.background = "#007AFF"; syncBtn.style.color = "#fff";
-            } else {
-                syncBtn.innerText = "同步: 关"; syncBtn.style.background = "#E5E5EA"; syncBtn.style.color = "#1C1C1E";
-            }
-        }
-
-        document.addEventListener('dblclick', (e) => {
-            if(e.target.closest('#top-bar')) return;
-            prefs.barHidden = !prefs.barHidden;
-            applyPrefs();
+            content.style.fontSize = prefs.font + 'em';
+            if (prefs.barHidden) { bar.classList.add('hidden'); document.body.classList.add('bar-hidden'); } else { bar.classList.remove('hidden'); document.body.classList.remove('bar-hidden'); }
+            if (prefs.dictEnabled) { document.body.classList.add('dict-enabled'); dictBtn.innerText = "查词: 开"; dictBtn.style.background = "#34C759"; dictBtn.style.color = "#fff"; } else { document.body.classList.remove('dict-enabled'); dictBtn.innerText = "查词: 关"; dictBtn.style.background = "#E5E5EA"; dictBtn.style.color = "#1C1C1E"; }
+            if (prefs.highlightEnabled) { document.body.classList.add('highlights-enabled'); hlBtn.innerText = "高亮: 开"; hlBtn.style.background = "#FF3B30"; hlBtn.style.color = "#fff"; } else { document.body.classList.remove('highlights-enabled'); hlBtn.innerText = "高亮: 关"; hlBtn.style.background = "#E5E5EA"; hlBtn.style.color = "#1C1C1E"; }
+            if (prefs.blurEnabled) { document.body.classList.add('global-blur-enabled'); blurBtn.innerText = "模糊: 开"; blurBtn.style.background = "#AF52DE"; blurBtn.style.color = "#fff"; document.querySelectorAll('.zh-para').forEach(function(el){el.classList.add('blurred');}); } else { document.body.classList.remove('global-blur-enabled'); blurBtn.innerText = "模糊: 关"; blurBtn.style.background = "#E5E5EA"; blurBtn.style.color = "#1C1C1E"; }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-            if(window.getSelection().toString().length > 0) return;
-        });
-
-        function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); }
-        function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); }
-        function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); }
-        function toggleSync() { prefs.syncEnabled = !prefs.syncEnabled; applyPrefs(); localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); }
-
-        let isProgrammaticScroll = false;
-        let scrollTimer;
-
-        function getHeights() {
-            let enWasHidden = enC.style.display === 'none';
-            let zhWasHidden = zhC.style.display === 'none';
-            if (enWasHidden) enC.style.display = 'block';
-            if (zhWasHidden) zhC.style.display = 'block';
-            let hEN = enC.offsetHeight || 1;
-            let hZH = zhC.offsetHeight || 1;
-            if (enWasHidden) enC.style.display = 'none';
-            if (zhWasHidden) zhC.style.display = 'none';
-            return { hEN, hZH };
         }
-
-        window.addEventListener('scroll', () => {
-            if (isProgrammaticScroll) return;
-            let currentY = window.scrollY;
-            let heights = getHeights();
-            let viewportH = window.innerHeight;
-            let maxEN = Math.max(1, heights.hEN - viewportH);
-            let maxZH = Math.max(1, heights.hZH - viewportH);
-
-            if (prefs.currentLang === 'en') {
-                let delta = currentY - prefs.posEN;
-                prefs.posEN = currentY;
-                if (prefs.syncEnabled) {
-                    let ratio = maxZH / maxEN;
-                    prefs.posZH += delta * ratio;
-                    prefs.posZH = Math.max(0, Math.min(prefs.posZH, maxZH)); 
-                }
-            } else {
-                let delta = currentY - prefs.posZH;
-                prefs.posZH = currentY;
-                if (prefs.syncEnabled) {
-                    let ratio = maxEN / maxZH;
-                    prefs.posEN += delta * ratio;
-                    prefs.posEN = Math.max(0, Math.min(prefs.posEN, maxEN));
-                }
-            }
-
-            if (scrollTimer) clearTimeout(scrollTimer);
-            scrollTimer = setTimeout(() => {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-            }, 300);
+        document.addEventListener('dblclick', function(e) {
+            if(e.target.closest('#top-bar') || e.target.classList.contains('zh-para')) return;
+            prefs.barHidden = !prefs.barHidden; applyPrefs();
         });
-
-        function switchLang() {
-            isProgrammaticScroll = true;
-            if (prefs.currentLang === 'en') {
-                enC.style.display = 'none';
-                zhC.style.display = 'block';
-                prefs.currentLang = 'zh';
-                window.scrollTo(0, prefs.posZH);
-            } else {
-                zhC.style.display = 'none';
-                enC.style.display = 'block';
-                prefs.currentLang = 'en';
-                window.scrollTo(0, prefs.posEN);
-            }
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-            setTimeout(() => { isProgrammaticScroll = false; }, 100);
-        }
-
-        let lastTwoFingerTap = 0;
-        window.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                let now = Date.now();
-                if (now - lastTwoFingerTap > 500) {
-                    switchLang();
-                    lastTwoFingerTap = now;
-                }
-            }
+        function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); }
+        function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); }
+        function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); }
+        function toggleBlur() { prefs.blurEnabled = !prefs.blurEnabled; applyPrefs(); }
+        window.addEventListener('DOMContentLoaded', function() {
+            applyPrefs(); var savedScroll = localStorage.getItem(STORAGE_KEY + '_scroll');
+            if (savedScroll) { setTimeout(function(){ window.scrollTo(0, parseFloat(savedScroll)); }, 150); }
         });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            applyPrefs();
-            if (prefs.currentLang === 'zh') { enC.style.display = 'none'; zhC.style.display = 'block'; } 
-            else { zhC.style.display = 'none'; enC.style.display = 'block'; }
-            isProgrammaticScroll = true;
-            setTimeout(() => { 
-                window.scrollTo({ top: prefs.currentLang === 'zh' ? prefs.posZH : prefs.posEN, behavior: 'instant' }); 
-                setTimeout(() => { isProgrammaticScroll = false; }, 50);
-            }, 50);
+        var scrollTimer;
+        window.addEventListener('scroll', function() {
+            if (scrollTimer) clearTimeout(scrollTimer); scrollTimer = setTimeout(function(){ localStorage.setItem(STORAGE_KEY + '_scroll', window.scrollY); }, 300);
         });
-
-        let highlightWords = new Set();
+        var highlightWords = new Set();
         async function initCloudHighlights() {
-            const cacheKey = 'bio_remote_hl_words_v2'; 
-            const cached = localStorage.getItem(cacheKey);
-            const now = Date.now();
-            if (cached) {
-                try {
-                    const {data, time} = JSON.parse(cached);
-                    if (now - time < 24 * 60 * 60 * 1000 && Array.isArray(data) && data.length > 0) { 
-                        highlightWords = new Set(data);
-                        applyHighlightsToDOM();
-                        return;
-                    }
-                } catch(e) {}
-            }
+            var cacheKey = 'bio_remote_hl_words_v2'; var cached = localStorage.getItem(cacheKey); var now = Date.now();
+            if (cached) { try { var parsed = JSON.parse(cached); if (now - parsed.time < 24 * 60 * 60 * 1000 && Array.isArray(parsed.data)) { highlightWords = new Set(parsed.data); applyHighlightsToDOM(); return; } } catch(e){} }
             try {
-                const urls = [
-                    'https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt',
-                    'https://ghproxy.net/https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt',
-                    'https://fastly.jsdelivr.net/gh/moodHappy/HelloWorld@master/Notes/one.txt'
-                ];
-                let text = '';
-                for (let u of urls) {
-                    try {
-                        const res = await fetch(u);
-                        if (res.ok) { text = await res.text(); if (text && !text.includes('<html') && !text.includes('Cloudflare')) break; }
-                    } catch (err) {}
-                }
-                if (!text) return;
-                const arr = text.split('\n').map(w => w.trim().toLowerCase()).filter(w => w);
-                if (arr.length > 0) {
-                    highlightWords = new Set(arr);
-                    localStorage.setItem(cacheKey, JSON.stringify({data: arr, time: now}));
-                    applyHighlightsToDOM();
-                }
-            } catch(e) {}
+                var urls = ['https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://ghproxy.net/https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://fastly.jsdelivr.net/gh/moodHappy/HelloWorld@master/Notes/one.txt'];
+                var text = ''; for (var i=0; i<urls.length; i++) { try { var res = await fetch(urls[i]); if (res.ok) { text = await res.text(); if (text && !text.includes('<html') && !text.includes('Cloudflare')) break; } } catch(err){} }
+                if (!text) throw new Error(); var arr = text.split('\n').map(function(w){return w.trim().toLowerCase();}).filter(function(w){return w;});
+                if (arr.length > 0) { highlightWords = new Set(arr); localStorage.setItem(cacheKey, JSON.stringify({data: arr, time: now})); applyHighlightsToDOM(); }
+            } catch(e){}
         }
-
         function applyHighlightsToDOM() {
             if(highlightWords.size === 0) return;
-            const words = enC.querySelectorAll('.tm-word');
-            words.forEach(span => {
-                const word = span.textContent.trim().toLowerCase();
-                if(highlightWords.has(word)) span.classList.add('is-highlight');
-            });
+            document.querySelectorAll('.tm-word').forEach(function(span){ if(highlightWords.has(span.textContent.trim().toLowerCase())) span.classList.add('is-highlight'); });
         }
-
-        const GM_getValue = (key, def) => { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; };
-        const GM_setValue = (key, val) => localStorage.setItem(key, JSON.stringify(val));
-        const GM_xmlhttpRequest = (opt) => {
-            let url = opt.url;
-            if(url.includes('dict.youdao.com') || url.includes('cambridge.org')) {
-                const isYoudao = url.includes('dict.youdao.com');
-                const proxies = [ url, `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, `https://corsproxy.io/?${encodeURIComponent(url)}` ];
-                let currentProxyIdx = 0;
-                const tryNext = () => {
-                    if (currentProxyIdx >= proxies.length) return opt.onerror && opt.onerror(new Error('Proxy Blocked'));
+        var GM_getValue = function(key, def) { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; };
+        var GM_setValue = function(key, val) { localStorage.setItem(key, JSON.stringify(val)); };
+        var GM_xmlhttpRequest = function(opt) {
+            var url = opt.url; if(url.includes('dict.youdao.com') || url.includes('cambridge.org')) {
+                var isYoudao = url.includes('dict.youdao.com');
+                var proxies = [url, 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), 'https://corsproxy.io/?' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)];
+                var currentProxyIdx = 0;
+                var tryNext = function() {
+                    if (currentProxyIdx >= proxies.length) { if(opt.onerror) opt.onerror(new Error()); return; }
                     fetch(proxies[currentProxyIdx++], { headers: opt.headers || {} })
-                    .then(async r => {
-                        let t = ''; try { t = await r.text(); } catch(err){}
-                        if (!r.ok || t.includes('Cloudflare')) throw new Error('Blocked Node');
-                        if (isYoudao && !t.trim().startsWith('{')) throw new Error('Not JSON');
-                        if(opt.onload) opt.onload({status: 200, responseText: t});
-                    }).catch(e => tryNext());
+                    .then(async function(r) { var t = ''; try{t = await r.text();}catch(e){} if(!r.ok || t.includes('Cloudflare')) throw new Error(); if(isYoudao && !t.trim().startsWith('{')) throw new Error(); if(opt.onload) opt.onload({status:200, responseText:t}); })
+                    .catch(function(){ tryNext(); });
                 };
                 tryNext(); return;
             }
-            fetch(url, { headers: opt.headers || {} }).then(async r => { let t = ''; try { t = await r.text(); } catch(err){} if(opt.onload) opt.onload({status: r.status, responseText: t}); }).catch(err => opt.onerror && opt.onerror(err));
+            fetch(url, { headers: opt.headers || {} }).then(async function(r){ var t = ''; try{t = await r.text();}catch(e){} if(opt.onload) opt.onload({status:r.status, responseText:t}); }).catch(opt.onerror);
         };
-
         (function() {
-            const ttsConfig = {
-                voices: ["en-US-AdamNeural", "en-US-AriaNeural", "en-US-AnaNeural", "en-US-JennyNeural"],
-                apis: [ { url: "https://read-aloud-bay.vercel.app/api/synthesis", type: "read-aloud" }, { url: "https://libre-tts-nu.vercel.app/api/tts", type: "libre" } ]
-            };
-
-            let globalResultCache = GM_getValue('tm_dict_cache', {});
-            let saveTimeout = null;
-            function saveToGlobalCache(wordKey, resultData) {
-                globalResultCache[wordKey] = resultData;
-                const keys = Object.keys(globalResultCache);
-                if (keys.length > 2000) delete globalResultCache[keys[0]]; 
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(() => { GM_setValue('tm_dict_cache', globalResultCache); }, 1500);
-            }
-
-            let cefrStaticCache = {}; 
+            var ttsConfig = { voices: ["en-US-AdamNeural", "en-US-AriaNeural", "en-US-AnaNeural", "en-US-JennyNeural", "en-US-GuyNeural"], apis: [ { url: "https://read-aloud-bay.vercel.app/api/synthesis", type: "read-aloud" }, { url: "https://libre-tts-nu.vercel.app/api/tts", type: "libre" } ] };
+            var globalResultCache = GM_getValue('tm_dict_cache', {}); var saveTimeout = null;
+            function saveToGlobalCache(wordKey, resultData) { globalResultCache[wordKey] = resultData; var keys = Object.keys(globalResultCache); if (keys.length > 2000) delete globalResultCache[keys[0]]; clearTimeout(saveTimeout); saveTimeout = setTimeout(function(){ GM_setValue('tm_dict_cache', globalResultCache); }, 1500); }
+            var cefrStaticCache = {};
             function initCEFRStaticDict() {
-                fetch("https://fastly.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json")
-                .then(r => r.json()).then(data => { if (Array.isArray(data)) data.forEach(item => { if (item.word && item.cefr) cefrStaticCache[item.word.toLowerCase()] = item.cefr.toUpperCase(); }); }).catch(()=>{});
+                var staticUrls = ["https://fastly.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json","https://cdn.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json"];
+                var idx = 0; var tryFetch = function() { if (idx >= staticUrls.length) return; fetch(staticUrls[idx++]).then(function(r){return r.json();}).then(function(data){ if (Array.isArray(data)) data.forEach(function(item){ if (item.word && item.cefr) cefrStaticCache[item.word.toLowerCase()] = item.cefr.toUpperCase(); }); }).catch(tryFetch); };
+                tryFetch();
             }
-
             function fetchCEFR(word) {
-                return new Promise((resolve) => {
-                    const w = word.toLowerCase();
-                    if (cefrStaticCache[w]) { resolve(cefrStaticCache[w]); return; } 
-                    GM_xmlhttpRequest({ method: "GET", url: `https://dictionary.cambridge.org/dictionary/english/${encodeURIComponent(w)}`, onload: (res) => { const match = res.responseText.match(/(?:epp-xref|dxref)[^>]*>\s*([A-C][1-2])\s*<\/span>/i); if (match && match[1]) { cefrStaticCache[w] = match[1].toUpperCase(); resolve(cefrStaticCache[w]); return; } resolve(null); }, onerror: () => resolve(null) });
+                return new Promise(function(resolve) {
+                    var w = word.toLowerCase(); if (cefrStaticCache[w]) { resolve(cefrStaticCache[w]); return; }
+                    GM_xmlhttpRequest({ method: "GET", url: 'https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(w), onload: function(res) { if (res.status === 200) { var match = res.responseText.match(/(?:epp-xref|dxref)[^>]*>\s*([A-C][1-2])\s*<\/span>/i) || res.responseText.match(/title="CEFR[^>]*>\s*([A-C][1-2])\s*<\/span>/i); if (match && match[1]) { cefrStaticCache[w] = match[1].toUpperCase(); resolve(cefrStaticCache[w]); return; } } resolve(null); }, onerror: function(){resolve(null);} });
                 });
             }
-            function fetchCEFRWithTimeout(word) { return Promise.race([ fetchCEFR(word), new Promise(r => setTimeout(() => r(null), 1500)) ]); }
-            function fetchTranslation(text) { return new Promise((resolve, reject) => { GM_xmlhttpRequest({ method: "GET", url: `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&q=${encodeURIComponent(text)}`, onload: (res) => { if (res.status === 200) resolve(JSON.parse(res.responseText)); else reject(); }, onerror: reject }); }); }
-            function fetchPhonetics(text) { return new Promise((resolve) => { GM_xmlhttpRequest({ method: "GET", url: `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(text)}`, onload: (res) => { if (res.status === 200) { const data = JSON.parse(res.responseText); if (data && data.length > 0) resolve((data[0].phonetics.find(p => p.text) || data[0]).text || null); } else resolve(null); }, onerror: () => resolve(null) }); }); }
-            function fetchWordLevel(text) { return new Promise((resolve) => { GM_xmlhttpRequest({ method: "GET", url: `https://dict.youdao.com/jsonapi?q=${encodeURIComponent(text)}`, onload: (res) => { let result = { stars: 0, tags: [] }; try { const data = JSON.parse(res.responseText); if (data.ec && data.ec.exam_type) result.tags = data.ec.exam_type; if (data.collins && data.collins.collins_entries) { const s = data.collins.collins_entries[0].star; if(s) result.stars = parseInt(String(s).replace(/[^0-9]/g, ''))||0; } } catch (e) {} resolve(result); }, onerror: () => resolve({ stars: 0, tags: [] }) }); }); }
-
-            let globalAudioPlayer = null;
-            let currentPlayingBtn = null;
+            function fetchTranslation(text) { return new Promise(function(resolve, reject) { GM_xmlhttpRequest({ method: "GET", url: 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&q=' + encodeURIComponent(text), onload: function(res) { if (res.status === 200) resolve(JSON.parse(res.responseText)); else reject(new Error()); }, onerror: reject }); }); }
+            function fetchPhonetics(text) { return new Promise(function(resolve) { GM_xmlhttpRequest({ method: "GET", url: 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(text), onload: function(res) { if (res.status === 200) { var data = JSON.parse(res.responseText); if (data && data.length > 0) { var pObj = data[0].phonetics.find(function(p){return p.text;}) || data[0]; resolve(pObj.text || null); return; } } resolve(null); }, onerror: function(){resolve(null);} }); }); }
+            function fetchWordLevel(text) { return new Promise(function(resolve) { GM_xmlhttpRequest({ method: "GET", url: 'https://dict.youdao.com/jsonapi?q=' + encodeURIComponent(text), onload: function(res) { var result = { stars: 0, tags: [] }; try { var data = JSON.parse(res.responseText); if (data.ec && data.ec.exam_type) result.tags = data.ec.exam_type; if (data.collins && data.collins.collins_entries && data.collins.collins_entries.length > 0) { var starStr = data.collins.collins_entries[0].star; if (starStr) { var parsedNum = parseInt(String(starStr).replace(/[^0-9]/g, ''), 10); result.stars = isNaN(parsedNum) ? 0 : parsedNum; } } } catch (e) {} resolve(result); }, onerror: function(){resolve({ stars: 0, tags: [] });} }); }); }
+            var globalAudioPlayer = null; var currentPlayingBtn = null;
+            function initAudioPlayer() { if (!globalAudioPlayer) { globalAudioPlayer = document.createElement('audio'); globalAudioPlayer.style.display = 'none'; document.body.appendChild(globalAudioPlayer); } }
             function playTTS(apiIndex, text, voice, btn) {
-                if (!globalAudioPlayer) { globalAudioPlayer = document.createElement('audio'); document.body.appendChild(globalAudioPlayer); }
                 if (apiIndex >= ttsConfig.apis.length) { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); return; }
                 if (currentPlayingBtn && currentPlayingBtn !== btn) currentPlayingBtn.classList.remove('playing');
-                currentPlayingBtn = btn; btn.classList.add('playing');
-                const api = ttsConfig.apis[apiIndex];
-                globalAudioPlayer.src = api.type === "read-aloud" ? `${api.url}?text=${encodeURIComponent(text)}&voiceName=${voice}` : `${api.url}?t=${encodeURIComponent(text)}&v=${voice}&r=0&p=0`;
-                globalAudioPlayer.onended = () => { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); };
-                globalAudioPlayer.onerror = () => playTTS(apiIndex + 1, text, voice, btn);
-                const p = globalAudioPlayer.play();
-                if (p !== undefined) p.catch(() => playTTS(apiIndex + 1, text, voice, btn));
-            }
-
-            function wrapTextNodesToWord(rootNode) {
-                const walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, {
-                    acceptNode: function(node) {
-                        const parent = node.parentNode;
-                        if (!parent || ['SCRIPT','STYLE','BUTTON','A'].includes(parent.nodeName)) return NodeFilter.FILTER_REJECT;
-                        if (parent.closest('.tm-word')) return NodeFilter.FILTER_REJECT;
-                        if (!node.nodeValue.trim() || !/\b[a-zA-Z'-]+\b/.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
-                        return NodeFilter.FILTER_ACCEPT;
-                    }
-                });
-                const nodes = []; let curr; while ((curr = walker.nextNode())) nodes.push(curr);
-                nodes.forEach(node => {
-                    const text = node.nodeValue; const fragment = document.createDocumentFragment(); let lastIndex = 0;
-                    text.replace(/\b([a-zA-Z'-]+)\b/g, (match, p1, offset) => {
-                        if (offset > lastIndex) fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset)));
-                        const span = document.createElement('span'); span.className = 'tm-word'; span.textContent = match; fragment.appendChild(span);
-                        lastIndex = offset + match.length; return match;
-                    });
-                    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
-                    if (fragment.childNodes.length > 0) node.parentNode.replaceChild(fragment, node);
-                });
-            }
-
-            function formatDictData(orig, data) {
-                const { transData, ipaText, levelData, cefrLevel } = data;
-                let tagsHtml = '';
-                if (cefrLevel || (levelData && (levelData.stars > 0 || levelData.tags.length > 0))) {
-                    tagsHtml = `<div class="dict-tags-row">`;
-                    if (levelData && levelData.stars > 0) tagsHtml += `<span class="dict-tag star-tag">${'★'.repeat(levelData.stars)}${'☆'.repeat(5 - levelData.stars)}</span>`;
-                    if (cefrLevel) tagsHtml += `<span class="dict-tag cefr-${cefrLevel}">CEFR ${cefrLevel}</span>`;
-                    if (levelData && levelData.tags) levelData.tags.forEach(t => tagsHtml += `<span class="dict-tag">${t}</span>`);
-                    tagsHtml += `</div>`;
+                currentPlayingBtn = btn; btn.classList.add('playing'); var api = ttsConfig.apis[apiIndex]; var params = new URLSearchParams();
+                if (api.type === "read-aloud") { params.append("text", text); params.append("voiceName", voice); } else { params.append("t", text); params.append("v", voice); params.append("r", "0"); params.append("p", "0"); }
+                globalAudioPlayer.src = api.url + '?' + params.toString(); globalAudioPlayer.onended = function() { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); };
+                globalAudioPlayer.onerror = function() { playTTS(apiIndex + 1, text, voice, btn); }; var p = globalAudioPlayer.play(); if (p !== undefined) p.catch(function(){ playTTS(apiIndex + 1, text, voice, btn); });
                 }
-                const basic = (transData && transData[0] && transData[0][0]) ? transData[0][0][0] : '';
-                let html = `<div class="dict-header-row"><div class="dict-word-line"><span class="dict-head-word">${orig}</span>${ipaText ? `<span class="dict-ipa">${ipaText}</span>` : ''}<span class="dict-speaker-btn" data-word="${orig.replace(/"/g, '&quot;')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span></div>${tagsHtml}<div class="dict-basic-trans">${basic}</div></div>`;
-                const entries = transData ? transData[1] : null;
-                if (entries && entries.length > 0) {
-                    html += `<div class="dict-details">`;
-                    entries.forEach(e => { html += `<div class="dict-pos-block"><span class="dict-pos-tag">${e[0]}.</span><ul class="dict-def-list">`; e[1].slice(0, 3).forEach(def => html += `<li class="dict-def-item">${def}</li>`); html += `</ul></div>`; });
-                    html += `</div>`;
-                } else if (!basic) html += `<div style="padding:10px; color:#666; font-size:24px;">无释义结果...</div>`; 
+            function wrapTextNodesToWord(rootNode) {
+                var ignoreTags = new Set(['SCRIPT', 'STYLE', 'BUTTON', 'A']);
+                var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, { acceptNode: function(currentNode) { var parent = currentNode.parentNode; if (!parent || ignoreTags.has(parent.nodeName.toUpperCase()) || parent.closest('.tm-word') || parent.closest('.zh-para')) return NodeFilter.FILTER_REJECT; if (!currentNode.nodeValue.trim() || !/\b[a-zA-Z'-]+\b/.test(currentNode.nodeValue)) return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; } });
+                var nodesToWrap = []; let currNode; while ((currNode = walker.nextNode())) { nodesToWrap.push(currNode); }
+                nodesToWrap.forEach(function(textNode) {
+                    var text = textNode.nodeValue; var fragment = document.createDocumentFragment(); var lastIndex = 0;
+                    text.replace(/\b([a-zA-Z'-]+)\b/g, function(match, p1, offset) { if (offset > lastIndex) fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset))); var span = document.createElement('span'); span.className = 'tm-word'; span.textContent = match; fragment.appendChild(span); lastIndex = offset + match.length; return match; });
+                    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.substring(lastIndex))); if (fragment.childNodes.length > 0) textNode.parentNode.replaceChild(fragment, textNode);
+                });
+            }
+            function formatDictData(originalWord, data) {
+                var transData = data.transData; var ipaText = data.ipaText; var levelData = data.levelData; var cefrLevel = data.cefrLevel; var tagsHtml = '';
+                if (cefrLevel || (levelData && (levelData.stars > 0 || (levelData.tags && levelData.tags.length > 0)))) {
+                    tagsHtml += '<div class="dict-tags-row">'; if (levelData && levelData.stars > 0) tagsHtml += '<span class="dict-tag star-tag">' + '★'.repeat(levelData.stars) + '☆'.repeat(5 - levelData.stars) + '</span>'; if (cefrLevel) tagsHtml += '<span class="dict-tag cefr-' + cefrLevel + '">CEFR ' + cefrLevel + '</span>'; if (levelData && levelData.tags) levelData.tags.forEach(function(tag){ tagsHtml += '<span class="dict-tag">' + tag + '</span>'; }); tagsHtml += '</div>';
+                }
+                var basicTrans = (transData && transData[0] && transData[0][0]) ? transData[0][0][0] : '';
+                var html = '<div class="dict-header-row"><div class="dict-word-line"><span class="dict-head-word Casting">' + originalWord + '</span>' + (ipaText ? '<span class="dict-ipa">' + ipaText + '</span>' : '') + '<span class="dict-speaker-btn" data-word="' + originalWord.replace(/"/g, '&quot;') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span></div>' + tagsHtml + '<div class="dict-basic-trans">' + basicTrans + '</div></div>';
+                var dictEntries = transData ? transData[1] : null;
+                if (dictEntries && dictEntries.length > 0) {
+                    html += '<div class="dict-details">'; dictEntries.forEach(function(entry){ var pos = entry[0]; var displayDefs = entry[1].slice(0, 3); html += '<div class="dict-pos-block"><span class="dict-pos-tag">' + pos + '.</span><ul class="dict-def-list">'; displayDefs.forEach(function(def){ html += '<li class="dict-def-item">' + def + '</li>'; }); html += '</ul></div>'; }); html += '</div>';
+                } else if (!basicTrans) { html += '<div style="padding:5px; color:#666; font-size:13px;">无释义结果...</div>'; }
                 return html;
             }
-
             function setupTippyDelegate() {
-                tippy.delegate(enC, {
-                    target: '.tm-word', trigger: 'click', interactive: true, theme: 'light-border', placement: 'bottom', appendTo: () => document.body, maxWidth: '90vw',
-                    onShow(instance) {
+                tippy.delegate(document.body, { 
+                    target: '.tm-word', trigger: 'click', interactive: true, theme: 'light-border', placement: 'bottom', appendTo: function(){return document.body;}, maxWidth: 320,
+                    onShow: function(instance) {
                         if (!document.body.classList.contains('dict-enabled')) return false;
-                        const word = instance.reference.innerText.trim();
-                        const render = (data) => {
-                            if (instance.reference.innerText.trim() !== word) return;
-                            const div = document.createElement('div'); div.className = 'dict-popup'; div.innerHTML = formatDictData(word, data);
-                            ['mousedown', 'touchstart', 'click'].forEach(evt => div.addEventListener(evt, e => e.stopPropagation(), { capture: true }));
-                            const btn = div.querySelector('.dict-speaker-btn');
-                            if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); const t = btn.getAttribute('data-word'); if (t && !btn.classList.contains('playing')) playTTS(0, t.trim(), ttsConfig.voices[Math.floor(Math.random() * ttsConfig.voices.length)], btn); });
-                            instance.setContent(div);
-                        };
-                        if (globalResultCache[word.toLowerCase()]) render(globalResultCache[word.toLowerCase()]); 
-                        else {
-                            const div = document.createElement('div'); div.className = 'dict-popup'; div.innerHTML = '<div class="dict-loading">极速查询中...</div>'; instance.setContent(div);
-                            Promise.all([ fetchTranslation(word).catch(()=>[[['API Error']]]), fetchPhonetics(word).catch(()=>null), fetchWordLevel(word).catch(()=>({stars:0,tags:[]})), fetchCEFRWithTimeout(word).catch(()=>null) ])
-                            .then(([transData, ipaText, levelData, cefrLevel]) => { const data = { transData, ipaText, levelData, cefrLevel }; saveToGlobalCache(word.toLowerCase(), data); if (instance.state.isVisible) render(data); });
+                        var word = instance.reference.innerText.trim(); var wordKey = word.toLowerCase();
+                        var renderContent = function(data) { if (instance.reference.innerText.trim() !== word) return; var contentDiv = document.createElement('div'); contentDiv.className = 'dict-popup'; contentDiv.innerHTML = formatDictData(word, data); ['mousedown', 'touchstart', 'click'].forEach(function(evt){ contentDiv.addEventListener(evt, function(e){e.stopPropagation();}, { capture: true }); }); var btn = contentDiv.querySelector('.dict-speaker-btn'); if (btn) { btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var text = btn.getAttribute('data-word'); if (!text || btn.classList.contains('playing')) return; playTTS(0, text.trim(), ttsConfig.voices[Math.floor(Math.random() * ttsConfig.voices.length)], btn); }); } instance.setContent(contentDiv); };
+                        if (globalResultCache[wordKey]) { renderContent(globalResultCache[wordKey]); } else {
+                            var loadingDiv = document.createElement('div'); loadingDiv.className = 'dict-popup'; loadingDiv.innerHTML = '<div class="dict-loading">极速查询中...</div>'; instance.setContent(loadingDiv);
+                            var pTrans = fetchTranslation(word).catch(function(){return [[['API Error']]];}); var pPhon = fetchPhonetics(word).catch(function(){return null;}); var pLevel = fetchWordLevel(word).catch(function(){return {stars:0, tags:[]};}); var pCefr = Promise.race([fetchCEFR(word), new Promise(function(r){setTimeout(function(){r(null);},1500);})]).catch(function(){return null;});
+                            Promise.all([pTrans, pPhon, pLevel, pCefr]).then(function(arr){ var resultData = { transData: arr[0], ipaText: arr[1], levelData: arr[2], cefrLevel: arr[3] }; saveToGlobalCache(wordKey, resultData); if (instance.state.isVisible) renderContent(resultData); });
                         }
                     }
                 });
             }
-
-            setTimeout(() => {
-                initCEFRStaticDict();
-                if(enC) wrapTextNodesToWord(enC);
-                setupTippyDelegate();
-                initCloudHighlights(); 
-            }, 500);
+            setTimeout(function() { initAudioPlayer(); initCEFRStaticDict(); var container = document.getElementById('content-container'); if(container) wrapTextNodesToWord(container); setupTippyDelegate(); initCloudHighlights(); }, 500);
         })();
     </script>
 </body>
