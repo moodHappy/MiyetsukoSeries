@@ -21,15 +21,53 @@
         .ep:hover .score { transform: rotate(-2deg) scale(1.1); background: #8b0000; color: #fff; transition: all 0.2s; }
         .title { font-weight: 900; color: #b22222; font-size: 1.1rem; margin-bottom: 8px; border-bottom: 2px solid #222; padding-bottom: 3px; padding-right: 45px; }
         p { margin: 0; font-size: 0.95rem; color: #111; text-align: justify; }
+
+        /* 配置中心专属样式 */
+        #config-gear { position: fixed; top: 15px; right: 20px; font-size: 32px; cursor: pointer; z-index: 9999; transition: transform 0.3s; text-shadow: 2px 2px 0px #8b0000; user-select: none; }
+        #config-gear:hover { transform: rotate(90deg) scale(1.1); }
+        #config-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; backdrop-filter: blur(2px); }
+        #config-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff8dc; border: 4px solid #8b0000; padding: 25px; z-index: 10001; width: 90%; max-width: 350px; box-shadow: 10px 10px 0px #222; display: none; box-sizing: border-box; }
+        #config-modal h2 { margin-top: 0; color: #8b0000; border-bottom: 2px dashed #222; padding-bottom: 10px; font-size: 1.4rem; text-align: center; }
+        .cfg-group { margin-bottom: 12px; text-align: left; }
+        .cfg-group label { display: block; font-weight: bold; font-size: 0.9rem; color: #222; margin-bottom: 4px; }
+        .cfg-group input { width: 100%; box-sizing: border-box; padding: 8px; border: 2px solid #444; background: #fff; font-family: monospace; font-size: 14px; }
+        .cfg-group input:focus { outline: none; border-color: #8b0000; background: #ffe4e1; }
+        #cfg-save-btn { margin-top: 15px; width: 100%; padding: 12px; background: #222; color: #fff; border: none; font-weight: 900; font-size: 1.1rem; cursor: pointer; border: 2px solid #8b0000; box-shadow: 4px 4px 0px #8b0000; transition: all 0.1s; }
+        #cfg-save-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #8b0000; }
     </style>
 </head>
 <body>
+
+    <!-- 悬浮齿轮 -->
+    <div id="config-gear" title="系统配置">⚙️</div>
+
+    <!-- 配置中心弹窗 -->
+    <div id="config-overlay"></div>
+    <div id="config-modal">
+        <h2>🛠️ 宇宙中枢配置</h2>
+        <div class="cfg-group">
+            <label>GitHub 拥有者 (Owner):</label>
+            <input type="text" id="cfg-owner" placeholder="例如: FreshMart">
+        </div>
+        <div class="cfg-group">
+            <label>GitHub 仓库名 (Repo):</label>
+            <input type="text" id="cfg-repo" placeholder="例如: FreshMart.github.io">
+        </div>
+        <div class="cfg-group">
+            <label>GitHub Token (PAT):</label>
+            <input type="password" id="cfg-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+        </div>
+        <div class="cfg-group">
+            <label>主目录绑定路径 (Path):</label>
+            <input type="text" id="cfg-path" placeholder="例如: volume2/index.html">
+        </div>
+        <button id="cfg-save-btn">💾 保存并应用</button>
+    </div>
 
     <h1>新鲜玛特的疯狂宇宙<br>第二卷</h1>
     <p class="subtitle">—— 欢迎光临！您的底线已过期 ——</p>
 
     <!-- 初始的示例分卷结构 -->
-    <!-- 第1季 -->
     <div class="season-divider">第一季</div>
     <div class="container" style="display: grid;">
         <div class="ep"><div class="score">8.5</div><div class="title">第1章：[标题占位符]</div><p>[内容占位符]</p></div>
@@ -37,26 +75,78 @@
 
     <!-- 极简增删与同步控件 (编辑模式下显示) -->
     <div id="simple-edit-controls" style="display: none; text-align: center; margin: 40px auto 120px auto;">
-        <button id="simple-add-btn" style="background: #228b22; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;">＋</button>
+        <button id="simple-add-btn" style="background: #228b22; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="新增章节">＋</button>
         <button id="sync-titles-btn" style="background: #1e90ff; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="自动抓取文件标题">🔄</button>
-        <button id="simple-del-btn" style="background: #8b0000; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;">🗑️</button>
+        <button id="simple-del-btn" style="background: #8b0000; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="删除末尾季">🗑️</button>
     </div>
 
     <!-- 悬浮的同步提交按钮 -->
-    <div id="github-save-btn" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 300px; background: #222; color: #fff; padding: 15px; border-radius: 12px; font-weight: 900; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 0px #8b0000; transition: all 0.1s; text-align: center; border: 2px solid #8b0000; z-index: 10000;">
+    <div id="github-save-btn" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 300px; background: #222; color: #fff; padding: 15px; border-radius: 12px; font-weight: 900; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 0px #8b0000; transition: all 0.1s; text-align: center; border: 2px solid #8b0000; z-index: 9998;">
         🚀 同步提交到 GitHub
     </div>
 
     <!-- 全局交互与编辑引擎 -->
     <script id="core-engine" data-file-path="">
-        // ⚠️ 请确保此处填入你的 GitHub 仓库信息
-        const GITHUB_OWNER = 'FreshMart'; 
-        const GITHUB_REPO = 'FreshMart.github.io'; 
-        // ⚠️====================================
-
         const controls = document.getElementById('simple-edit-controls');
         const saveBtn = document.getElementById('github-save-btn');
         const engineScript = document.getElementById('core-engine');
+
+        // ==========================================
+        // 0. 配置中心逻辑
+        // ==========================================
+        const gearBtn = document.getElementById('config-gear');
+        const cfgModal = document.getElementById('config-modal');
+        const cfgOverlay = document.getElementById('config-overlay');
+        const cfgSaveBtn = document.getElementById('cfg-save-btn');
+
+        const getSysConfig = () => {
+            return {
+                owner: localStorage.getItem('github_owner') || 'FreshMart',
+                repo: localStorage.getItem('github_repo') || 'FreshMart.github.io',
+                token: localStorage.getItem('github_pat') || '',
+                path: engineScript.getAttribute('data-file-path') || ''
+            };
+        };
+
+        gearBtn.addEventListener('click', () => {
+            const cfg = getSysConfig();
+            document.getElementById('cfg-owner').value = cfg.owner;
+            document.getElementById('cfg-repo').value = cfg.repo;
+            document.getElementById('cfg-token').value = cfg.token;
+            document.getElementById('cfg-path').value = cfg.path;
+            cfgModal.style.display = 'block';
+            cfgOverlay.style.display = 'block';
+        });
+
+        cfgOverlay.addEventListener('click', () => {
+            cfgModal.style.display = 'none';
+            cfgOverlay.style.display = 'none';
+        });
+
+        cfgSaveBtn.addEventListener('click', () => {
+            localStorage.setItem('github_owner', document.getElementById('cfg-owner').value.trim());
+            localStorage.setItem('github_repo', document.getElementById('cfg-repo').value.trim());
+            localStorage.setItem('github_pat', document.getElementById('cfg-token').value.trim());
+            
+            const newPath = document.getElementById('cfg-path').value.trim();
+            engineScript.setAttribute('data-file-path', newPath);
+
+            cfgModal.style.display = 'none';
+            cfgOverlay.style.display = 'none';
+            
+            gearBtn.style.color = '#34C759';
+            setTimeout(() => gearBtn.style.color = '', 1000);
+        });
+
+        function ensureConfig() {
+            const cfg = getSysConfig();
+            if (!cfg.token || !cfg.path || !cfg.owner || !cfg.repo) {
+                alert('⚠️ 缺少必要配置参数！\n请先在右上角 ⚙️ 配置中心补全信息。');
+                gearBtn.click();
+                return false;
+            }
+            return cfg;
+        }
 
         // ==========================================
         // 1. 基础解析与缓存机制
@@ -66,19 +156,9 @@
             const chnNumChar = { 零:0, 一:1, 二:2, 三:3, 四:4, 五:5, 六:6, 七:7, 八:8, 九:9 };
             let s = chnStr.replace(/零/g, '');
             let h = 0, t = 0, o = 0;
-            if (s.includes('百')) {
-                let parts = s.split('百');
-                h = parts[0] === '' || parts[0] === '一' ? 1 : (chnNumChar[parts[0]] || parseInt(parts[0]) || 1);
-                s = parts[1];
-            }
-            if (s.includes('十')) {
-                let parts = s.split('十');
-                t = parts[0] === '' ? 1 : (chnNumChar[parts[0]] || parseInt(parts[0]) || 1);
-                s = parts[1];
-            }
-            if (s) {
-                o = chnNumChar[s] || parseInt(s) || 0;
-            }
+            if (s.includes('百')) { let parts = s.split('百'); h = parts[0] === '' || parts[0] === '一' ? 1 : (chnNumChar[parts[0]] || parseInt(parts[0]) || 1); s = parts[1]; }
+            if (s.includes('十')) { let parts = s.split('十'); t = parts[0] === '' ? 1 : (chnNumChar[parts[0]] || parseInt(parts[0]) || 1); s = parts[1]; }
+            if (s) { o = chnNumChar[s] || parseInt(s) || 0; }
             return h * 100 + t * 10 + o;
         }
 
@@ -93,22 +173,17 @@
             }
             isFetchingDir = true;
             try {
-                let filePath = engineScript.getAttribute('data-file-path');
-                if (!filePath && typeof FILE_PATH !== 'undefined') filePath = FILE_PATH;
-                const dirPath = filePath ? filePath.substring(0, filePath.lastIndexOf('/')) : '';
-                if (!dirPath) throw new Error("尚未绑定 GitHub 路径，请先保存一次！");
+                const cfg = getSysConfig();
+                if (!cfg.path || !cfg.token) throw new Error("缺少配置");
 
-                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${dirPath}`;
-                let headers = {};
-                const token = localStorage.getItem('github_pat');
-                if (token) headers['Authorization'] = `Bearer ${token}`; 
-
-                const res = await fetch(url, { headers });
+                const dirPath = cfg.path.substring(0, cfg.path.lastIndexOf('/'));
+                const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${dirPath}`;
+                
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${cfg.token}` } });
                 if (res.ok) {
                     const files = await res.json();
                     directoryCache = files.map(f => f.name);
                 } else {
-                    console.error("无法拉取目录文件", await res.text());
                     directoryCache = []; 
                 }
             } catch (e) {
@@ -142,8 +217,7 @@
 
         function bindEditEffects(elements) {
             elements.forEach(el => {
-                if(el.dataset.bound) return; 
-                el.dataset.bound = "true";
+                if(el.dataset.bound) return; el.dataset.bound = "true";
                 el.addEventListener('focus', () => {
                     el.style.backgroundColor = '#fffacd';
                     el.style.outline = '2px dashed #8b0000';
@@ -169,35 +243,30 @@
                 controls.style.display = 'none';
                 saveBtn.style.display = 'none';
                 document.body.style.border = '6px solid #8b0000';
-                getEditableElements().forEach(el => {
-                    el.blur();
-                    el.removeAttribute('contenteditable');
-                });
+                getEditableElements().forEach(el => { el.blur(); el.removeAttribute('contenteditable'); });
             }
         }
 
         document.addEventListener('touchstart', (e) => { 
-            if (e.touches.length === 2) { e.preventDefault(); toggleEditMode(); } 
+            if (e.touches.length === 2 && !cfgOverlay.style.display.includes('block')) { e.preventDefault(); toggleEditMode(); } 
         }, { passive: false });
         document.addEventListener('dblclick', (e) => { 
-            if (e.altKey) { window.getSelection().removeAllRanges(); toggleEditMode(); } 
+            if (e.altKey && !cfgOverlay.style.display.includes('block')) { window.getSelection().removeAllRanges(); toggleEditMode(); } 
         });
 
-        // 卡片点击跳转逻辑
         document.addEventListener('click', async (e) => {
             const isEditing = controls.style.display === 'block';
             if (isEditing || e.altKey) return; 
 
             const epCard = e.target.closest('.ep');
             if (epCard) {
+                const cfg = ensureConfig();
+                if(!cfg) return;
+
                 const titleEl = epCard.querySelector('.title');
                 if (titleEl) {
                     const titleText = titleEl.innerText.trim();
-
-                    if (titleText.includes('占位符')) {
-                        alert('🚧 该章节暂未更新，敬请期待！');
-                        return;
-                    }
+                    if (titleText.includes('占位符')) return alert('🚧 该章节暂未更新，敬请期待！');
 
                     const match = titleText.match(/第(.+?)章/);
                     if (!match) return alert('无法从标题中解析出章节序号！');
@@ -215,62 +284,43 @@
                     epCard.style.backgroundColor = originalBg;
                     epCard.style.cursor = 'pointer';
 
-                    if (files.length === 0) return alert('未能获取到目录文件列表，请检查网络。');
+                    if (files.length === 0) return alert('未能获取到目录文件列表，请检查网络或配置。');
 
                     const targetPrefix = `Chapter_${paddedNum}__`;
                     const targetFile = files.find(f => f.startsWith(targetPrefix));
 
-                    if (targetFile) {
-                        window.location.href = targetFile;
-                    } else {
-                        alert(`🔍 找不到对应的章节文件\n（期望前缀: ${targetPrefix}）`);
-                    }
+                    if (targetFile) { window.location.href = targetFile; } 
+                    else { alert(`🔍 找不到对应的章节文件\n（期望前缀: ${targetPrefix}）`); }
                 }
             }
         });
 
-        function generateRandomScore() {
-            return (Math.random() * (9.9 - 7.5) + 7.5).toFixed(1);
-        }
+        function generateRandomScore() { return (Math.random() * (9.9 - 7.5) + 7.5).toFixed(1); }
 
         // ==========================================
-        // 3. 极简增删与✨自动抓取标题核心逻辑✨
+        // 3. ✨核心修复：自动抓取标题✨
         // ==========================================
-        
-        // 自动提取子文件内容并更新目录
         document.getElementById('sync-titles-btn').addEventListener('click', async () => {
-            let token = localStorage.getItem('github_pat');
-            if (!token) {
-                token = prompt('读取子文件需要 GitHub Token:');
-                if (!token) return;
-                localStorage.setItem('github_pat', token);
-            }
+            const cfg = ensureConfig();
+            if (!cfg) return;
 
-            let filePath = engineScript.getAttribute('data-file-path');
-            if (!filePath && typeof FILE_PATH !== 'undefined') filePath = FILE_PATH;
-            const dirPath = filePath ? filePath.substring(0, filePath.lastIndexOf('/')) : '';
-            if (!dirPath) return alert("请先【保存】一次主目录，建立路径绑定！");
-
+            const dirPath = cfg.path.substring(0, cfg.path.lastIndexOf('/'));
             const btn = document.getElementById('sync-titles-btn');
             const originalText = btn.innerText;
             btn.innerText = '⏳...';
             btn.style.pointerEvents = 'none';
 
             try {
-                // 1. 拿文件列表
                 const files = await getDirectoryFiles();
-                const chapterFiles = files.filter(f => f.startsWith('Chapter_') && f.endsWith('.html'));
+                // 修复 1：放宽文件匹配条件，不再强制要求以 .html 结尾
+                const chapterFiles = files.filter(f => f.startsWith('Chapter_'));
 
-                if (chapterFiles.length === 0) throw new Error("目录下没有找到 Chapter_ 开头的 HTML 文件。");
+                if (chapterFiles.length === 0) throw new Error("目录下没有找到 Chapter_ 开头的文件，请确认文件路径是否正确。");
 
-                // 2. 并发读取所有具体章节文件的源码内容
                 const fetchPromises = chapterFiles.map(async (filename) => {
-                    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${dirPath}/${filename}`;
+                    const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${dirPath}/${filename}`;
                     const res = await fetch(url, {
-                        headers: { 
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/vnd.github.v3.raw' 
-                        }
+                        headers: { 'Authorization': `Bearer ${cfg.token}`, 'Accept': 'application/vnd.github.v3.raw' }
                     });
                     if (!res.ok) return null;
                     return { filename, html: await res.text() };
@@ -279,27 +329,24 @@
                 const results = await Promise.all(fetchPromises);
                 let updatedCount = 0;
 
-                // 3. 虚拟 DOM 解析并对比替换
                 results.forEach(item => {
                     if (!item) return;
                     const match = item.filename.match(/Chapter_(\d+)/);
                     if (!match) return;
                     const chapterNum = parseInt(match[1], 10);
 
-                    // 虚拟解析 HTML
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(item.html, 'text/html');
 
-                    // 提取标题
-                    const h1Text = doc.querySelector('h1')?.innerText || '';
+                    // 修复 2：DOMParser 产生的虚拟 DOM 必须使用 textContent，不能使用 innerText
+                    const h1Text = doc.querySelector('h1')?.textContent || '';
                     const enTitle = h1Text.includes(':') ? h1Text.substring(h1Text.indexOf(':') + 1).trim() : h1Text;
-
-                    const zhText = doc.querySelector('.zh-para')?.innerText || '';
+                    
+                    const zhText = doc.querySelector('.zh-para')?.textContent || '';
                     const zhTitle = zhText.includes('：') ? zhText.substring(zhText.indexOf('：') + 1).trim() : zhText;
 
                     if (!enTitle && !zhTitle) return;
 
-                    // 在主页里找到对应卡片
                     document.querySelectorAll('.ep').forEach(card => {
                         const titleEl = card.querySelector('.title');
                         if (!titleEl) return;
@@ -312,7 +359,6 @@
                                 if (zhTitle && enTitle && zhTitle !== enTitle) {
                                     newTitleStr += ` (${enTitle})`;
                                 }
-                                
                                 if (titleEl.innerText !== newTitleStr && !titleEl.innerText.includes(zhTitle)) {
                                     titleEl.innerText = newTitleStr;
                                     updatedCount++;
@@ -322,12 +368,8 @@
                     });
                 });
 
-                alert(`✅ 扫描完成！共自动填充/更新了 ${updatedCount} 个章节标题。\n点击确定后将自动提交覆盖至云端！`);
-                
-                // 4. 自动触发整体 GitHub 保存！
-                if (updatedCount > 0) {
-                    saveBtn.click();
-                }
+                alert(`✅ 扫描完成！共自动更新了 ${updatedCount} 个标题。\n点击确定后将自动提交覆盖至云端！`);
+                if (updatedCount > 0) saveBtn.click();
 
             } catch (e) {
                 console.error(e);
@@ -338,10 +380,9 @@
             }
         });
 
-        // 极简增加逻辑 
         document.getElementById('simple-add-btn').addEventListener('click', () => {
             const nextSeasonNum = document.querySelectorAll('.season-divider').length + 1;
-            const sName = prompt('请输入你要添加的季名：', `第${nextSeasonNum}季`);
+            const sName = prompt('请输入添加的季名：', `第${nextSeasonNum}季`);
             if (!sName) return; 
 
             let maxChapter = 0;
@@ -356,7 +397,6 @@
             const startChapter = maxChapter + 1;
             const endChapter = maxChapter + 20; 
             let epTemplate = '';
-
             for (let i = startChapter; i <= endChapter; i++) {
                 epTemplate += `<div class="ep"><div class="score">${generateRandomScore()}</div><div class="title">第${i}章：[标题占位符]</div><p>[内容占位符]</p></div>`;
             }
@@ -371,18 +411,14 @@
             const newEdits = newContainer.querySelectorAll('.title, .ep p, .score');
             bindEditEffects(newEdits);
             newEdits.forEach(el => el.setAttribute('contenteditable', 'true'));
-
-            alert('✨ 章节已生成在页面底部！\n生成后，可以点击【🔄】自动去抓取替换占位符标题！');
+            alert('✨ 章节已生成在页面底部！\n可以点击【🔄】去抓取替换占位符。');
         });
 
-        // 删除逻辑
         document.getElementById('simple-del-btn').addEventListener('click', () => {
             const dividers = document.querySelectorAll('.season-divider');
             if (dividers.length === 0) return alert('已经删光了！');
-
             const lastDivider = dividers[dividers.length - 1];
             const lastContainer = lastDivider.nextElementSibling;
-
             if (confirm(`⚠️ 确定要删除【${lastDivider.innerText}】吗？`)) {
                 lastDivider.remove();
                 if (lastContainer && lastContainer.classList.contains('container')) lastContainer.remove();
@@ -390,7 +426,7 @@
         });
 
         // ==========================================
-        // 4. 白名单重建引擎与 GitHub 提交流程
+        // 4. 白名单重建引擎与 GitHub 同步
         // ==========================================
         function getPurifiedHTML() {
             const seasonsData = [];
@@ -405,8 +441,7 @@
                             if (!el) return "";
                             const clone = el.cloneNode(true);
                             clone.querySelectorAll('.para-read-btn, .x-tts-header-btn, svg, img, button, a').forEach(n => n.remove());
-                            let text = clone.innerText.trim();
-                            return text.replace(/\n/g, '<br>');
+                            return clone.innerText.trim().replace(/\n/g, '<br>');
                         };
                         epsData.push({ score: getSafeText('.score'), title: getSafeText('.title'), content: getSafeText('p') });
                     });
@@ -434,7 +469,30 @@
             htmlBlocks.push('        .ep:hover .score { transform: rotate(-2deg) scale(1.1); background: #8b0000; color: #fff; transition: all 0.2s; }');
             htmlBlocks.push('        .title { font-weight: 900; color: #b22222; font-size: 1.1rem; margin-bottom: 8px; border-bottom: 2px solid #222; padding-bottom: 3px; padding-right: 45px; }');
             htmlBlocks.push('        p { margin: 0; font-size: 0.95rem; color: #111; text-align: justify; }');
+            htmlBlocks.push('        #config-gear { position: fixed; top: 15px; right: 20px; font-size: 32px; cursor: pointer; z-index: 9999; transition: transform 0.3s; text-shadow: 2px 2px 0px #8b0000; user-select: none; }');
+            htmlBlocks.push('        #config-gear:hover { transform: rotate(90deg) scale(1.1); }');
+            htmlBlocks.push('        #config-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; backdrop-filter: blur(2px); }');
+            htmlBlocks.push('        #config-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff8dc; border: 4px solid #8b0000; padding: 25px; z-index: 10001; width: 90%; max-width: 350px; box-shadow: 10px 10px 0px #222; display: none; box-sizing: border-box; }');
+            htmlBlocks.push('        #config-modal h2 { margin-top: 0; color: #8b0000; border-bottom: 2px dashed #222; padding-bottom: 10px; font-size: 1.4rem; text-align: center; }');
+            htmlBlocks.push('        .cfg-group { margin-bottom: 12px; text-align: left; }');
+            htmlBlocks.push('        .cfg-group label { display: block; font-weight: bold; font-size: 0.9rem; color: #222; margin-bottom: 4px; }');
+            htmlBlocks.push('        .cfg-group input { width: 100%; box-sizing: border-box; padding: 8px; border: 2px solid #444; background: #fff; font-family: monospace; font-size: 14px; }');
+            htmlBlocks.push('        .cfg-group input:focus { outline: none; border-color: #8b0000; background: #ffe4e1; }');
+            htmlBlocks.push('        #cfg-save-btn { margin-top: 15px; width: 100%; padding: 12px; background: #222; color: #fff; border: none; font-weight: 900; font-size: 1.1rem; cursor: pointer; border: 2px solid #8b0000; box-shadow: 4px 4px 0px #8b0000; transition: all 0.1s; }');
+            htmlBlocks.push('        #cfg-save-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #8b0000; }');
             htmlBlocks.push('    </style>\n</head>\n<body>\n');
+            
+            htmlBlocks.push('    <div id="config-gear" title="系统配置">⚙️</div>');
+            htmlBlocks.push('    <div id="config-overlay"></div>');
+            htmlBlocks.push('    <div id="config-modal">');
+            htmlBlocks.push('        <h2>🛠️ 宇宙中枢配置</h2>');
+            htmlBlocks.push('        <div class="cfg-group"><label>GitHub 拥有者 (Owner):</label><input type="text" id="cfg-owner" placeholder="例如: FreshMart"></div>');
+            htmlBlocks.push('        <div class="cfg-group"><label>GitHub 仓库名 (Repo):</label><input type="text" id="cfg-repo" placeholder="例如: FreshMart.github.io"></div>');
+            htmlBlocks.push('        <div class="cfg-group"><label>GitHub Token (PAT):</label><input type="password" id="cfg-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"></div>');
+            htmlBlocks.push('        <div class="cfg-group"><label>主目录绑定路径 (Path):</label><input type="text" id="cfg-path" placeholder="例如: volume2/index.html"></div>');
+            htmlBlocks.push('        <button id="cfg-save-btn">💾 保存并应用</button>');
+            htmlBlocks.push('    </div>\n');
+
             htmlBlocks.push('    <h1>新鲜玛特的疯狂宇宙<br>第二卷</h1>');
             htmlBlocks.push('    <p class="subtitle">—— 欢迎光临！您的底线已过期 ——</p>\n');
 
@@ -450,12 +508,12 @@
 
             htmlBlocks.push('    <!-- 极简增删与同步控件 (编辑模式下显示) -->');
             htmlBlocks.push('    <div id="simple-edit-controls" style="display: none; text-align: center; margin: 40px auto 120px auto;">');
-            htmlBlocks.push('        <button id="simple-add-btn" style="background: #228b22; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;">＋</button>');
+            htmlBlocks.push('        <button id="simple-add-btn" style="background: #228b22; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="新增章节">＋</button>');
             htmlBlocks.push('        <button id="sync-titles-btn" style="background: #1e90ff; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="自动抓取文件标题">🔄</button>');
-            htmlBlocks.push('        <button id="simple-del-btn" style="background: #8b0000; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;">🗑️</button>');
+            htmlBlocks.push('        <button id="simple-del-btn" style="background: #8b0000; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="删除末尾季">🗑️</button>');
             htmlBlocks.push('    </div>\n');
             htmlBlocks.push('    <!-- 悬浮的同步提交按钮 -->');
-            htmlBlocks.push('    <div id="github-save-btn" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 300px; background: #222; color: #fff; padding: 15px; border-radius: 12px; font-weight: 900; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 0px #8b0000; transition: all 0.1s; text-align: center; border: 2px solid #8b0000; z-index: 10000;">');
+            htmlBlocks.push('    <div id="github-save-btn" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 300px; background: #222; color: #fff; padding: 15px; border-radius: 12px; font-weight: 900; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 0px #8b0000; transition: all 0.1s; text-align: center; border: 2px solid #8b0000; z-index: 9998;">');
             htmlBlocks.push('        🚀 同步提交到 GitHub\n    </div>\n');
 
             let currentSavedPath = engineScript.getAttribute('data-file-path');
@@ -475,64 +533,49 @@
         saveBtn.addEventListener('touchend', () => { saveBtn.style.boxShadow = '0 4px 0px #8b0000'; saveBtn.style.transform = 'translateX(-50%) translateY(0)'; });
 
         saveBtn.addEventListener('click', async () => {
-            let token = localStorage.getItem('github_pat');
-            if (!token) {
-                token = prompt('请输入 GitHub Token:');
-                if (!token) return;
-                localStorage.setItem('github_pat', token);
-            }
-
-            let filePath = engineScript.getAttribute('data-file-path');
-            if (!filePath) {
-                filePath = prompt('【初次绑定】请输入此故事要保存的专属 GitHub 路径\n(例如：Notes/danmu/MyNewStory/index.html):');
-                if (!filePath) return;
-                engineScript.setAttribute('data-file-path', filePath);
-            }
+            const cfg = ensureConfig();
+            if (!cfg) return;
 
             saveBtn.innerText = '⏳ 白名单重建并同步中...';
             saveBtn.style.pointerEvents = 'none';
             try {
-                const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`;
+                const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
                 let fileSha = undefined;
                 try {
-                    const getRes = await fetch(apiUrl, { headers: { 'Authorization': `Bearer ${token}` } });
+                    const getRes = await fetch(apiUrl, { headers: { 'Authorization': `Bearer ${cfg.token}` } });
                     if (getRes.status === 401) {
                         localStorage.removeItem('github_pat');
-                        throw new Error('Token 无效，请重新输入。');
+                        throw new Error('Token 已过期或无效，请重新输入。');
                     }
-                    if (getRes.ok) {
-                        fileSha = (await getRes.json()).sha;
-                    }
+                    if (getRes.ok) fileSha = (await getRes.json()).sha;
                 } catch (e) {
                     if(e.message.includes('Token')) throw e;
                 }
 
                 const cleanHTML = getPurifiedHTML(); 
-
                 const bodyData = {
-                    message: '📝 更新宇宙档案 (触发自动标题同步)',
+                    message: '📝 更新宇宙档案 (修复兼容性)',
                     content: btoa(unescape(encodeURIComponent(cleanHTML)))
                 };
                 if (fileSha) bodyData.sha = fileSha;
 
                 const putRes = await fetch(apiUrl, {
                     method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(bodyData)
                 });
 
                 if (putRes.ok) {
-                    alert('🎉 完美成功！数据已纯净重建并存入云端。\n此文件已永久绑定路径：' + filePath);
+                    alert('🎉 完美成功！数据已纯净重建并存入云端。');
                     if (controls.style.display === 'block') toggleEditMode(); 
                 } else {
                     const err = await putRes.json();
                     throw new Error(err.message || '保存失败');
                 }
             } catch (e) { 
-                alert('网络或 Token 错误: ' + e.message); 
+                alert('网络或配置错误: ' + e.message); 
                 controls.style.display = 'block'; 
-            }
-            finally { 
+            } finally { 
                 saveBtn.innerText = '🚀 同步提交到 GitHub'; 
                 saveBtn.style.pointerEvents = 'auto'; 
             }
