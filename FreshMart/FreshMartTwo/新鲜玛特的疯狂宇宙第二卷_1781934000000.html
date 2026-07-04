@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新鲜玛特的疯狂宇宙</title>
+    <title>目录 - [模板]</title>
     <style>
         body { font-family: "Microsoft YaHei", "Arial Black", sans-serif; line-height: 1.5; background: #fff8dc; color: #222; max-width: 1100px; margin: 0 auto; padding: 20px; border: 6px solid #8b0000; }
         h1 { text-align: center; background: #8b0000; color: #fff; padding: 15px; letter-spacing: 2px; transform: rotate(-1deg); box-shadow: 5px 5px 0px #222; }
@@ -44,14 +44,14 @@
     <!-- 配置中心弹窗 -->
     <div id="config-overlay"></div>
     <div id="config-modal">
-        <h2>🛠️ 宇宙中枢配置</h2>
+        <h2>🛠️ 核心引擎配置</h2>
         <div class="cfg-group">
             <label>GitHub 拥有者 (Owner):</label>
-            <input type="text" id="cfg-owner" placeholder="例如: moodHappy">
+            <input type="text" id="cfg-owner" placeholder="例如: yourName">
         </div>
         <div class="cfg-group">
             <label>GitHub 仓库名 (Repo):</label>
-            <input type="text" id="cfg-repo" placeholder="例如: MiyetsukoSeries">
+            <input type="text" id="cfg-repo" placeholder="例如: yourRepo">
         </div>
         <div class="cfg-group">
             <label>GitHub Token (PAT):</label>
@@ -59,24 +59,23 @@
         </div>
         <div class="cfg-group">
             <label>主目录绑定路径 (Path):</label>
-            <input type="text" id="cfg-path" placeholder="例如: FreshMart/FreshMartTwo/xxx.html">
+            <input type="text" id="cfg-path" placeholder="例如: book/index.html">
         </div>
         <button id="cfg-save-btn">💾 保存并应用</button>
     </div>
 
-    <h1>新鲜玛特的疯狂宇宙<br>第二卷</h1>
-    <p class="subtitle">—— 欢迎光临！您的底线已过期 ——</p>
+    <h1 class="title-edit">[书名占位符]</h1>
+    <p class="subtitle">—— [副标题/寄语占位符] ——</p>
 
-    <!-- 初始的示例分卷结构 (50章一季) -->
-    <div class="season-divider">第一卷 (1-50章)</div>
+    <!-- 初始的示例分季结构 (50章一季) -->
+    <div class="season-divider">第一季 (1-50章)</div>
     <div class="container" style="display: grid;">
-        <!-- 如果页面原本啥都没有，抓取引擎也会自动按照50章边界补齐！ -->
-        <div class="ep"><div class="score">8.5</div><div class="title">第1章：[标题占位符]</div><p>[内容占位符]</p></div>
+        <div class="ep"><div class="score">8.5</div><div class="title">第1章：[标题占位符]</div><p>[内容摘要占位符]</p></div>
     </div>
 
     <!-- 极简增删与同步控件 (编辑模式下显示) -->
     <div id="simple-edit-controls" style="display: none; text-align: center; margin: 40px auto 120px auto;">
-        <button id="simple-add-btn" style="background: #228b22; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="新增章节">＋</button>
+        <button id="simple-add-btn" style="background: #228b22; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="新增一季">＋</button>
         <button id="sync-titles-btn" style="background: #1e90ff; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="自动抓取文件标题">🔄</button>
         <button id="simple-del-btn" style="background: #8b0000; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="删除末尾季">🗑️</button>
     </div>
@@ -93,6 +92,17 @@
         const engineScript = document.getElementById('core-engine');
 
         // ==========================================
+        // 阿拉伯数字转中文数字 (用于生成 第一季、第二季...)
+        // ==========================================
+        function numberToChinese(num) {
+            const chnNumChar = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+            if (num <= 10) return num === 10 ? "十" : chnNumChar[num];
+            if (num < 20) return "十" + (num % 10 === 0 ? "" : chnNumChar[num % 10]);
+            if (num < 100) return chnNumChar[Math.floor(num / 10)] + "十" + (num % 10 === 0 ? "" : chnNumChar[num % 10]);
+            return num.toString(); 
+        }
+
+        // ==========================================
         // 0. 配置中心逻辑
         // ==========================================
         const gearBtn = document.getElementById('config-gear');
@@ -102,8 +112,8 @@
 
         const getSysConfig = () => {
             return {
-                owner: localStorage.getItem('github_owner') || 'moodHappy',
-                repo: localStorage.getItem('github_repo') || 'MiyetsukoSeries',
+                owner: localStorage.getItem('github_owner') || '',
+                repo: localStorage.getItem('github_repo') || '',
                 token: localStorage.getItem('github_pat') || '',
                 path: engineScript.getAttribute('data-file-path') || ''
             };
@@ -196,7 +206,7 @@
         }
 
         // ==========================================
-        // 2. 界面交互与模式切换 (增加对齿轮的控制)
+        // 2. 界面交互与模式切换 (增加对大标题的编辑)
         // ==========================================
         function bindCollapseEvent(dividers) {
             dividers.forEach(button => {
@@ -214,7 +224,7 @@
         }
         bindCollapseEvent(document.querySelectorAll('.season-divider'));
 
-        const getEditableElements = () => document.querySelectorAll('.title, .ep p, .score');
+        const getEditableElements = () => document.querySelectorAll('.title, .ep p, .score, .title-edit, .subtitle, .season-divider');
 
         function bindEditEffects(elements) {
             elements.forEach(el => {
@@ -222,12 +232,13 @@
                 el.addEventListener('focus', () => {
                     el.style.backgroundColor = '#fffacd';
                     el.style.outline = '2px dashed #8b0000';
-                    if (el.classList.contains('score')) el.style.color = '#8b0000';
+                    if (el.classList.contains('score') || el.classList.contains('season-divider')) el.style.color = '#8b0000';
                 });
                 el.addEventListener('blur', () => {
                     el.style.backgroundColor = '';
                     el.style.outline = '';
                     if (el.classList.contains('score')) el.style.color = '';
+                    if (el.classList.contains('season-divider')) el.style.color = '#fff';
                 });
             });
         }
@@ -301,7 +312,7 @@
         function generateRandomScore() { return (Math.random() * (9.9 - 7.5) + 7.5).toFixed(1); }
 
         // ==========================================
-        // 3. ✨核心进阶：严格50章分卷建库与纯中文解析✨
+        // 3. ✨核心进阶：智能抓取、按“季”建卡片✨
         // ==========================================
         document.getElementById('sync-titles-btn').addEventListener('click', async () => {
             const cfg = ensureConfig();
@@ -319,7 +330,6 @@
 
                 if (chapterFiles.length === 0) throw new Error("目录下没有找到 Chapter_ 开头的文件，请确认文件路径是否正确。");
 
-                // 使用分批请求 (每批10个)，防止并发过高
                 const results = [];
                 for (let i = 0; i < chapterFiles.length; i += 10) {
                     btn.innerText = `⏳ 抓取中 (${i}/${chapterFiles.length})...`;
@@ -336,7 +346,6 @@
                     results.push(...batchRes.filter(r => r));
                 }
 
-                // 按章节数字严格排序，确保顺序生成不乱套
                 results.sort((a, b) => {
                     const numA = parseInt(a.filename.match(/Chapter_(\d+)/)[1], 10);
                     const numB = parseInt(b.filename.match(/Chapter_(\d+)/)[1], 10);
@@ -361,7 +370,6 @@
 
                     if (!enTitle && !zhTitle) return;
 
-                    // 纯净中文解析：绝对不带括号和英文
                     const newTitleStr = `第${chapterNum}章：${zhTitle || enTitle}`;
 
                     let existingCard = null;
@@ -381,25 +389,27 @@
                             updatedCount++;
                         }
                     } else {
-                        // 坑位不存在！按每50章一卷自动计算位置
+                        // 自动按照每季50章来新建季
                         const seasonIndex = Math.floor((chapterNum - 1) / 50); 
                         let containers = document.querySelectorAll('.container');
                         
-                        // 如果连卷的大标题都没有，引擎连卷都能给你自动造出来
                         while (containers.length <= seasonIndex) {
                             const sNum = containers.length + 1;
                             const sStart = (sNum - 1) * 50 + 1;
                             const sEnd = sNum * 50;
-                            const newSeasonHtml = `<div class="season-divider">第${sNum}卷 (${sStart}-${sEnd}章)</div><div class="container" style="display: grid;"></div>`;
+                            // 使用中文大写生成：第一季、第二季
+                            const sName = `第${numberToChinese(sNum)}季`;
+                            const newSeasonHtml = `<div class="season-divider">${sName} (${sStart}-${sEnd}章)</div><div class="container" style="display: grid;"></div>`;
                             controls.insertAdjacentHTML('beforebegin', newSeasonHtml);
                             
                             containers = document.querySelectorAll('.container');
                             const dividers = document.querySelectorAll('.season-divider');
                             bindCollapseEvent([dividers[dividers.length - 1]]);
+                            bindEditEffects([dividers[dividers.length - 1]]);
                         }
 
                         const targetContainer = containers[seasonIndex];
-                        const newEpHtml = `<div class="ep"><div class="score">${generateRandomScore()}</div><div class="title">${newTitleStr}</div><p>[内容已收录]</p></div>`;
+                        const newEpHtml = `<div class="ep"><div class="score">${generateRandomScore()}</div><div class="title">${newTitleStr}</div><p>[内容摘要占位符]</p></div>`;
                         targetContainer.insertAdjacentHTML('beforeend', newEpHtml);
                         
                         const newlyAdded = targetContainer.lastElementChild;
@@ -423,7 +433,7 @@
             }
         });
 
-        // 极简添加逻辑同样遵循 50章一卷
+        // 极简添加逻辑遵循 50章一季
         document.getElementById('simple-add-btn').addEventListener('click', () => {
             let maxChapter = 0;
             document.querySelectorAll('.title').forEach(el => {
@@ -434,17 +444,16 @@
                 }
             });
 
-            // 自动计算这一卷的首尾章节数字（如 51 - 100）
             const startChapter = maxChapter + 1;
             const targetSeason = Math.ceil(startChapter / 50) || 1; 
             const endChapter = targetSeason * 50;
 
-            const sName = prompt('请输入添加的季/卷名：', `第${targetSeason}卷`);
+            const sName = prompt('请输入添加的季名：', `第${numberToChinese(targetSeason)}季`);
             if (!sName) return; 
 
             let epTemplate = '';
             for (let i = startChapter; i <= endChapter; i++) {
-                epTemplate += `<div class="ep"><div class="score">${generateRandomScore()}</div><div class="title">第${i}章：[标题占位符]</div><p>[内容已收录]</p></div>`;
+                epTemplate += `<div class="ep"><div class="score">${generateRandomScore()}</div><div class="title">第${i}章：[标题占位符]</div><p>[内容摘要占位符]</p></div>`;
             }
             const newSeasonHtml = `<div class="season-divider">${sName} (${startChapter}-${endChapter}章)</div><div class="container" style="display: grid;">${epTemplate}</div>`;
 
@@ -452,6 +461,7 @@
             
             const newDivider = controls.previousElementSibling.previousElementSibling;
             bindCollapseEvent([newDivider]);
+            bindEditEffects([newDivider]);
 
             const newEdits = newDivider.nextElementSibling.querySelectorAll('.title, p, .score');
             bindEditEffects(newEdits);
@@ -472,9 +482,12 @@
         });
 
         // ==========================================
-        // 4. 白名单重建引擎与 GitHub 同步
+        // 4. 白名单重建引擎与 GitHub 同步 (保留模板属性)
         // ==========================================
         function getPurifiedHTML() {
+            const mainTitle = document.querySelector('.title-edit').innerText.trim() || '[书名占位符]';
+            const subTitle = document.querySelector('.subtitle').innerText.trim() || '—— [副标题/寄语占位符] ——';
+
             const seasonsData = [];
             document.querySelectorAll('.season-divider').forEach(divider => {
                 const container = divider.nextElementSibling;
@@ -498,7 +511,7 @@
             });
 
             let htmlBlocks = [];
-            htmlBlocks.push('<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>新鲜玛特的疯狂宇宙</title>\n    <style>');
+            htmlBlocks.push('<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>目录 - [模板]</title>\n    <style>');
             htmlBlocks.push('        body { font-family: "Microsoft YaHei", "Arial Black", sans-serif; line-height: 1.5; background: #fff8dc; color: #222; max-width: 1100px; margin: 0 auto; padding: 20px; border: 6px solid #8b0000; }');
             htmlBlocks.push('        h1 { text-align: center; background: #8b0000; color: #fff; padding: 15px; letter-spacing: 2px; transform: rotate(-1deg); box-shadow: 5px 5px 0px #222; }');
             htmlBlocks.push('        .subtitle { text-align: center; font-weight: bold; color: #444; transform: rotate(1deg); margin-bottom: 30px; }');
@@ -531,16 +544,16 @@
             htmlBlocks.push('    <div id="config-gear" title="系统配置" style="display: none;">⚙️</div>');
             htmlBlocks.push('    <div id="config-overlay"></div>');
             htmlBlocks.push('    <div id="config-modal">');
-            htmlBlocks.push('        <h2>🛠️ 宇宙中枢配置</h2>');
-            htmlBlocks.push('        <div class="cfg-group"><label>GitHub 拥有者 (Owner):</label><input type="text" id="cfg-owner" placeholder="例如: moodHappy"></div>');
-            htmlBlocks.push('        <div class="cfg-group"><label>GitHub 仓库名 (Repo):</label><input type="text" id="cfg-repo" placeholder="例如: MiyetsukoSeries"></div>');
+            htmlBlocks.push('        <h2>🛠️ 核心引擎配置</h2>');
+            htmlBlocks.push('        <div class="cfg-group"><label>GitHub 拥有者 (Owner):</label><input type="text" id="cfg-owner" placeholder="例如: yourName"></div>');
+            htmlBlocks.push('        <div class="cfg-group"><label>GitHub 仓库名 (Repo):</label><input type="text" id="cfg-repo" placeholder="例如: yourRepo"></div>');
             htmlBlocks.push('        <div class="cfg-group"><label>GitHub Token (PAT):</label><input type="password" id="cfg-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"></div>');
-            htmlBlocks.push('        <div class="cfg-group"><label>主目录绑定路径 (Path):</label><input type="text" id="cfg-path" placeholder="例如: FreshMart/FreshMartTwo/xxx.html"></div>');
+            htmlBlocks.push('        <div class="cfg-group"><label>主目录绑定路径 (Path):</label><input type="text" id="cfg-path" placeholder="例如: book/index.html"></div>');
             htmlBlocks.push('        <button id="cfg-save-btn">💾 保存并应用</button>');
             htmlBlocks.push('    </div>\n');
 
-            htmlBlocks.push('    <h1>新鲜玛特的疯狂宇宙<br>第二卷</h1>');
-            htmlBlocks.push('    <p class="subtitle">—— 欢迎光临！您的底线已过期 ——</p>\n');
+            htmlBlocks.push(`    <h1 class="title-edit">${mainTitle}</h1>`);
+            htmlBlocks.push(`    <p class="subtitle">${subTitle}</p>\n`);
 
             seasonsData.forEach((s, idx) => {
                 htmlBlocks.push(`    <!-- 第${idx + 1}季 -->`);
@@ -554,7 +567,7 @@
 
             htmlBlocks.push('    <!-- 极简增删与同步控件 (编辑模式下显示) -->');
             htmlBlocks.push('    <div id="simple-edit-controls" style="display: none; text-align: center; margin: 40px auto 120px auto;">');
-            htmlBlocks.push('        <button id="simple-add-btn" style="background: #228b22; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="新增章节">＋</button>');
+            htmlBlocks.push('        <button id="simple-add-btn" style="background: #228b22; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="新增一季">＋</button>');
             htmlBlocks.push('        <button id="sync-titles-btn" style="background: #1e90ff; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="自动抓取文件标题">🔄</button>');
             htmlBlocks.push('        <button id="simple-del-btn" style="background: #8b0000; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="删除末尾季">🗑️</button>');
             htmlBlocks.push('    </div>\n');
@@ -600,7 +613,7 @@
 
                 const cleanHTML = getPurifiedHTML(); 
                 const bodyData = {
-                    message: '📝 更新宇宙档案 (智能分卷建档与防封禁迭代)',
+                    message: '📝 更新宇宙档案 (通用版模板)',
                     content: btoa(unescape(encodeURIComponent(cleanHTML)))
                 };
                 if (fileSha) bodyData.sha = fileSha;
