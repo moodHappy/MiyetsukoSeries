@@ -91,14 +91,14 @@
             text-shadow: none;
             min-width: 0; 
         }
-        
+
         .config-row select option {
             background: #222;
             color: #fff;
         }
 
         .config-row input::placeholder { color: rgba(255, 255, 255, 0.5); }
-        
+
         .config-row button {
             background: rgba(0, 0, 0, 0.4);
             color: #fff;
@@ -112,7 +112,7 @@
             text-shadow: none;
             white-space: nowrap;
         }
-        
+
         .config-row button:hover { background: rgba(255, 255, 255, 0.2); }
         .config-row button.btn-danger:hover { background: rgba(255, 50, 50, 0.5); border-color: rgba(255, 100, 100, 0.8); }
 
@@ -272,6 +272,8 @@
                     <a class="link" href="https://moodhappy.github.io/OneHundredYearsReading/docs/index.html">OneHundred Years Reading</a>
                     <a class="link" href="https://moodhappy.github.io/Web-Notes-Matrix/docs/index.html">Web Matrix</a>
                     <a class="link" href="https://moodhappy.github.io/bbc-news-archive/docs/index.html">BBC News Archive</a>
+                                        <a class="link" href="https://moodhappy.github.io/nyt-news-archive/docs/index.html">NYT News Archive</a>
+                    
                     <a class="link" href="https://moodhappy.github.io/YT-Street-Echoes/docs/index.html">YT Street Echoes</a>
                     <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/style/YouTubeChina24.html">China24</a>
                     <a class="link" href="https://moodhappy.github.io/Echoes-of-History/docs/index.html">Echoes of History</a>
@@ -316,10 +318,10 @@
         window.addEventListener('touchend', function(e) {
             let touchEndX = e.changedTouches[0].screenX;
             let touchEndY = e.changedTouches[0].screenY;
-            
+
             let dx = touchEndX - touchStartX;
             let dy = touchEndY - touchStartY;
-            
+
             // 确保是明显的水平滑动（水平移动距离大于垂直，且绝对滑动距离>50防误触）
             if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
                 if (dx < 0) {
@@ -356,7 +358,7 @@
             }
 
             const savedMode = localStorage.getItem('miyetsuko_wallpaper_index');
-            
+
             // 兼容以前的 random 模式
             if (savedMode === 'random' || savedMode === 'user_random') {
                 selectionMode = 'user_random';
@@ -373,7 +375,7 @@
         function renderSelect() {
             const select = document.getElementById('bgSelect');
             select.innerHTML = '';
-            
+
             // 选项1：用户随机图（只在用户自己的列表里随机）
             const userRandomOpt = document.createElement('option');
             userRandomOpt.value = 'user_random';
@@ -450,14 +452,14 @@
             }
 
             wallpapers.push({ name: name, url: url });
-            
+
             // 添加新壁纸后，直接选中并显示这张新壁纸
             selectionMode = (wallpapers.length - 1).toString();
-            
+
             saveData();
             renderSelect();
             applyCurrentWallpaper();
-            
+
             nameInput.value = '';
             urlInput.value = '';
         }
@@ -467,15 +469,15 @@
                 alert('系统级选项无法删除！');
                 return;
             }
-            
+
             let displayIndex = parseInt(selectionMode);
             if (confirm(`确定要删除壁纸 "${wallpapers[displayIndex].name}" 吗？`)) {
                 // 删除
                 wallpapers.splice(displayIndex, 1);
-                
+
                 // 删除后自动跳回到“用户随机图”
                 selectionMode = 'user_random';
-                
+
                 saveData();
                 renderSelect();
                 applyCurrentWallpaper();
@@ -505,13 +507,13 @@
                     const importedData = JSON.parse(e.target.result);
                     // 过滤掉以前旧的默认壁纸备份数据
                     const cleanImportedData = importedData.filter(wp => !wp.url.includes("picsum.photos/1920/1080?random=101"));
-                    
+
                     if (Array.isArray(cleanImportedData) && cleanImportedData.length > 0 && cleanImportedData[0].url) {
                         wallpapers = wallpapers.concat(cleanImportedData);
-                        
+
                         // 导入后跳转到刚导入的第一张壁纸
                         selectionMode = (wallpapers.length - cleanImportedData.length).toString();
-                        
+
                         saveData();
                         renderSelect();
                         applyCurrentWallpaper();
