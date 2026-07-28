@@ -50,6 +50,127 @@
             height: 18px;
             fill: currentColor;
         }
+    </style><style id="VMst0.5121583402066447">
+        #tm-dashboard {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 90%; max-width: 420px; max-height: 90vh;
+            background: #fff; border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            z-index: 99999; display: flex; flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        #tm-dashboard.open { opacity: 1; pointer-events: auto; }
+        .tm-header { padding: 15px; border-bottom: 1px solid #eee; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; border-radius: 16px 16px 0 0; }
+        .tm-title { font-weight: 700; font-size: 16px; color: #333; }
+        .tm-close { cursor: pointer; padding: 5px 10px; font-size: 20px; color: #666; }
+        .tm-back { cursor: pointer; padding: 5px 10px; font-size: 18px; color: #007bff; display: none; }
+        .tm-body { flex: 1; overflow-y: auto; padding: 15px; background: #fff; border-radius: 0 0 16px 16px; }
+        
+        /* Grid 布局 */
+        .tm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; user-select: none; }
+        
+        /* 卡片样式 */
+        .tm-card {
+            background: #f1f3f5; border-radius: 10px; padding: 12px;
+            text-align: center; cursor: pointer; transition: transform 0.1s, background 0.2s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 80px; 
+            touch-action: none;
+        }
+        .tm-card:active { transform: scale(0.95); }
+        .tm-card-icon { font-size: 22px; margin-bottom: 6px; pointer-events: none; }
+        .tm-card-text { font-size: 13px; font-weight: 500; color: #495057; pointer-events: none; line-height: 1.2; }
+        .tm-card.primary { background: #e7f5ff; color: #004085; }
+        .tm-card.full { grid-column: span 2; }
+        
+        /* 拖拽时的样式 */
+        .sortable-ghost { opacity: 0.4; background: #cce5ff; border: 2px dashed #007bff; }
+        .sortable-drag { cursor: grabbing; opacity: 1; background: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: scale(1.05); }
+
+        .tm-list-item { padding: 10px; border-bottom: 1px solid #eee; position: relative; }
+        .tm-list-title { font-weight: 600; font-size: 14px; color: #007bff; text-decoration: none; display:block; padding-right: 30px; }
+        .tm-list-meta { font-size: 11px; color: #999; margin-top: 2px; }
+        .tm-list-del { position: absolute; right: 5px; top: 10px; cursor: pointer; color: #dc3545; font-size: 16px; padding: 0 5px; opacity: 0.6; }
+        .tm-list-del:hover { opacity: 1; }
+
+        .tm-btn { width: 100%; padding: 10px; border: none; border-radius: 8px; background: #007bff; color: white; margin-top: 10px; cursor: pointer; transition: background 0.2s; }
+        .tm-btn:hover { background: #0056b3; }
+        .tm-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; box-sizing: border-box; }
+        .tm-select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; background: #fff; }
+        .tm-range-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .tm-range { flex: 1; margin: 0 10px; }
+        .tm-label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; display: block; }
+        
+        .tm-footer { padding: 8px; font-size: 10px; color: #adb5bd; text-align: center; border-top: 1px solid #eee; }
+        #tm-toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: white; padding: 10px 20px;
+            border-radius: 20px; font-size: 13px; z-index: 100000;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s; white-space: nowrap;
+        }
+        
+        /* 日历样式 */
+        .tm-cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .tm-cal-nav { cursor: pointer; user-select: none; padding: 5px 12px; background: #f1f3f5; border-radius: 6px; font-weight: bold; color:#555; }
+        .tm-cal-controls { display: flex; gap: 5px; }
+        .tm-cal-select { border: 1px solid #eee; background: #fff; font-size: 14px; padding: 4px; border-radius: 4px; font-weight: 500; color: #333; }
+        .tm-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .tm-cal-head { text-align: center; font-size: 11px; color: #999; padding-bottom: 5px; }
+        .tm-cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border: 1px solid #eee; border-radius: 6px; font-size: 12px; position: relative; background: #fff; }
+        .tm-cal-cell.has { background: #e7f5ff; border-color: #d0ebff; font-weight: bold; cursor: pointer; color: #004085; }
+        .tm-cal-badge { position: absolute; bottom: 1px; right: 2px; font-size: 8px; color: #007bff; opacity: 0.8; }
+    </style><meta name="viewport" content="width=device-width, initial-scale=1"></head><body class="global-blur-enabled dict-enabled highlights-enabled bar-hidden" aria-expanded="false"><style data-tippy-stylesheet="">.tippy-box[data-animation=fade][data-state=hidden]{opacity:0}[data-tippy-root]{max-width:calc(100vw - 10px)}.tippy-box{position:relative;background-color:#333;color:#fff;border-radius:4px;font-size:14px;line-height:1.4;white-space:normal;outline:0;transition-property:transform,visibility,opacity}.tippy-box[data-placement^=top]>.tippy-arrow{bottom:0}.tippy-box[data-placement^=top]>.tippy-arrow:before{bottom:-7px;left:0;border-width:8px 8px 0;border-top-color:initial;transform-origin:center top}.tippy-box[data-placement^=bottom]>.tippy-arrow{top:0}.tippy-box[data-placement^=bottom]>.tippy-arrow:before{top:-7px;left:0;border-width:0 8px 8px;border-bottom-color:initial;transform-origin:center bottom}.tippy-box[data-placement^=left]>.tippy-arrow{right:0}.tippy-box[data-placement^=left]>.tippy-arrow:before{border-width:8px 0 8px 8px;border-left-color:initial;right:-7px;transform-origin:center left}.tippy-box[data-placement^=right]>.tippy-arrow{left:0}.tippy-box[data-placement^=right]>.tippy-arrow:before{left:-7px;border-width:8px 8px 8px 0;border-right-color:initial;transform-origin:center right}.tippy-box[data-inertia][data-state=visible]{transition-timing-function:cubic-bezier(.54,1.5,.38,1.11)}.tippy-arrow{width:16px;height:16px;color:#333}.tippy-arrow:before{content:"";position:absolute;border-color:transparent;border-style:solid}.tippy-content{position:relative;padding:5px 9px;z-index:1}</style><style>
+        @keyframes elegantPopIn {
+            0% { opacity: 0; transform: translateX(-50%) translateY(15px) scale(0.9); }
+            100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+        }
+        .fancy-copy-btn {
+            position: fixed;
+            bottom: 12%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            color: #ffffff;
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-family: system-ui, -apple-system, sans-serif;
+            font-weight: 600;
+            z-index: 2147483647;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.5), 0 8px 10px -6px rgba(168, 85, 247, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            pointer-events: auto;
+            user-select: none;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .fancy-copy-btn.show-btn {
+            display: flex;
+            animation: elegantPopIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .fancy-copy-btn:hover {
+            transform: translateX(-50%) translateY(-3px);
+            box-shadow: 0 20px 25px -5px rgba(168, 85, 247, 0.6), 0 8px 10px -6px rgba(168, 85, 247, 0.4);
+            background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+        }
+        .fancy-copy-btn:active {
+            transform: translateX(-50%) translateY(1px);
+            box-shadow: 0 5px 10px -3px rgba(168, 85, 247, 0.5);
+        }
+        .fancy-copy-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
     </style><style id="matrix-core-styles">
             .para-wrap { position: relative; margin-bottom: 1.5em; }
             .para-wrap > p { margin-bottom: 0 !important; }
@@ -145,7 +266,7 @@
         .tm-cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border: 1px solid #eee; border-radius: 6px; font-size: 12px; position: relative; background: #fff; }
         .tm-cal-cell.has { background: #e7f5ff; border-color: #d0ebff; font-weight: bold; cursor: pointer; color: #004085; }
         .tm-cal-badge { position: absolute; bottom: 1px; right: 2px; font-size: 8px; color: #007bff; opacity: 0.8; }
-    </style><meta name="viewport" content="width=device-width, initial-scale=1"><style id="relin-highlight">relin-hc relin-highlight[data-relin-meta^="starred"]:not([data-relin-mastered])[data-relin-vocabularies*="68f65b6976aa0ba4dad39330"] relin-origin {
+    </style><style id="relin-highlight">relin-hc relin-highlight[data-relin-meta^="starred"]:not([data-relin-mastered])[data-relin-vocabularies*="68f65b6976aa0ba4dad39330"] relin-origin {
           color: #d3cf15!important;
           opacity: 0.85;
           transition: all 0.3s ease;
@@ -474,7 +595,7 @@ relin-hc relin-highlight[data-relin-meta^="starred"]:not([data-relin-mastered])[
         .relingo-caption relin-hc relin-highlight.relingo-pos-ADV.relingo-pos-underline relin-origin {
           background: linear-gradient(to bottom, transparent 60%, rgba(92, 178, 6, 0.8) 75%);
         }
-        </style></head><body class="global-blur-enabled dict-enabled highlights-enabled bar-hidden" aria-expanded="false"><style data-tippy-stylesheet="">.tippy-box[data-animation=fade][data-state=hidden]{opacity:0}[data-tippy-root]{max-width:calc(100vw - 10px)}.tippy-box{position:relative;background-color:#333;color:#fff;border-radius:4px;font-size:14px;line-height:1.4;white-space:normal;outline:0;transition-property:transform,visibility,opacity}.tippy-box[data-placement^=top]>.tippy-arrow{bottom:0}.tippy-box[data-placement^=top]>.tippy-arrow:before{bottom:-7px;left:0;border-width:8px 8px 0;border-top-color:initial;transform-origin:center top}.tippy-box[data-placement^=bottom]>.tippy-arrow{top:0}.tippy-box[data-placement^=bottom]>.tippy-arrow:before{top:-7px;left:0;border-width:0 8px 8px;border-bottom-color:initial;transform-origin:center bottom}.tippy-box[data-placement^=left]>.tippy-arrow{right:0}.tippy-box[data-placement^=left]>.tippy-arrow:before{border-width:8px 0 8px 8px;border-left-color:initial;right:-7px;transform-origin:center left}.tippy-box[data-placement^=right]>.tippy-arrow{left:0}.tippy-box[data-placement^=right]>.tippy-arrow:before{left:-7px;border-width:8px 8px 8px 0;border-right-color:initial;transform-origin:center right}.tippy-box[data-inertia][data-state=visible]{transition-timing-function:cubic-bezier(.54,1.5,.38,1.11)}.tippy-arrow{width:16px;height:16px;color:#333}.tippy-arrow:before{content:"";position:absolute;border-color:transparent;border-style:solid}.tippy-content{position:relative;padding:5px 9px;z-index:1}</style><style>
+        </style><style data-tippy-stylesheet="">.tippy-box[data-animation=fade][data-state=hidden]{opacity:0}[data-tippy-root]{max-width:calc(100vw - 10px)}.tippy-box{position:relative;background-color:#333;color:#fff;border-radius:4px;font-size:14px;line-height:1.4;white-space:normal;outline:0;transition-property:transform,visibility,opacity}.tippy-box[data-placement^=top]>.tippy-arrow{bottom:0}.tippy-box[data-placement^=top]>.tippy-arrow:before{bottom:-7px;left:0;border-width:8px 8px 0;border-top-color:initial;transform-origin:center top}.tippy-box[data-placement^=bottom]>.tippy-arrow{top:0}.tippy-box[data-placement^=bottom]>.tippy-arrow:before{top:-7px;left:0;border-width:0 8px 8px;border-bottom-color:initial;transform-origin:center bottom}.tippy-box[data-placement^=left]>.tippy-arrow{right:0}.tippy-box[data-placement^=left]>.tippy-arrow:before{border-width:8px 0 8px 8px;border-left-color:initial;right:-7px;transform-origin:center left}.tippy-box[data-placement^=right]>.tippy-arrow{left:0}.tippy-box[data-placement^=right]>.tippy-arrow:before{left:-7px;border-width:8px 8px 8px 0;border-right-color:initial;transform-origin:center right}.tippy-box[data-inertia][data-state=visible]{transition-timing-function:cubic-bezier(.54,1.5,.38,1.11)}.tippy-arrow{width:16px;height:16px;color:#333}.tippy-arrow:before{content:"";position:absolute;border-color:transparent;border-style:solid}.tippy-content{position:relative;padding:5px 9px;z-index:1}</style><style>
         @keyframes elegantPopIn {
             0% { opacity: 0; transform: translateX(-50%) translateY(15px) scale(0.9); }
             100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
@@ -119431,398 +119552,398 @@ luminous：
 - the main thing is... —— 最重要的是……
 - lose one's bearings —— 迷失方向</textarea></div></div>
     <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')" data-relingo-block="true" data-relin-paragraph="179">他们无法返回，因为他们新开辟的地带，刚离开，很快就被植被覆盖掉了，几乎在眼前就长起来了。“没关系，”何塞·阿尔卡蒂奥·布恩迪亚说。“最重要的事情是不要迷失我们的方向。”</p>
-    <div class="para-wrap"><p data-relingo-block="true" data-relin-paragraph="180" data-nexus-idx="86" data-nexus-text="alwaysfollowinghiscompass,hekeptonguidinghismentowardtheinvisiblenorthsothattheywouldbeabletogetoutofthatenchantedregion.itwasathicknight,starless,butthedarknesswasbecomingimpregnatedwithafreshandclearair.">Always following his compass, he kept on guiding his men toward the invisible north so that they would be able to get out of that enchanted region. It was a thick night, starless, but the darkness was becoming impregnated with a fresh and clear air.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no" style="display: block;"><h1 data-relingo-block="true" data-relin-paragraph="308">📌 完整翻译</h1>
-<p data-relingo-block="true" data-relin-paragraph="309">他始终跟随着指南针，继续带领他的部下朝着那看不见的北方前进，以便他们能够离开那片充满魔幻色彩的区域。</p>
-<p data-relingo-block="true" data-relin-paragraph="310">那是一个浓重的黑夜，没有星星，但黑暗之中正逐渐充满一种清新而明澈的空气。</p>
-<hr data-relingo-block="true">
-<h1 data-relingo-block="true" data-relin-paragraph="311">📘 英语教学式讲解</h1>
-<h2 data-relingo-block="true" data-relin-paragraph="312"><relin-hc data-id="1">1. <relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>Always</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="starred-0" data-relin-vocabularies=""><relin-origin>following</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>his</relin-origin></relin-highlight> <relin-highlight data-relin-meta="starred-4" data-relin-vocabularies="6679c0ee12643b3f0e27a3b6 68f65b6976aa0ba4dad39330" class="relingo-highlight"><relin-origin>compass</relin-origin></relin-highlight>,</relin-hc></h2>
+    <div class="para-wrap"><p data-relingo-block="true" data-relin-paragraph="180" data-nexus-idx="86" data-nexus-text="alwaysfollowinghiscompass,hekeptonguidinghismentowardtheinvisiblenorthsothattheywouldbeabletogetoutofthatenchantedregion.itwasathicknight,starless,butthedarknesswasbecomingimpregnatedwithafreshandclearair.">Always following his compass, he kept on guiding his men toward the invisible north so that they would be able to get out of that enchanted region. It was a thick night, starless, but the darkness was becoming impregnated with a fresh and clear air.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no" style="display: block;"><h1>📌 完整翻译</h1>
+<p>他始终跟随着指南针，继续带领他的部下朝着那看不见的北方前进，以便他们能够离开那片充满魔幻色彩的区域。</p>
+<p>那是一个浓重的黑夜，没有星星，但黑暗之中正逐渐充满一种清新而明澈的空气。</p>
+<hr>
+<h1>📘 英语教学式讲解</h1>
+<h2>1. Always following his compass,</h2>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="313"><strong>始终跟随着他的指南针。</strong></li>
+<li><strong>始终跟随着他的指南针。</strong></li>
 </ul>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="314">这是现在分词短语。</p>
-<p data-relingo-block="true" data-relin-paragraph="315">完整结构：</p>
+<hr>
+<p>这是现在分词短语。</p>
+<p>完整结构：</p>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="316"><relin-hc data-id="2"><relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>Always</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="starred-0" data-relin-vocabularies=""><relin-origin>following</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>his</relin-origin></relin-highlight> <relin-highlight data-relin-meta="starred-4" data-relin-vocabularies="6679c0ee12643b3f0e27a3b6 68f65b6976aa0ba4dad39330" class="relingo-highlight"><relin-origin>compass</relin-origin></relin-highlight>, <relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>he</relin-origin></relin-highlight> <relin-highlight data-phrase="keep on" data-relin-meta="unstarred-undefined" data-relin-vocabularies=""><relin-origin><relin-highlight data-relin-mastered="" data-relin-meta="unstarred-0" data-relin-vocabularies=""><relin-origin>kept</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="starred-5" data-relin-vocabularies="6679c0ee12643b3f0e27a3b6"><relin-origin>on</relin-origin></relin-highlight></relin-origin></relin-highlight> <relin-highlight data-relin-meta="starred-0" data-relin-vocabularies="" class="relingo-highlight"><relin-origin>guiding</relin-origin></relin-highlight>...</relin-hc></p>
+<p>Always following his compass, he kept on guiding...</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="317">表示：</p>
-<p data-relingo-block="true" data-relin-paragraph="318">“他在……的情况下，继续……”</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="319"><relin-hc data-id="3"><relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>always</relin-origin></relin-highlight></relin-hc></h2>
-<p data-relingo-block="true" data-relin-paragraph="320">总是；</p>
-<p data-relingo-block="true" data-relin-paragraph="321">始终。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="322">强调：</p>
-<p data-relingo-block="true" data-relin-paragraph="323">何塞没有放弃他的方向判断。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="324"><relin-hc data-id="4"><relin-highlight data-relin-mastered="" data-relin-meta="starred-5" data-relin-vocabularies="6679c0ee12643b3f0e27a3b6"><relin-origin>follow</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>one</relin-origin></relin-highlight><relin-highlight data-relin-meta="unstarred-undefined" data-relin-vocabularies=""><relin-origin>'s</relin-origin></relin-highlight> <relin-highlight data-relin-meta="starred-4" data-relin-vocabularies="6679c0ee12643b3f0e27a3b6 68f65b6976aa0ba4dad39330" class="relingo-highlight"><relin-origin>compass</relin-origin></relin-highlight></relin-hc></h2>
-<p data-relingo-block="true" data-relin-paragraph="325">直译：</p>
-<p data-relingo-block="true" data-relin-paragraph="326">跟随某人的指南针。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="327">实际意思：</p>
-<p data-relingo-block="true" data-relin-paragraph="328">依靠指南针导航。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="329">例如：</p>
+<p>表示：</p>
+<p>“他在……的情况下，继续……”</p>
+<hr>
+<h2>always</h2>
+<p>总是；</p>
+<p>始终。</p>
+<hr>
+<p>强调：</p>
+<p>何塞没有放弃他的方向判断。</p>
+<hr>
+<h2>follow one's compass</h2>
+<p>直译：</p>
+<p>跟随某人的指南针。</p>
+<hr>
+<p>实际意思：</p>
+<p>依靠指南针导航。</p>
+<hr>
+<p>例如：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="330"><relin-hc data-id="5"><relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>The</relin-origin></relin-highlight> <relin-highlight data-relin-meta="unstarred-undefined" data-relin-vocabularies=""><relin-origin>sailors</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="starred-0" data-relin-vocabularies=""><relin-origin>followed</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="unstarred-4" data-relin-vocabularies=""><relin-origin>their</relin-origin></relin-highlight> <relin-highlight data-relin-meta="starred-4" data-relin-vocabularies="6679c0ee12643b3f0e27a3b6 68f65b6976aa0ba4dad39330" class="relingo-highlight"><relin-origin>compass</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>across</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>the</relin-origin></relin-highlight> <relin-highlight data-relin-mastered="" data-relin-meta="unstarred-5" data-relin-vocabularies=""><relin-origin>ocean</relin-origin></relin-highlight>.</relin-hc></li>
+<li>The sailors followed their compass across the ocean.</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="331">水手依靠指南针穿越海洋。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="332">这里的 compass 不只是工具。</p>
-<p data-relingo-block="true" data-relin-paragraph="333">它象征：</p>
+<p>水手依靠指南针穿越海洋。</p>
+<hr>
+<p>这里的 compass 不只是工具。</p>
+<p>它象征：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="334">理性；</li>
-<li data-relingo-block="true" data-relin-paragraph="335">科学；</li>
-<li data-relingo-block="true" data-relin-paragraph="336">对方向的信念。</li>
+<li>理性；</li>
+<li>科学；</li>
+<li>对方向的信念。</li>
 </ul>
-<hr data-relingo-block="true">
-<h1 data-relingo-block="true" data-relin-paragraph="337">2. he kept on guiding his men</h1>
+<hr>
+<h1>2. he kept on guiding his men</h1>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="338"><strong>他继续带领他的部下。</strong></li>
+<li><strong>他继续带领他的部下。</strong></li>
 </ul>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="339">keep on doing</h2>
-<p data-relingo-block="true" data-relin-paragraph="340">固定结构：</p>
+<hr>
+<h2>keep on doing</h2>
+<p>固定结构：</p>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="341">继续做某事。</p>
+<p>继续做某事。</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="342">例如：</p>
+<p>例如：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="343">He kept on working.</li>
+<li>He kept on working.</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="344">他继续工作。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="345">区别：</p>
+<p>他继续工作。</p>
+<hr>
+<p>区别：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="346">keep doing</li>
+<li>keep doing</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="347">持续做。</p>
+<p>持续做。</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="348">keep on doing</li>
+<li>keep on doing</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="349">强调反复或坚持。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="350">这里：</p>
-<p data-relingo-block="true" data-relin-paragraph="351">即使环境危险，</p>
-<p data-relingo-block="true" data-relin-paragraph="352">他仍然坚持带队前进。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="353">guide</h2>
-<p data-relingo-block="true" data-relin-paragraph="354">表示：</p>
-<p data-relingo-block="true" data-relin-paragraph="355">引导；</p>
-<p data-relingo-block="true" data-relin-paragraph="356">带领。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="357">例如：</p>
+<p>强调反复或坚持。</p>
+<hr>
+<p>这里：</p>
+<p>即使环境危险，</p>
+<p>他仍然坚持带队前进。</p>
+<hr>
+<h2>guide</h2>
+<p>表示：</p>
+<p>引导；</p>
+<p>带领。</p>
+<hr>
+<p>例如：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="358">guide someone through a forest</li>
+<li>guide someone through a forest</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="359">带某人穿过森林。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="360">his men</h2>
-<p data-relingo-block="true" data-relin-paragraph="361">这里：</p>
-<p data-relingo-block="true" data-relin-paragraph="362">他的伙伴；</p>
-<p data-relingo-block="true" data-relin-paragraph="363">队伍成员。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="364">不是现代军事意义上的士兵。</p>
-<hr data-relingo-block="true">
-<h1 data-relingo-block="true" data-relin-paragraph="365">3. toward the invisible north</h1>
+<p>带某人穿过森林。</p>
+<hr>
+<h2>his men</h2>
+<p>这里：</p>
+<p>他的伙伴；</p>
+<p>队伍成员。</p>
+<hr>
+<p>不是现代军事意义上的士兵。</p>
+<hr>
+<h1>3. toward the invisible north</h1>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="366"><strong>朝着那看不见的北方。</strong></li>
+<li><strong>朝着那看不见的北方。</strong></li>
 </ul>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="367">toward</h2>
-<p data-relingo-block="true" data-relin-paragraph="368">朝向。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="369">例如：</p>
+<hr>
+<h2>toward</h2>
+<p>朝向。</p>
+<hr>
+<p>例如：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="370">walk toward the river</li>
+<li>walk toward the river</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="371">朝河边走。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="372">invisible</h2>
-<p data-relingo-block="true" data-relin-paragraph="373">表示：</p>
-<p data-relingo-block="true" data-relin-paragraph="374">看不见的。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="375">由：</p>
+<p>朝河边走。</p>
+<hr>
+<h2>invisible</h2>
+<p>表示：</p>
+<p>看不见的。</p>
+<hr>
+<p>由：</p>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="376">in-（不）
+<p>in-（不）
 +
 visible（可见的）</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="377">组成。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="378">例如：</p>
+<p>组成。</p>
+<hr>
+<p>例如：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="379">invisible force</li>
+<li>invisible force</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="380">看不见的力量。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="381">这里很有文学意味。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="382">北方：</p>
-<p data-relingo-block="true" data-relin-paragraph="383">实际上存在。</p>
-<p data-relingo-block="true" data-relin-paragraph="384">但是：</p>
-<p data-relingo-block="true" data-relin-paragraph="385">在茂密森林和未知环境中，</p>
-<p data-relingo-block="true" data-relin-paragraph="386">它无法被肉眼确认。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="387">the north</h2>
-<p data-relingo-block="true" data-relin-paragraph="388">北方。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="389">这里不是普通方向。</p>
-<p data-relingo-block="true" data-relin-paragraph="390">它代表：</p>
+<p>看不见的力量。</p>
+<hr>
+<p>这里很有文学意味。</p>
+<hr>
+<p>北方：</p>
+<p>实际上存在。</p>
+<p>但是：</p>
+<p>在茂密森林和未知环境中，</p>
+<p>它无法被肉眼确认。</p>
+<hr>
+<h2>the north</h2>
+<p>北方。</p>
+<hr>
+<p>这里不是普通方向。</p>
+<p>它代表：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="391">目标；</li>
-<li data-relingo-block="true" data-relin-paragraph="392">文明；</li>
-<li data-relingo-block="true" data-relin-paragraph="393">出口。</li>
+<li>目标；</li>
+<li>文明；</li>
+<li>出口。</li>
 </ul>
-<hr data-relingo-block="true">
-<h1 data-relingo-block="true" data-relin-paragraph="394">4. so that they would be able to get out of that enchanted region.</h1>
+<hr>
+<h1>4. so that they would be able to get out of that enchanted region.</h1>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="395"><strong>这样他们就能够离开那片魔幻区域。</strong></li>
+<li><strong>这样他们就能够离开那片魔幻区域。</strong></li>
 </ul>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="396">so that</h2>
-<p data-relingo-block="true" data-relin-paragraph="397">表示：</p>
-<p data-relingo-block="true" data-relin-paragraph="398">目的。</p>
+<hr>
+<h2>so that</h2>
+<p>表示：</p>
+<p>目的。</p>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="399">为了……</p>
+<p>为了……</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="400">例如：</p>
+<p>例如：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="401">He studied hard so that he could pass the exam.</li>
+<li>He studied hard so that he could pass the exam.</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="402">他努力学习，以便通过考试。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="403">would be able to</h2>
-<p data-relingo-block="true" data-relin-paragraph="404">过去将来结构。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="405">表示：</p>
-<p data-relingo-block="true" data-relin-paragraph="406">从过去角度看：</p>
-<p data-relingo-block="true" data-relin-paragraph="407">将能够……</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="408">例如：</p>
+<p>他努力学习，以便通过考试。</p>
+<hr>
+<h2>would be able to</h2>
+<p>过去将来结构。</p>
+<hr>
+<p>表示：</p>
+<p>从过去角度看：</p>
+<p>将能够……</p>
+<hr>
+<p>例如：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="409">He believed he would be able to win.</li>
+<li>He believed he would be able to win.</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="410">他相信自己能够获胜。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="411">get out of</h2>
-<p data-relingo-block="true" data-relin-paragraph="412">离开；</p>
-<p data-relingo-block="true" data-relin-paragraph="413">摆脱。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="414">例如：</p>
+<p>他相信自己能够获胜。</p>
+<hr>
+<h2>get out of</h2>
+<p>离开；</p>
+<p>摆脱。</p>
+<hr>
+<p>例如：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="415">get out of trouble</li>
+<li>get out of trouble</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="416">摆脱麻烦。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="417">enchanted region</h2>
+<p>摆脱麻烦。</p>
+<hr>
+<h2>enchanted region</h2>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="418">被施了魔法的区域。</li>
+<li>被施了魔法的区域。</li>
 </ul>
-<hr data-relingo-block="true">
-<h3 data-relingo-block="true" data-relin-paragraph="419">enchanted</h3>
-<p data-relingo-block="true" data-relin-paragraph="420">表示：</p>
-<p data-relingo-block="true" data-relin-paragraph="421">着魔的；</p>
-<p data-relingo-block="true" data-relin-paragraph="422">魔法般的。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="423">来自：</p>
+<hr>
+<h3>enchanted</h3>
+<p>表示：</p>
+<p>着魔的；</p>
+<p>魔法般的。</p>
+<hr>
+<p>来自：</p>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="424">enchant</p>
+<p>enchant</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="425">施魔法。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="426">例如：</p>
+<p>施魔法。</p>
+<hr>
+<p>例如：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="427">an enchanted forest</li>
+<li>an enchanted forest</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="428">魔法森林。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="429">这里不是说真的有魔法。</p>
-<p data-relingo-block="true" data-relin-paragraph="430">而表现：</p>
-<p data-relingo-block="true" data-relin-paragraph="431">森林神秘、不可理解。</p>
-<hr data-relingo-block="true">
-<h1 data-relingo-block="true" data-relin-paragraph="432">5. It was a thick night, starless,</h1>
+<p>魔法森林。</p>
+<hr>
+<p>这里不是说真的有魔法。</p>
+<p>而表现：</p>
+<p>森林神秘、不可理解。</p>
+<hr>
+<h1>5. It was a thick night, starless,</h1>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="433"><strong>那是一个浓重的黑夜，没有星星。</strong></li>
+<li><strong>那是一个浓重的黑夜，没有星星。</strong></li>
 </ul>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="434">thick night</h2>
-<p data-relingo-block="true" data-relin-paragraph="435">文学表达。</p>
-<p data-relingo-block="true" data-relin-paragraph="436">不是：</p>
-<p data-relingo-block="true" data-relin-paragraph="437">厚的夜晚。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="438">表示：</p>
-<p data-relingo-block="true" data-relin-paragraph="439">浓重、压迫的黑暗。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="440">类似：</p>
+<hr>
+<h2>thick night</h2>
+<p>文学表达。</p>
+<p>不是：</p>
+<p>厚的夜晚。</p>
+<hr>
+<p>表示：</p>
+<p>浓重、压迫的黑暗。</p>
+<hr>
+<p>类似：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="441">thick fog</li>
+<li>thick fog</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="442">浓雾。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="443">starless</h2>
-<p data-relingo-block="true" data-relin-paragraph="444">无星的。</p>
-<p data-relingo-block="true" data-relin-paragraph="445">结构：</p>
+<p>浓雾。</p>
+<hr>
+<h2>starless</h2>
+<p>无星的。</p>
+<p>结构：</p>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="446">star + less</p>
+<p>star + less</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="447">没有星星。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="448">类似：</p>
+<p>没有星星。</p>
+<hr>
+<p>类似：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="449">endless</li>
+<li>endless</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="450">无尽的。</p>
+<p>无尽的。</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="451">hopeless</li>
+<li>hopeless</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="452">无希望的。</p>
-<hr data-relingo-block="true">
-<h1 data-relingo-block="true" data-relin-paragraph="453">6. but the darkness was becoming impregnated with a fresh and clear air.</h1>
+<p>无希望的。</p>
+<hr>
+<h1>6. but the darkness was becoming impregnated with a fresh and clear air.</h1>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="454"><strong>但是黑暗之中正逐渐充满一种清新而明澈的空气。</strong></li>
+<li><strong>但是黑暗之中正逐渐充满一种清新而明澈的空气。</strong></li>
 </ul>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="455">这是整句最有文学色彩的部分。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="456">darkness was becoming impregnated with...</h2>
+<hr>
+<p>这是整句最有文学色彩的部分。</p>
+<hr>
+<h2>darkness was becoming impregnated with...</h2>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="457">黑暗正在被……渗透。</li>
+<li>黑暗正在被……渗透。</li>
 </ul>
-<hr data-relingo-block="true">
-<h3 data-relingo-block="true" data-relin-paragraph="458">impregnate</h3>
-<p data-relingo-block="true" data-relin-paragraph="459">本义：</p>
-<p data-relingo-block="true" data-relin-paragraph="460">使充满；</p>
-<p data-relingo-block="true" data-relin-paragraph="461">使渗透。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="462">例如：</p>
+<hr>
+<h3>impregnate</h3>
+<p>本义：</p>
+<p>使充满；</p>
+<p>使渗透。</p>
+<hr>
+<p>例如：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="463">The room was impregnated with the smell of flowers.</li>
+<li>The room was impregnated with the smell of flowers.</li>
 </ul>
-<p data-relingo-block="true" data-relin-paragraph="464">房间里充满了花香。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="465">这里：</p>
-<p data-relingo-block="true" data-relin-paragraph="466">黑暗不是空无一物。</p>
-<p data-relingo-block="true" data-relin-paragraph="467">而正在被空气改变。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="468">fresh and clear air</h2>
+<p>房间里充满了花香。</p>
+<hr>
+<p>这里：</p>
+<p>黑暗不是空无一物。</p>
+<p>而正在被空气改变。</p>
+<hr>
+<h2>fresh and clear air</h2>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="469">清新的、纯净的空气。</li>
+<li>清新的、纯净的空气。</li>
 </ul>
-<hr data-relingo-block="true">
-<h3 data-relingo-block="true" data-relin-paragraph="470">fresh</h3>
-<p data-relingo-block="true" data-relin-paragraph="471">新鲜的；</p>
-<p data-relingo-block="true" data-relin-paragraph="472">清新的。</p>
-<hr data-relingo-block="true">
-<h3 data-relingo-block="true" data-relin-paragraph="473">clear</h3>
-<p data-relingo-block="true" data-relin-paragraph="474">清澈的；</p>
-<p data-relingo-block="true" data-relin-paragraph="475">纯净的。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="476">这里暗示：</p>
-<p data-relingo-block="true" data-relin-paragraph="477">环境正在变化。</p>
-<hr data-relingo-block="true">
-<h1 data-relingo-block="true" data-relin-paragraph="478">📌 Sentence Structure</h1>
-<p data-relingo-block="true" data-relin-paragraph="479">整段结构：</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="480">第一部分：</h2>
+<hr>
+<h3>fresh</h3>
+<p>新鲜的；</p>
+<p>清新的。</p>
+<hr>
+<h3>clear</h3>
+<p>清澈的；</p>
+<p>纯净的。</p>
+<hr>
+<p>这里暗示：</p>
+<p>环境正在变化。</p>
+<hr>
+<h1>📌 Sentence Structure</h1>
+<p>整段结构：</p>
+<hr>
+<h2>第一部分：</h2>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="481">Always following his compass, he kept on guiding his men toward the invisible north</p>
+<p>Always following his compass, he kept on guiding his men toward the invisible north</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="482">方式：</p>
-<p data-relingo-block="true" data-relin-paragraph="483">依靠指南针。</p>
-<p data-relingo-block="true">↓</p>
-<p data-relingo-block="true" data-relin-paragraph="484">动作：</p>
-<p data-relingo-block="true" data-relin-paragraph="485">继续带领队伍。</p>
-<p data-relingo-block="true">↓</p>
-<p data-relingo-block="true" data-relin-paragraph="486">方向：</p>
-<p data-relingo-block="true" data-relin-paragraph="487">向看不见的北方。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="488">目的：</h2>
+<p>方式：</p>
+<p>依靠指南针。</p>
+<p>↓</p>
+<p>动作：</p>
+<p>继续带领队伍。</p>
+<p>↓</p>
+<p>方向：</p>
+<p>向看不见的北方。</p>
+<hr>
+<h2>目的：</h2>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="489">so that they would be able to get out of that enchanted region</p>
+<p>so that they would be able to get out of that enchanted region</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="490">为了：</p>
-<p data-relingo-block="true" data-relin-paragraph="491">离开魔幻区域。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="492">第二部分：</h2>
+<p>为了：</p>
+<p>离开魔幻区域。</p>
+<hr>
+<h2>第二部分：</h2>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="493">It was a thick night, starless, but the darkness was becoming impregnated with...</p>
+<p>It was a thick night, starless, but the darkness was becoming impregnated with...</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="494">环境描写：</p>
-<p data-relingo-block="true" data-relin-paragraph="495">黑夜。</p>
-<p data-relingo-block="true">↓</p>
-<p data-relingo-block="true" data-relin-paragraph="496">没有星光。</p>
-<p data-relingo-block="true">↓</p>
-<p data-relingo-block="true" data-relin-paragraph="497">但是空气开始改变。</p>
-<hr data-relingo-block="true">
-<h1 data-relingo-block="true" data-relin-paragraph="498">📌 Language Note</h1>
-<h2 data-relingo-block="true" data-relin-paragraph="499">1. 北方的象征意义</h2>
-<p data-relingo-block="true" data-relin-paragraph="500">在小说中：</p>
-<p data-relingo-block="true" data-relin-paragraph="501">北方不仅是地理方向。</p>
-<p data-relingo-block="true" data-relin-paragraph="502">它象征：</p>
+<p>环境描写：</p>
+<p>黑夜。</p>
+<p>↓</p>
+<p>没有星光。</p>
+<p>↓</p>
+<p>但是空气开始改变。</p>
+<hr>
+<h1>📌 Language Note</h1>
+<h2>1. 北方的象征意义</h2>
+<p>在小说中：</p>
+<p>北方不仅是地理方向。</p>
+<p>它象征：</p>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="503">文明；</li>
-<li data-relingo-block="true" data-relin-paragraph="504">外界；</li>
-<li data-relingo-block="true" data-relin-paragraph="505">希望。</li>
+<li>文明；</li>
+<li>外界；</li>
+<li>希望。</li>
 </ul>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="506">何塞依靠指南针寻找北方，</p>
-<p data-relingo-block="true" data-relin-paragraph="507">实际上是在寻找：</p>
-<p data-relingo-block="true" data-relin-paragraph="508">马孔多与世界的联系。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="509">2. "invisible north" 的矛盾美感</h2>
-<p data-relingo-block="true" data-relin-paragraph="510">北方：</p>
-<p data-relingo-block="true" data-relin-paragraph="511">应该可以测量。</p>
-<p data-relingo-block="true" data-relin-paragraph="512">但这里：</p>
+<hr>
+<p>何塞依靠指南针寻找北方，</p>
+<p>实际上是在寻找：</p>
+<p>马孔多与世界的联系。</p>
+<hr>
+<h2>2. "invisible north" 的矛盾美感</h2>
+<p>北方：</p>
+<p>应该可以测量。</p>
+<p>但这里：</p>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="513">invisible</p>
+<p>invisible</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="514">不可见。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="515">形成矛盾：</p>
-<p data-relingo-block="true" data-relin-paragraph="516">科学工具存在，</p>
-<p data-relingo-block="true" data-relin-paragraph="517">但环境超越了人的控制。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="518">这正是《百年孤独》的特点：</p>
-<p data-relingo-block="true" data-relin-paragraph="519">理性和神秘同时存在。</p>
-<hr data-relingo-block="true">
-<h2 data-relingo-block="true" data-relin-paragraph="520">3. 黑暗中的变化</h2>
-<p data-relingo-block="true" data-relin-paragraph="521">前半句：</p>
+<p>不可见。</p>
+<hr>
+<p>形成矛盾：</p>
+<p>科学工具存在，</p>
+<p>但环境超越了人的控制。</p>
+<hr>
+<p>这正是《百年孤独》的特点：</p>
+<p>理性和神秘同时存在。</p>
+<hr>
+<h2>3. 黑暗中的变化</h2>
+<p>前半句：</p>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="522">thick night, starless</p>
+<p>thick night, starless</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="523">黑暗、无方向。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="524">后半句：</p>
+<p>黑暗、无方向。</p>
+<hr>
+<p>后半句：</p>
 <blockquote>
-<p data-relingo-block="true" data-relin-paragraph="525">fresh and clear air</p>
+<p>fresh and clear air</p>
 </blockquote>
-<p data-relingo-block="true" data-relin-paragraph="526">清新、明亮。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="527">形成转折：</p>
-<p data-relingo-block="true" data-relin-paragraph="528">虽然看不见道路，</p>
-<p data-relingo-block="true" data-relin-paragraph="529">但环境开始透露希望。</p>
-<hr data-relingo-block="true">
-<p data-relingo-block="true" data-relin-paragraph="530">这通常预示：</p>
-<p data-relingo-block="true" data-relin-paragraph="531">他们即将接近新的地方。</p>
-<hr data-relingo-block="true">
-<h1 data-relingo-block="true" data-relin-paragraph="532">📌 Key Expressions</h1>
+<p>清新、明亮。</p>
+<hr>
+<p>形成转折：</p>
+<p>虽然看不见道路，</p>
+<p>但环境开始透露希望。</p>
+<hr>
+<p>这通常预示：</p>
+<p>他们即将接近新的地方。</p>
+<hr>
+<h1>📌 Key Expressions</h1>
 <ul>
-<li data-relingo-block="true" data-relin-paragraph="533">follow one's compass —— 依靠指南针导航</li>
-<li data-relingo-block="true" data-relin-paragraph="534">keep on doing —— 继续做某事</li>
-<li data-relingo-block="true" data-relin-paragraph="535">guide someone —— 带领某人</li>
-<li data-relingo-block="true" data-relin-paragraph="536">toward —— 朝向</li>
-<li data-relingo-block="true" data-relin-paragraph="537">invisible —— 看不见的</li>
-<li data-relingo-block="true" data-relin-paragraph="538">north —— 北方</li>
-<li data-relingo-block="true" data-relin-paragraph="539">so that —— 以便；为了</li>
-<li data-relingo-block="true" data-relin-paragraph="540">be able to —— 能够</li>
-<li data-relingo-block="true" data-relin-paragraph="541">get out of —— 离开；摆脱</li>
-<li data-relingo-block="true" data-relin-paragraph="542">enchanted region —— 魔法般的区域</li>
-<li data-relingo-block="true" data-relin-paragraph="543">thick night —— 浓重的黑夜</li>
-<li data-relingo-block="true" data-relin-paragraph="544">starless —— 无星的</li>
-<li data-relingo-block="true" data-relin-paragraph="545">be impregnated with —— 充满；渗透着</li>
-<li data-relingo-block="true" data-relin-paragraph="546">fresh and clear air —— 清新纯净的空气</li>
+<li>follow one's compass —— 依靠指南针导航</li>
+<li>keep on doing —— 继续做某事</li>
+<li>guide someone —— 带领某人</li>
+<li>toward —— 朝向</li>
+<li>invisible —— 看不见的</li>
+<li>north —— 北方</li>
+<li>so that —— 以便；为了</li>
+<li>be able to —— 能够</li>
+<li>get out of —— 离开；摆脱</li>
+<li>enchanted region —— 魔法般的区域</li>
+<li>thick night —— 浓重的黑夜</li>
+<li>starless —— 无星的</li>
+<li>be impregnated with —— 充满；渗透着</li>
+<li>fresh and clear air —— 清新纯净的空气</li>
 </ul>
 </div><textarea class="anno-edit notranslate" translate="no" style="display: none;" placeholder="输入 Markdown 批注..." data-old-val="# 📌 完整翻译
 
@@ -121031,8 +121152,1376 @@ visible（可见的）</p>
 - starless —— 无星的
 - be impregnated with —— 充满；渗透着
 - fresh and clear air —— 清新纯净的空气</textarea></div></div>
-    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')" data-relingo-block="true" data-relin-paragraph="181">跟随着罗盘的方向，他带领着跟随他的人一直往看不见的北方前进，这样他们才能走出这令人着魔的地区。这是一个伸手不见五指的夜晚，没有星星，但是黑暗中遍布清新干净的空气。</p>
-    <div class="para-wrap"><p data-relingo-block="true" data-relin-paragraph="182" data-nexus-idx="87" data-nexus-text="exhaustedbythelongcrossing,theyhunguptheirhammocksandsleptdeeplyforthefirsttimeintwoweeks.whentheywokeup,withthesunalreadyhighinthesky,theywerespeechlesswithfascination.">Exhausted by the long crossing, they hung up their hammocks and slept deeply for the first time in two weeks. When they woke up, with the sun already high in the sky, they were speechless with fascination.<span class="anno-toggle"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"></div><textarea class="anno-edit notranslate" translate="no" style="display:none;" placeholder="输入 Markdown 批注..." data-old-val=""></textarea></div></div>
+    <p class="zh-para" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')" data-relingo-block="true" data-relin-paragraph="181">跟随着罗盘的方向，他带领着跟随他的人一直往看不见的北方前进，这样他们才能走出这令人着魔的地区。这是一个伸手不见五指的夜晚，没有星星，但是黑暗中遍布清新干净的空气。</p>
+    <div class="para-wrap"><p data-relingo-block="true" data-relin-paragraph="182" data-nexus-idx="87" data-nexus-text="exhaustedbythelongcrossing,theyhunguptheirhammocksandsleptdeeplyforthefirsttimeintwoweeks.whentheywokeup,withthesunalreadyhighinthesky,theywerespeechlesswithfascination.">Exhausted by the long crossing, they hung up their hammocks and slept deeply for the first time in two weeks. When they woke up, with the sun already high in the sky, they were speechless with fascination.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no" style="display: block;"><h1>📌 完整翻译</h1>
+<p>由于长途跋涉而疲惫不堪，他们挂起吊床，第一次在整整两周里睡了一个深沉的觉。</p>
+<p>当他们醒来时，太阳已经高高升起，他们因为眼前的景象而惊叹得说不出话来。</p>
+<hr>
+<h1>📘 英语教学式讲解</h1>
+<h2>1. Exhausted by the long crossing,</h2>
+<ul>
+<li><strong>由于漫长的穿越而疲惫不堪。</strong></li>
+</ul>
+<hr>
+<p>这是过去分词短语。</p>
+<p>完整结构：</p>
+<blockquote>
+<p>Exhausted by ..., they hung up their hammocks...</p>
+</blockquote>
+<p>表示：</p>
+<p>“因为……，他们……”</p>
+<hr>
+<h2>exhausted</h2>
+<p>表示：</p>
+<p>筋疲力尽的；</p>
+<p>耗尽的。</p>
+<hr>
+<p>来自：</p>
+<blockquote>
+<p>exhaust</p>
+</blockquote>
+<p>耗尽。</p>
+<p>例如：</p>
+<ul>
+<li>The journey exhausted him.</li>
+</ul>
+<p>这次旅行使他精疲力竭。</p>
+<hr>
+<p>区别：</p>
+<ul>
+<li><p>tired<br>累。</p>
+</li>
+<li><p>exhausted<br>极度疲惫，几乎没有力气。</p>
+</li>
+</ul>
+<hr>
+<p>这里表示：</p>
+<p>他们穿越森林、沼泽、水域之后，</p>
+<p>身体和精神都到了极限。</p>
+<hr>
+<h2>by</h2>
+<p>这里表示：</p>
+<p>由于；</p>
+<p>因为。</p>
+<hr>
+<p>例如：</p>
+<ul>
+<li>He was surprised by the news.</li>
+</ul>
+<p>他因这个消息感到惊讶。</p>
+<hr>
+<h2>long crossing</h2>
+<ul>
+<li>漫长的穿越。</li>
+</ul>
+<hr>
+<h3>crossing</h3>
+<p>来自：</p>
+<blockquote>
+<p>cross</p>
+</blockquote>
+<p>穿过。</p>
+<hr>
+<p>表示：</p>
+<p>跨越某个区域的过程。</p>
+<hr>
+<p>这里指：</p>
+<p>穿越未知森林和沼泽的旅程。</p>
+<hr>
+<h1>2. they hung up their hammocks</h1>
+<ul>
+<li><strong>他们挂起了自己的吊床。</strong></li>
+</ul>
+<hr>
+<h2>hang up</h2>
+<p>表示：</p>
+<p>挂起。</p>
+<hr>
+<p>例如：</p>
+<ul>
+<li>Hang up your coat.</li>
+</ul>
+<p>挂起你的外套。</p>
+<hr>
+<p>这里：</p>
+<p>把吊床固定在树之间。</p>
+<hr>
+<h2>hammock</h2>
+<p>吊床。</p>
+<hr>
+<p>这是热带地区常见的休息工具。</p>
+<hr>
+<p>《百年孤独》的环境：</p>
+<p>炎热、潮湿、多森林。</p>
+<p>所以吊床符合当地生活。</p>
+<hr>
+<h1>3. and slept deeply for the first time in two weeks.</h1>
+<ul>
+<li><strong>并且两周以来第一次睡得很沉。</strong></li>
+</ul>
+<hr>
+<h2>sleep deeply</h2>
+<p>深睡。</p>
+<hr>
+<p>例如：</p>
+<ul>
+<li>The baby slept deeply.</li>
+</ul>
+<p>婴儿睡得很沉。</p>
+<hr>
+<h2>for the first time in two weeks</h2>
+<p>重点结构：</p>
+<blockquote>
+<p>for the first time in + 时间段</p>
+</blockquote>
+<p>表示：</p>
+<p>在某段时间里第一次。</p>
+<hr>
+<p>例如：</p>
+<ul>
+<li>I smiled for the first time in years.</li>
+</ul>
+<p>我多年来第一次笑了。</p>
+<hr>
+<p>这里：</p>
+<p>两周以来，他们第一次真正休息。</p>
+<hr>
+<h1>4. When they woke up,</h1>
+<ul>
+<li><strong>当他们醒来时。</strong></li>
+</ul>
+<hr>
+<h2>when</h2>
+<p>引导时间状语从句。</p>
+<hr>
+<p>结构：</p>
+<blockquote>
+<p>When + 从句，主句</p>
+</blockquote>
+<p>表示：</p>
+<p>当……的时候。</p>
+<hr>
+<p>例如：</p>
+<ul>
+<li>When I arrived, he was sleeping.</li>
+</ul>
+<p>我到达时，他正在睡觉。</p>
+<hr>
+<h1>5. with the sun already high in the sky,</h1>
+<ul>
+<li><strong>太阳已经高高升起。</strong></li>
+</ul>
+<hr>
+<p>这是：</p>
+<p>with + 名词 + 形容词短语</p>
+<p>结构。</p>
+<hr>
+<p>表示：</p>
+<p>伴随状态。</p>
+<hr>
+<p>例如：</p>
+<ul>
+<li>He sat there with his eyes closed.</li>
+</ul>
+<p>他闭着眼坐在那里。</p>
+<hr>
+<p>这里：</p>
+<blockquote>
+<p>with the sun already high</p>
+</blockquote>
+<p>太阳已经很高。</p>
+<hr>
+<h2>already</h2>
+<p>已经。</p>
+<hr>
+<h2>high in the sky</h2>
+<p>高挂天空。</p>
+<hr>
+<p>例如：</p>
+<ul>
+<li>The moon was high in the sky.</li>
+</ul>
+<p>月亮高挂天空。</p>
+<hr>
+<h1>6. they were speechless with fascination.</h1>
+<ul>
+<li><strong>他们因为惊叹而说不出话来。</strong></li>
+</ul>
+<hr>
+<h2>speechless</h2>
+<p>表示：</p>
+<p>无言的；</p>
+<p>说不出话的。</p>
+<hr>
+<p>例如：</p>
+<ul>
+<li>I was speechless after hearing the news.</li>
+</ul>
+<p>听到消息后我说不出话。</p>
+<hr>
+<p>这里不是害怕。</p>
+<p>而是：</p>
+<p>震惊、惊喜到无法表达。</p>
+<hr>
+<h2>with fascination</h2>
+<p>表示：</p>
+<p>由于迷 fascination。</p>
+<hr>
+<h3>fascination</h3>
+<p>魅力；</p>
+<p>强烈吸引力；</p>
+<p>着迷。</p>
+<hr>
+<p>例如：</p>
+<ul>
+<li>The story held my fascination.</li>
+</ul>
+<p>这个故事吸引了我。</p>
+<hr>
+<p>这里：</p>
+<blockquote>
+<p>speechless with fascination</p>
+</blockquote>
+<p>= 因惊奇而失语。</p>
+<hr>
+<h1>📌 Sentence Structure</h1>
+<p>整句结构：</p>
+<blockquote>
+<p>Exhausted by the long crossing, they hung up their hammocks and slept deeply...</p>
+</blockquote>
+<hr>
+<p>原因：</p>
+<blockquote>
+<p>Exhausted by the long crossing</p>
+</blockquote>
+<p>因为长途跋涉疲惫。</p>
+<p>↓</p>
+<p>动作：</p>
+<blockquote>
+<p>hung up their hammocks</p>
+</blockquote>
+<p>挂吊床。</p>
+<p>↓</p>
+<p>结果：</p>
+<blockquote>
+<p>slept deeply</p>
+</blockquote>
+<p>熟睡。</p>
+<hr>
+<p>第二句：</p>
+<blockquote>
+<p>When they woke up, with the sun already high in the sky, they were speechless with fascination.</p>
+</blockquote>
+<p>时间：</p>
+<p>醒来时。</p>
+<p>↓</p>
+<p>伴随环境：</p>
+<p>太阳已经升高。</p>
+<p>↓</p>
+<p>状态：</p>
+<p>惊叹得说不出话。</p>
+<hr>
+<h1>📌 Language Note</h1>
+<h2>1. "speechless with fascination" 是典型马尔克斯式表达</h2>
+<p>普通写法：</p>
+<blockquote>
+<p>They were amazed.</p>
+</blockquote>
+<p>他们很惊讶。</p>
+<hr>
+<p>马尔克斯写：</p>
+<blockquote>
+<p>they were speechless with fascination</p>
+</blockquote>
+<p>他们因迷醉而失语。</p>
+<hr>
+<p>更强调：</p>
+<p>不是简单看到美景，</p>
+<p>而是被某种超越语言的东西震撼。</p>
+<hr>
+<h2>2. 从痛苦到奇迹的转变</h2>
+<p>前一句：</p>
+<ul>
+<li>黑暗；</li>
+<li>血腥气味；</li>
+<li>疲惫；</li>
+<li>迷失。</li>
+</ul>
+<hr>
+<p>这一句：</p>
+<ul>
+<li>睡眠；</li>
+<li>阳光；</li>
+<li>惊叹。</li>
+</ul>
+<hr>
+<p>形成强烈对比。</p>
+<hr>
+<p>探险队经历了：</p>
+<p>黑暗 → 光明</p>
+<p>恐惧 → 奇迹</p>
+<hr>
+<p>这是《百年孤独》中常见的叙事节奏：</p>
+<p>在极端困境之后，</p>
+<p>突然出现不可思议的景象。</p>
+<hr>
+<h2>3. "for the first time in two weeks"</h2>
+<p>这个时间表达很重要。</p>
+<p>它暗示：</p>
+<p>两周以来他们一直处于：</p>
+<ul>
+<li>紧张状态；</li>
+<li>疲劳状态；</li>
+<li>生存状态。</li>
+</ul>
+<hr>
+<p>这一觉不仅是身体休息，</p>
+<p>也是精神上的暂时恢复。</p>
+<hr>
+<h1>📌 Key Expressions</h1>
+<ul>
+<li>exhausted by —— 因……而筋疲力尽</li>
+<li>long crossing —— 漫长的穿越</li>
+<li>hang up —— 挂起</li>
+<li>hammock —— 吊床</li>
+<li>sleep deeply —— 深睡</li>
+<li>for the first time in two weeks —— 两周以来第一次</li>
+<li>wake up —— 醒来</li>
+<li>with + 名词 + 形容词 —— 伴随状态</li>
+<li>high in the sky —— 高挂天空</li>
+<li>speechless —— 说不出话的</li>
+<li>fascination —— 着迷；惊叹</li>
+<li>be speechless with fascination —— 因惊叹而失语</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display: none;" placeholder="输入 Markdown 批注..." data-old-val="# 📌 完整翻译
+
+由于长途跋涉而疲惫不堪，他们挂起吊床，第一次在整整两周里睡了一个深沉的觉。
+
+当他们醒来时，太阳已经高高升起，他们因为眼前的景象而惊叹得说不出话来。
+
+---
+
+# 📘 英语教学式讲解
+
+## 1. Exhausted by the long crossing,
+
+- **由于漫长的穿越而疲惫不堪。**
+
+---
+
+这是过去分词短语。
+
+完整结构：
+
+&gt; Exhausted by ..., they hung up their hammocks...
+
+表示：
+
+“因为……，他们……”
+
+---
+
+## exhausted
+
+表示：
+
+筋疲力尽的；
+
+耗尽的。
+
+---
+
+来自：
+
+&gt; exhaust
+
+耗尽。
+
+例如：
+
+- The journey exhausted him.
+
+这次旅行使他精疲力竭。
+
+---
+
+区别：
+
+- tired  
+  累。
+
+- exhausted  
+  极度疲惫，几乎没有力气。
+
+---
+
+这里表示：
+
+他们穿越森林、沼泽、水域之后，
+
+身体和精神都到了极限。
+
+---
+
+## by
+
+这里表示：
+
+由于；
+
+因为。
+
+---
+
+例如：
+
+- He was surprised by the news.
+
+他因这个消息感到惊讶。
+
+---
+
+## long crossing
+
+- 漫长的穿越。
+
+---
+
+### crossing
+
+来自：
+
+&gt; cross
+
+穿过。
+
+---
+
+表示：
+
+跨越某个区域的过程。
+
+---
+
+这里指：
+
+穿越未知森林和沼泽的旅程。
+
+---
+
+# 2. they hung up their hammocks
+
+- **他们挂起了自己的吊床。**
+
+---
+
+## hang up
+
+表示：
+
+挂起。
+
+---
+
+例如：
+
+- Hang up your coat.
+
+挂起你的外套。
+
+---
+
+这里：
+
+把吊床固定在树之间。
+
+---
+
+## hammock
+
+吊床。
+
+---
+
+这是热带地区常见的休息工具。
+
+---
+
+《百年孤独》的环境：
+
+炎热、潮湿、多森林。
+
+所以吊床符合当地生活。
+
+---
+
+# 3. and slept deeply for the first time in two weeks.
+
+- **并且两周以来第一次睡得很沉。**
+
+---
+
+## sleep deeply
+
+深睡。
+
+---
+
+例如：
+
+- The baby slept deeply.
+
+婴儿睡得很沉。
+
+---
+
+## for the first time in two weeks
+
+重点结构：
+
+&gt; for the first time in + 时间段
+
+表示：
+
+在某段时间里第一次。
+
+---
+
+例如：
+
+- I smiled for the first time in years.
+
+我多年来第一次笑了。
+
+---
+
+这里：
+
+两周以来，他们第一次真正休息。
+
+---
+
+# 4. When they woke up,
+
+- **当他们醒来时。**
+
+---
+
+## when
+
+引导时间状语从句。
+
+---
+
+结构：
+
+&gt; When + 从句，主句
+
+表示：
+
+当……的时候。
+
+---
+
+例如：
+
+- When I arrived, he was sleeping.
+
+我到达时，他正在睡觉。
+
+---
+
+# 5. with the sun already high in the sky,
+
+- **太阳已经高高升起。**
+
+---
+
+这是：
+
+with + 名词 + 形容词短语
+
+结构。
+
+---
+
+表示：
+
+伴随状态。
+
+---
+
+例如：
+
+- He sat there with his eyes closed.
+
+他闭着眼坐在那里。
+
+---
+
+这里：
+
+&gt; with the sun already high
+
+太阳已经很高。
+
+---
+
+## already
+
+已经。
+
+---
+
+## high in the sky
+
+高挂天空。
+
+---
+
+例如：
+
+- The moon was high in the sky.
+
+月亮高挂天空。
+
+---
+
+# 6. they were speechless with fascination.
+
+- **他们因为惊叹而说不出话来。**
+
+---
+
+## speechless
+
+表示：
+
+无言的；
+
+说不出话的。
+
+---
+
+例如：
+
+- I was speechless after hearing the news.
+
+听到消息后我说不出话。
+
+---
+
+这里不是害怕。
+
+而是：
+
+震惊、惊喜到无法表达。
+
+---
+
+## with fascination
+
+表示：
+
+由于迷 fascination。
+
+---
+
+### fascination
+
+魅力；
+
+强烈吸引力；
+
+着迷。
+
+---
+
+例如：
+
+- The story held my fascination.
+
+这个故事吸引了我。
+
+---
+
+这里：
+
+&gt; speechless with fascination
+
+= 因惊奇而失语。
+
+---
+
+# 📌 Sentence Structure
+
+整句结构：
+
+&gt; Exhausted by the long crossing, they hung up their hammocks and slept deeply...
+
+---
+
+原因：
+
+&gt; Exhausted by the long crossing
+
+因为长途跋涉疲惫。
+
+↓
+
+动作：
+
+&gt; hung up their hammocks
+
+挂吊床。
+
+↓
+
+结果：
+
+&gt; slept deeply
+
+熟睡。
+
+---
+
+第二句：
+
+&gt; When they woke up, with the sun already high in the sky, they were speechless with fascination.
+
+时间：
+
+醒来时。
+
+↓
+
+伴随环境：
+
+太阳已经升高。
+
+↓
+
+状态：
+
+惊叹得说不出话。
+
+---
+
+# 📌 Language Note
+
+## 1. &quot;speechless with fascination&quot; 是典型马尔克斯式表达
+
+普通写法：
+
+&gt; They were amazed.
+
+他们很惊讶。
+
+---
+
+马尔克斯写：
+
+&gt; they were speechless with fascination
+
+他们因迷醉而失语。
+
+---
+
+更强调：
+
+不是简单看到美景，
+
+而是被某种超越语言的东西震撼。
+
+---
+
+## 2. 从痛苦到奇迹的转变
+
+前一句：
+
+- 黑暗；
+- 血腥气味；
+- 疲惫；
+- 迷失。
+
+---
+
+这一句：
+
+- 睡眠；
+- 阳光；
+- 惊叹。
+
+---
+
+形成强烈对比。
+
+---
+
+探险队经历了：
+
+黑暗 → 光明
+
+恐惧 → 奇迹
+
+---
+
+这是《百年孤独》中常见的叙事节奏：
+
+在极端困境之后，
+
+突然出现不可思议的景象。
+
+---
+
+## 3. &quot;for the first time in two weeks&quot;
+
+这个时间表达很重要。
+
+它暗示：
+
+两周以来他们一直处于：
+
+- 紧张状态；
+- 疲劳状态；
+- 生存状态。
+
+---
+
+这一觉不仅是身体休息，
+
+也是精神上的暂时恢复。
+
+---
+
+# 📌 Key Expressions
+
+- exhausted by —— 因……而筋疲力尽
+- long crossing —— 漫长的穿越
+- hang up —— 挂起
+- hammock —— 吊床
+- sleep deeply —— 深睡
+- for the first time in two weeks —— 两周以来第一次
+- wake up —— 醒来
+- with + 名词 + 形容词 —— 伴随状态
+- high in the sky —— 高挂天空
+- speechless —— 说不出话的
+- fascination —— 着迷；惊叹
+- be speechless with fascination —— 因惊叹而失语"># 📌 完整翻译
+
+由于长途跋涉而疲惫不堪，他们挂起吊床，第一次在整整两周里睡了一个深沉的觉。
+
+当他们醒来时，太阳已经高高升起，他们因为眼前的景象而惊叹得说不出话来。
+
+---
+
+# 📘 英语教学式讲解
+
+## 1. Exhausted by the long crossing,
+
+- **由于漫长的穿越而疲惫不堪。**
+
+---
+
+这是过去分词短语。
+
+完整结构：
+
+&gt; Exhausted by ..., they hung up their hammocks...
+
+表示：
+
+“因为……，他们……”
+
+---
+
+## exhausted
+
+表示：
+
+筋疲力尽的；
+
+耗尽的。
+
+---
+
+来自：
+
+&gt; exhaust
+
+耗尽。
+
+例如：
+
+- The journey exhausted him.
+
+这次旅行使他精疲力竭。
+
+---
+
+区别：
+
+- tired  
+  累。
+
+- exhausted  
+  极度疲惫，几乎没有力气。
+
+---
+
+这里表示：
+
+他们穿越森林、沼泽、水域之后，
+
+身体和精神都到了极限。
+
+---
+
+## by
+
+这里表示：
+
+由于；
+
+因为。
+
+---
+
+例如：
+
+- He was surprised by the news.
+
+他因这个消息感到惊讶。
+
+---
+
+## long crossing
+
+- 漫长的穿越。
+
+---
+
+### crossing
+
+来自：
+
+&gt; cross
+
+穿过。
+
+---
+
+表示：
+
+跨越某个区域的过程。
+
+---
+
+这里指：
+
+穿越未知森林和沼泽的旅程。
+
+---
+
+# 2. they hung up their hammocks
+
+- **他们挂起了自己的吊床。**
+
+---
+
+## hang up
+
+表示：
+
+挂起。
+
+---
+
+例如：
+
+- Hang up your coat.
+
+挂起你的外套。
+
+---
+
+这里：
+
+把吊床固定在树之间。
+
+---
+
+## hammock
+
+吊床。
+
+---
+
+这是热带地区常见的休息工具。
+
+---
+
+《百年孤独》的环境：
+
+炎热、潮湿、多森林。
+
+所以吊床符合当地生活。
+
+---
+
+# 3. and slept deeply for the first time in two weeks.
+
+- **并且两周以来第一次睡得很沉。**
+
+---
+
+## sleep deeply
+
+深睡。
+
+---
+
+例如：
+
+- The baby slept deeply.
+
+婴儿睡得很沉。
+
+---
+
+## for the first time in two weeks
+
+重点结构：
+
+&gt; for the first time in + 时间段
+
+表示：
+
+在某段时间里第一次。
+
+---
+
+例如：
+
+- I smiled for the first time in years.
+
+我多年来第一次笑了。
+
+---
+
+这里：
+
+两周以来，他们第一次真正休息。
+
+---
+
+# 4. When they woke up,
+
+- **当他们醒来时。**
+
+---
+
+## when
+
+引导时间状语从句。
+
+---
+
+结构：
+
+&gt; When + 从句，主句
+
+表示：
+
+当……的时候。
+
+---
+
+例如：
+
+- When I arrived, he was sleeping.
+
+我到达时，他正在睡觉。
+
+---
+
+# 5. with the sun already high in the sky,
+
+- **太阳已经高高升起。**
+
+---
+
+这是：
+
+with + 名词 + 形容词短语
+
+结构。
+
+---
+
+表示：
+
+伴随状态。
+
+---
+
+例如：
+
+- He sat there with his eyes closed.
+
+他闭着眼坐在那里。
+
+---
+
+这里：
+
+&gt; with the sun already high
+
+太阳已经很高。
+
+---
+
+## already
+
+已经。
+
+---
+
+## high in the sky
+
+高挂天空。
+
+---
+
+例如：
+
+- The moon was high in the sky.
+
+月亮高挂天空。
+
+---
+
+# 6. they were speechless with fascination.
+
+- **他们因为惊叹而说不出话来。**
+
+---
+
+## speechless
+
+表示：
+
+无言的；
+
+说不出话的。
+
+---
+
+例如：
+
+- I was speechless after hearing the news.
+
+听到消息后我说不出话。
+
+---
+
+这里不是害怕。
+
+而是：
+
+震惊、惊喜到无法表达。
+
+---
+
+## with fascination
+
+表示：
+
+由于迷 fascination。
+
+---
+
+### fascination
+
+魅力；
+
+强烈吸引力；
+
+着迷。
+
+---
+
+例如：
+
+- The story held my fascination.
+
+这个故事吸引了我。
+
+---
+
+这里：
+
+&gt; speechless with fascination
+
+= 因惊奇而失语。
+
+---
+
+# 📌 Sentence Structure
+
+整句结构：
+
+&gt; Exhausted by the long crossing, they hung up their hammocks and slept deeply...
+
+---
+
+原因：
+
+&gt; Exhausted by the long crossing
+
+因为长途跋涉疲惫。
+
+↓
+
+动作：
+
+&gt; hung up their hammocks
+
+挂吊床。
+
+↓
+
+结果：
+
+&gt; slept deeply
+
+熟睡。
+
+---
+
+第二句：
+
+&gt; When they woke up, with the sun already high in the sky, they were speechless with fascination.
+
+时间：
+
+醒来时。
+
+↓
+
+伴随环境：
+
+太阳已经升高。
+
+↓
+
+状态：
+
+惊叹得说不出话。
+
+---
+
+# 📌 Language Note
+
+## 1. "speechless with fascination" 是典型马尔克斯式表达
+
+普通写法：
+
+&gt; They were amazed.
+
+他们很惊讶。
+
+---
+
+马尔克斯写：
+
+&gt; they were speechless with fascination
+
+他们因迷醉而失语。
+
+---
+
+更强调：
+
+不是简单看到美景，
+
+而是被某种超越语言的东西震撼。
+
+---
+
+## 2. 从痛苦到奇迹的转变
+
+前一句：
+
+- 黑暗；
+- 血腥气味；
+- 疲惫；
+- 迷失。
+
+---
+
+这一句：
+
+- 睡眠；
+- 阳光；
+- 惊叹。
+
+---
+
+形成强烈对比。
+
+---
+
+探险队经历了：
+
+黑暗 → 光明
+
+恐惧 → 奇迹
+
+---
+
+这是《百年孤独》中常见的叙事节奏：
+
+在极端困境之后，
+
+突然出现不可思议的景象。
+
+---
+
+## 3. "for the first time in two weeks"
+
+这个时间表达很重要。
+
+它暗示：
+
+两周以来他们一直处于：
+
+- 紧张状态；
+- 疲劳状态；
+- 生存状态。
+
+---
+
+这一觉不仅是身体休息，
+
+也是精神上的暂时恢复。
+
+---
+
+# 📌 Key Expressions
+
+- exhausted by —— 因……而筋疲力尽
+- long crossing —— 漫长的穿越
+- hang up —— 挂起
+- hammock —— 吊床
+- sleep deeply —— 深睡
+- for the first time in two weeks —— 两周以来第一次
+- wake up —— 醒来
+- with + 名词 + 形容词 —— 伴随状态
+- high in the sky —— 高挂天空
+- speechless —— 说不出话的
+- fascination —— 着迷；惊叹
+- be speechless with fascination —— 因惊叹而失语</textarea></div></div>
     <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')" data-relingo-block="true" data-relin-paragraph="183">长途跋涉让他们精疲力竭，他们挂起吊床，两个星期以来第一次睡得这么熟。当他们醒来时，太阳已在空中高悬，眼前的景象让他们着迷，惊讶的说不话来。</p>
     <div class="para-wrap"><p data-relingo-block="true" data-relin-paragraph="184" data-nexus-idx="88" data-nexus-text="beforethem,surroundedbyfernsandpalmtrees,whiteandpowderyinthesilentmorninglight,wasanenormousspanishgalleon.">Before them, surrounded by ferns and palm trees, white and powdery in the silent morning light, was an enormous Spanish galleon.<span class="anno-toggle"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"></div><textarea class="anno-edit notranslate" translate="no" style="display:none;" placeholder="输入 Markdown 批注..." data-old-val=""></textarea></div></div>
     <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')" data-relingo-block="true" data-relin-paragraph="185">在他们面前，环绕着蕨类植物和棕榈树，在寂静的晨曦中，白色的满是灰尘的是一个巨大的西班牙帆船。</p>
@@ -125657,7 +127146,7 @@ place
         })();
     </script>
 
-<audio style="display: none;"></audio><script id="matrix-static-script">
+<audio style="display: none;"></audio><audio style="display: none;"></audio><script id="matrix-static-script">
                         window.addEventListener('DOMContentLoaded', () => {
                             setTimeout(() => {
                                 if (document.documentElement.getAttribute('data-matrix-active') === 'true' || window.__MATRIX_ENGINE_ACTIVE__) return;
@@ -125697,4 +127186,4 @@ place
                                 });
                             }, 500);
                         });
-                    </script></body></html>
+                    </script></body><relingo-app id="relingo-drawer" style="visibility: visible;"><div class="relingo-drawer-root"></div></relingo-app></html>
