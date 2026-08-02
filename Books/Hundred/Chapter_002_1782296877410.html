@@ -1,0 +1,4421 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chapter 2</title>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <style>
+        body { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; max-width: 800px; margin: 0 auto; padding: 50px 24px; font-size: 20px; line-height: 1.8; letter-spacing: 0.05em; background-color: #F8F4E6; color: #4A3F35; } h1 { text-align: left !important; font-size: 28px; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #D5CBBB; padding-bottom: 20px; color: #2C241B; } p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
+        body { padding-top: 70px !important; transition: padding-top 0.3s cubic-bezier(0.4,0,0.2,1); }
+        body.bar-hidden { padding-top: 20px !important; }
+        .reader-bar { position: fixed; top: 0; left: 0; right: 0; min-height: 50px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 1px 8px rgba(0,0,0,0.08); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 5px; }
+        .reader-bar.hidden { transform: translateY(-100%); }
+        .reader-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .reader-btn { background: #E5E5EA; color: #1C1C1E; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+        .reader-btn:active { transform: scale(0.95); }
+        #content-container { transition: font-size 0.2s; }
+        .zh-para { transition: filter 0.3s ease, opacity 0.3s ease; }
+        .global-blur-enabled .zh-para { cursor: pointer; }
+        .global-blur-enabled .zh-para.blurred { filter: blur(0.35em); opacity: 0.5; user-select: none; }
+        .global-blur-enabled .zh-para.blurred:hover { filter: blur(0.2em); opacity: 0.7; }
+        body.highlights-enabled .tm-word.is-highlight { color: #FF3B30 !important; font-weight: 700; background-color: rgba(255, 59, 48, 0.05); border-radius: 3px; padding: 0 2px; }
+        .dict-enabled .tm-word { cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 3px; }
+        .dict-enabled .tm-word:hover, .dict-enabled .tm-word[aria-expanded="true"] { background-color: #E3F2FD; color: #1565C0 !important; }
+        .tippy-box[data-theme~='light-border'] { background-color: #fff; color: #333; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+        .tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before { border-top-color: #ccc; }
+        .tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: #ccc; }
+        .tippy-content { padding: 8px; }
+        .dict-popup { text-align: left; font-size: 14px; line-height: 1.4; max-width: 280px; min-width: 200px; color: #333; font-family: -apple-system, sans-serif; }
+        .dict-header-row { border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
+        .dict-word-line { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .dict-head-word { font-weight: bold; color: #D32F2F; font-size: 18px; }
+        .dict-ipa { font-family: sans-serif; color: #666; font-size: 13px; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
+        .dict-speaker-btn { display: inline-flex; cursor: pointer; color: #1976D2; padding: 2px; border-radius: 50%; transition: background 0.2s; }
+        .dict-speaker-btn:hover { background-color: rgba(25, 118, 210, 0.1); }
+        .dict-speaker-btn svg { width: 18px; height: 18px; pointer-events: none; }
+        .dict-speaker-btn.playing { color: #E91E63; animation: tm-pulse 1s infinite; }
+        .dict-tags-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;}
+        .dict-tag { background: #F0F4F8; color: #476582; font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #D9E2EC; font-weight: 500; }
+        .dict-tag.star-tag { color: #F59E0B; background: #FEF3C7; border-color: #FDE68A; letter-spacing: 1px; padding: 2px 4px; }
+        .dict-tag.cefr-A1 { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+        .dict-tag.cefr-A2 { background: #E0F2F1; color: #00695C; border-color: #B2DFDB; }
+        .dict-tag.cefr-B1 { background: #FFF8E1; color: #F57F17; border-color: #FFECB3; }
+        .dict-tag.cefr-B2 { background: #FFF3E0; color: #E65100; border-color: #FFE0B2; }
+        .dict-tag.cefr-C1 { background: #FCE4EC; color: #C2185B; border-color: #F8BBD0; }
+        .dict-tag.cefr-C2 { background: #F3E5F5; color: #7B1FA2; border-color: #E1BEE7; }
+        .dict-basic-trans { font-size: 14px; color: #444; margin-top: 4px; }
+        .dict-pos-block { margin-bottom: 4px; }
+        .dict-pos-tag { font-style: italic; color: #1976D2; font-weight: bold; font-size: 12px; margin-right: 4px; }
+        .dict-def-list { margin: 0; padding: 0; list-style: none; display: inline; }
+        .dict-def-item { display: inline; }
+        .dict-def-item::after { content: "; "; color: #999; }
+        .dict-def-item:last-child::after { content: ""; }
+        .dict-loading { color: #666; font-style: italic; font-size: 13px; padding: 5px; text-align: center; }
+        @keyframes tm-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body class="bar-hidden global-blur-enabled dict-enabled highlights-enabled">
+    <div class="reader-bar hidden" id="top-bar">
+        <div class="reader-controls">
+            <button class="reader-btn" onclick="adjustFont(-0.1)">A-</button>
+            <button class="reader-btn" onclick="adjustFont(0.1)">A+</button>
+            <button id="blur-btn" class="reader-btn" style="background:#AF52DE; color:white;" onclick="toggleBlur()">模糊: 开</button>
+            <button id="hl-btn" class="reader-btn" style="background:#FF3B30; color:white;" onclick="toggleHighlight()">高亮: 开</button>
+            <button id="dict-btn" class="reader-btn" style="background:#34C759; color:white;" onclick="toggleDict()">查词: 开</button>
+        </div>
+    </div>
+    <div id="content-container">
+    <h1 style="text-align: left !important;">Chapter 2</h1>
+    <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">发布时间：2026/7/28 23:37:02</div>
+    <div class="para-wrap"><p>When the pirate Sir Francis Drake attacked Riohacha in the sixteenth century, Úrsula Iguarán's great-great-grandmother became so frightened with the ringing of alarm bells and the firing of cannons that she lost control of her nerves and sat down on a lighted stove. The burns changed her into a useless wife for the rest of her days.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h1>📌 完整翻译</h1>
+<p>十六世纪，当海盗弗朗西斯·德雷克爵士袭击里奥阿查时，乌尔苏拉·伊瓜兰的高祖母被警报钟的响声和大炮的轰鸣吓得惊慌失措，以至于失去了对神经的控制，坐到了一口燃烧着的炉子上。</p>
+<p>烧伤使她在余生中都成为一个无法履行妻子职责的人。</p>
+<hr>
+<h1>📘 英语教学式讲解</h1>
+<h2>1. When the pirate Sir Francis Drake attacked Riohacha in the sixteenth century</h2>
+<ul>
+<li>十六世纪，当海盗弗朗西斯·德雷克爵士袭击里奥阿查时。</li>
+</ul>
+<p>这是时间状语从句。</p>
+<p>结构：</p>
+<blockquote>
+<p>When + 从句，主句</p>
+</blockquote>
+<p>表示：</p>
+<blockquote>
+<p>当……的时候。</p>
+</blockquote>
+<hr>
+<h2>When</h2>
+<p>表示：</p>
+<ul>
+<li>当……时。</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li>When I arrived, he was sleeping.</li>
+</ul>
+<p>当我到达时，他正在睡觉。</p>
+<hr>
+<h2>pirate</h2>
+<ul>
+<li>海盗。</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li>pirate ship</li>
+</ul>
+<p>海盗船。</p>
+<hr>
+<h2>Sir Francis Drake</h2>
+<ul>
+<li>弗朗西斯·德雷克爵士。</li>
+</ul>
+<p>历史人物。</p>
+<p>他是英国航海家、私掠者。</p>
+<p>这里小说把真实历史事件融入家族故事。</p>
+<hr>
+<h2>attacked</h2>
+<p>来自：</p>
+<blockquote>
+<p>attack</p>
+</blockquote>
+<p>表示：</p>
+<ul>
+<li>袭击；</li>
+<li>攻击。</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li>The army attacked the city.</li>
+</ul>
+<p>军队袭击城市。</p>
+<hr>
+<h2>Riohacha</h2>
+<ul>
+<li>里奥阿查。</li>
+</ul>
+<p>哥伦比亚加勒比海沿岸城市。</p>
+<hr>
+<h2>in the sixteenth century</h2>
+<ul>
+<li>在十六世纪。</li>
+</ul>
+<hr>
+<h3>century</h3>
+<ul>
+<li>世纪。</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li>the twentieth century</li>
+</ul>
+<p>二十世纪。</p>
+<hr>
+<h1>2. Úrsula Iguarán's great-great-grandmother</h1>
+<ul>
+<li>乌尔苏拉·伊瓜兰的高祖母。</li>
+</ul>
+<hr>
+<p>这是复合名词。</p>
+<p>结构：</p>
+<blockquote>
+<p>someone's + family relationship</p>
+</blockquote>
+<p>表示：</p>
+<p>某人的亲属。</p>
+<hr>
+<h2>great-great-grandmother</h2>
+<p>词汇拆解：</p>
+<ul>
+<li>grandmother</li>
+</ul>
+<p>祖母。</p>
+<p>↓</p>
+<ul>
+<li>great-grandmother</li>
+</ul>
+<p>曾祖母。</p>
+<p>↓</p>
+<ul>
+<li>great-great-grandmother</li>
+</ul>
+<p>高祖母。</p>
+<p>也就是：</p>
+<p>祖母的祖母。</p>
+<hr>
+<h1>3. became so frightened with the ringing of alarm bells and the firing of cannons</h1>
+<ul>
+<li>被警报钟声和大炮轰鸣吓得非常害怕。</li>
+</ul>
+<hr>
+<h2>became frightened</h2>
+<p>表示：</p>
+<blockquote>
+<p>变得害怕。</p>
+</blockquote>
+<p>结构：</p>
+<blockquote>
+<p>become + 形容词</p>
+</blockquote>
+<p>例如：</p>
+<ul>
+<li>become angry</li>
+</ul>
+<p>变生气。</p>
+<hr>
+<h2>so frightened</h2>
+<p>表示：</p>
+<blockquote>
+<p>如此害怕。</p>
+</blockquote>
+<p>后面通常接：</p>
+<blockquote>
+<p>so...that...</p>
+</blockquote>
+<p>但是这里：</p>
+<p>that 从句被省略。</p>
+<hr>
+<h2>the ringing of alarm bells</h2>
+<ul>
+<li>警报钟的响声。</li>
+</ul>
+<hr>
+<h3>ringing</h3>
+<p>来自：</p>
+<blockquote>
+<p>ring</p>
+</blockquote>
+<p>表示：</p>
+<ul>
+<li>响；</li>
+<li>鸣。</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li>the ringing of the phone</li>
+</ul>
+<p>电话铃声。</p>
+<hr>
+<h3>alarm bells</h3>
+<ul>
+<li>警钟；</li>
+<li>警报钟。</li>
+</ul>
+<hr>
+<h2>the firing of cannons</h2>
+<ul>
+<li>大炮开火。</li>
+</ul>
+<hr>
+<h3>firing</h3>
+<p>来自：</p>
+<blockquote>
+<p>fire</p>
+</blockquote>
+<p>这里表示：</p>
+<p>开火。</p>
+<p>例如：</p>
+<ul>
+<li>firing a gun</li>
+</ul>
+<p>开枪。</p>
+<hr>
+<h3>cannons</h3>
+<ul>
+<li>大炮。</li>
+</ul>
+<hr>
+<h1>4. that she lost control of her nerves</h1>
+<ul>
+<li>以至于她失去了对神经的控制。</li>
+</ul>
+<p>这里是：</p>
+<blockquote>
+<p>so...that...</p>
+</blockquote>
+<p>结构。</p>
+<p>完整：</p>
+<blockquote>
+<p>became so frightened that...</p>
+</blockquote>
+<p>表示：</p>
+<blockquote>
+<p>如此害怕，以至于……</p>
+</blockquote>
+<hr>
+<h2>lose control of</h2>
+<p>固定表达：</p>
+<blockquote>
+<p>失去对……的控制。</p>
+</blockquote>
+<p>例如：</p>
+<ul>
+<li>lose control of oneself</li>
+</ul>
+<p>失去自控。</p>
+<hr>
+<h2>nerves</h2>
+<p>这里不是：</p>
+<p>“神经线”。</p>
+<p>而是：</p>
+<ul>
+<li>神经系统；</li>
+<li>情绪控制能力。</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li>She has strong nerves.</li>
+</ul>
+<p>她心理承受力很强。</p>
+<hr>
+<h1>5. and sat down on a lighted stove</h1>
+<ul>
+<li>并坐到了一口燃烧着的炉子上。</li>
+</ul>
+<hr>
+<h2>sat down</h2>
+<ul>
+<li>坐下。</li>
+</ul>
+<hr>
+<h2>lighted stove</h2>
+<ul>
+<li>点燃的炉子。</li>
+</ul>
+<hr>
+<h3>lighted</h3>
+<p>来自：</p>
+<blockquote>
+<p>light</p>
+</blockquote>
+<p>这里：</p>
+<p>表示：</p>
+<p>被点燃的。</p>
+<p>例如：</p>
+<ul>
+<li>a lighted candle</li>
+</ul>
+<p>点燃的蜡烛。</p>
+<hr>
+<h1>6. The burns changed her into a useless wife</h1>
+<ul>
+<li>烧伤使她变成了一个无用的妻子。</li>
+</ul>
+<hr>
+<h2>burns</h2>
+<ul>
+<li>烧伤。</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li>serious burns</li>
+</ul>
+<p>严重烧伤。</p>
+<hr>
+<h2>change somebody into something</h2>
+<p>表示：</p>
+<blockquote>
+<p>使某人变成……</p>
+</blockquote>
+<p>例如：</p>
+<ul>
+<li>The experience changed him into a different person.</li>
+</ul>
+<p>这段经历改变了他。</p>
+<hr>
+<h2>useless wife</h2>
+<ul>
+<li>无法履行妻子职责的妻子。</li>
+</ul>
+<p>注意：</p>
+<p>这里的：</p>
+<blockquote>
+<p>useless</p>
+</blockquote>
+<p>不是说她作为人的价值不存在。</p>
+<p>而是在当时社会背景下：</p>
+<p>她无法完成传统婚姻中的角色。</p>
+<hr>
+<h1>7. for the rest of her days</h1>
+<ul>
+<li>在她余下的日子里。</li>
+</ul>
+<hr>
+<p>固定表达：</p>
+<blockquote>
+<p>for the rest of one's life/days</p>
+</blockquote>
+<p>表示：</p>
+<blockquote>
+<p>余生。</p>
+</blockquote>
+<p>例如：</p>
+<ul>
+<li>He stayed there for the rest of his life.</li>
+</ul>
+<p>他在那里度过余生。</p>
+<hr>
+<h1>📌 Sentence Structure</h1>
+<h2>第一句：</h2>
+<p>时间：</p>
+<blockquote>
+<p>When the pirate Sir Francis Drake attacked Riohacha...</p>
+</blockquote>
+<p>当德雷克袭击里奥阿查时。</p>
+<p>↓</p>
+<p>主语：</p>
+<blockquote>
+<p>Úrsula Iguarán's great-great-grandmother</p>
+</blockquote>
+<p>乌尔苏拉的高祖母。</p>
+<p>↓</p>
+<p>结果：</p>
+<blockquote>
+<p>became so frightened...</p>
+</blockquote>
+<p>变得极度恐惧。</p>
+<p>↓</p>
+<p>原因：</p>
+<blockquote>
+<p>with the ringing... and firing...</p>
+</blockquote>
+<p>因为钟声和炮声。</p>
+<p>↓</p>
+<p>结果：</p>
+<blockquote>
+<p>that she lost control...</p>
+</blockquote>
+<p>以至于失去控制。</p>
+<p>↓</p>
+<p>动作：</p>
+<blockquote>
+<p>sat down on a lighted stove</p>
+</blockquote>
+<p>坐到了炉子上。</p>
+<hr>
+<h2>第二句：</h2>
+<p>主语：</p>
+<blockquote>
+<p>The burns</p>
+</blockquote>
+<p>烧伤。</p>
+<p>↓</p>
+<p>动词：</p>
+<blockquote>
+<p>changed</p>
+</blockquote>
+<p>改变。</p>
+<p>↓</p>
+<p>宾语：</p>
+<blockquote>
+<p>her</p>
+</blockquote>
+<p>她。</p>
+<p>↓</p>
+<p>结果：</p>
+<blockquote>
+<p>into a useless wife</p>
+</blockquote>
+<p>成为无法履行妻子职责的人。</p>
+<hr>
+<h1>📌 Grammar Summary</h1>
+<h2>1. When 引导时间状语从句</h2>
+<blockquote>
+<p>When A, B.</p>
+</blockquote>
+<p>当A发生时，B发生。</p>
+<hr>
+<h2>2. so + 形容词 + that...</h2>
+<p>表示：</p>
+<blockquote>
+<p>如此……以至于……</p>
+</blockquote>
+<p>例如：</p>
+<ul>
+<li>He was so tired that he fell asleep.</li>
+</ul>
+<hr>
+<h2>3. lose control of</h2>
+<p>表示：</p>
+<blockquote>
+<p>失去对……的控制。</p>
+</blockquote>
+<hr>
+<h2>4. change A into B</h2>
+<p>表示：</p>
+<blockquote>
+<p>把A变成B。</p>
+</blockquote>
+<hr>
+<h2>5. for the rest of one's days</h2>
+<p>表示：</p>
+<blockquote>
+<p>余生。</p>
+</blockquote>
+<hr>
+<h1>📌 Language Note</h1>
+<p>这一段解释了乌尔苏拉家族对于“诅咒”的恐惧来源。</p>
+<p>表面上：</p>
+<p>这是一个关于祖先受伤的故事。</p>
+<p>但在《百年孤独》中，它逐渐变成家族记忆中的创伤。</p>
+<p>一次历史事件：</p>
+<blockquote>
+<p>Sir Francis Drake attack</p>
+</blockquote>
+<p>导致一个女人：</p>
+<blockquote>
+<p>lost control of her nerves</p>
+</blockquote>
+<p>最终改变了整个家族后来的观念。</p>
+<p>尤其是后面乌尔苏拉害怕近亲婚姻会生出带猪尾巴的孩子，这种恐惧并不是凭空产生的，而来自一代代传下来的家族传说。</p>
+<p>马尔克斯经常把：</p>
+<ul>
+<li>历史；</li>
+<li>家族记忆；</li>
+<li>个人创伤；</li>
+</ul>
+<p>混合在一起，让过去一直影响现在。</p>
+<hr>
+<h1>📌 Key Expressions</h1>
+<ul>
+<li>in the sixteenth century —— 在十六世纪</li>
+<li>pirate —— 海盗</li>
+<li>attack a city —— 袭击城市</li>
+<li>become frightened —— 变得害怕</li>
+<li>ringing of bells —— 钟声</li>
+<li>alarm bell —— 警钟</li>
+<li>firing of cannons —— 大炮开火</li>
+<li>lose control of —— 失去对……的控制</li>
+<li>nerves —— 神经；心理承受力</li>
+<li>sit down on —— 坐在……</li>
+<li>lighted stove —— 点燃的炉子</li>
+<li>burn —— 烧伤</li>
+<li>change somebody into —— 使某人成为……</li>
+<li>useless wife —— 无法履行妻子职责的人</li>
+<li>for the rest of one's days —— 余生</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;"># 📌 完整翻译
+
+十六世纪，当海盗弗朗西斯·德雷克爵士袭击里奥阿查时，乌尔苏拉·伊瓜兰的高祖母被警报钟的响声和大炮的轰鸣吓得惊慌失措，以至于失去了对神经的控制，坐到了一口燃烧着的炉子上。
+
+烧伤使她在余生中都成为一个无法履行妻子职责的人。
+
+---
+
+# 📘 英语教学式讲解
+
+## 1. When the pirate Sir Francis Drake attacked Riohacha in the sixteenth century
+
+- 十六世纪，当海盗弗朗西斯·德雷克爵士袭击里奥阿查时。
+
+这是时间状语从句。
+
+结构：
+
+&gt; When + 从句，主句
+
+表示：
+
+&gt; 当……的时候。
+
+---
+
+## When
+
+表示：
+
+- 当……时。
+
+例如：
+
+- When I arrived, he was sleeping.
+
+当我到达时，他正在睡觉。
+
+---
+
+## pirate
+
+- 海盗。
+
+例如：
+
+- pirate ship
+
+海盗船。
+
+---
+
+## Sir Francis Drake
+
+- 弗朗西斯·德雷克爵士。
+
+历史人物。
+
+他是英国航海家、私掠者。
+
+这里小说把真实历史事件融入家族故事。
+
+---
+
+## attacked
+
+来自：
+
+&gt; attack
+
+表示：
+
+- 袭击；
+- 攻击。
+
+例如：
+
+- The army attacked the city.
+
+军队袭击城市。
+
+---
+
+## Riohacha
+
+- 里奥阿查。
+
+哥伦比亚加勒比海沿岸城市。
+
+---
+
+## in the sixteenth century
+
+- 在十六世纪。
+
+---
+
+### century
+
+- 世纪。
+
+例如：
+
+- the twentieth century
+
+二十世纪。
+
+---
+
+# 2. Úrsula Iguarán's great-great-grandmother
+
+- 乌尔苏拉·伊瓜兰的高祖母。
+
+---
+
+这是复合名词。
+
+结构：
+
+&gt; someone's + family relationship
+
+表示：
+
+某人的亲属。
+
+---
+
+## great-great-grandmother
+
+词汇拆解：
+
+- grandmother
+
+祖母。
+
+↓
+
+- great-grandmother
+
+曾祖母。
+
+↓
+
+- great-great-grandmother
+
+高祖母。
+
+也就是：
+
+祖母的祖母。
+
+---
+
+# 3. became so frightened with the ringing of alarm bells and the firing of cannons
+
+- 被警报钟声和大炮轰鸣吓得非常害怕。
+
+---
+
+## became frightened
+
+表示：
+
+&gt; 变得害怕。
+
+结构：
+
+&gt; become + 形容词
+
+例如：
+
+- become angry
+
+变生气。
+
+---
+
+## so frightened
+
+表示：
+
+&gt; 如此害怕。
+
+后面通常接：
+
+&gt; so...that...
+
+但是这里：
+
+that 从句被省略。
+
+---
+
+## the ringing of alarm bells
+
+- 警报钟的响声。
+
+---
+
+### ringing
+
+来自：
+
+&gt; ring
+
+表示：
+
+- 响；
+- 鸣。
+
+例如：
+
+- the ringing of the phone
+
+电话铃声。
+
+---
+
+### alarm bells
+
+- 警钟；
+- 警报钟。
+
+---
+
+## the firing of cannons
+
+- 大炮开火。
+
+---
+
+### firing
+
+来自：
+
+&gt; fire
+
+这里表示：
+
+开火。
+
+例如：
+
+- firing a gun
+
+开枪。
+
+---
+
+### cannons
+
+- 大炮。
+
+---
+
+# 4. that she lost control of her nerves
+
+- 以至于她失去了对神经的控制。
+
+这里是：
+
+&gt; so...that...
+
+结构。
+
+完整：
+
+&gt; became so frightened that...
+
+表示：
+
+&gt; 如此害怕，以至于……
+
+---
+
+## lose control of
+
+固定表达：
+
+&gt; 失去对……的控制。
+
+例如：
+
+- lose control of oneself
+
+失去自控。
+
+---
+
+## nerves
+
+这里不是：
+
+“神经线”。
+
+而是：
+
+- 神经系统；
+- 情绪控制能力。
+
+例如：
+
+- She has strong nerves.
+
+她心理承受力很强。
+
+---
+
+# 5. and sat down on a lighted stove
+
+- 并坐到了一口燃烧着的炉子上。
+
+---
+
+## sat down
+
+- 坐下。
+
+---
+
+## lighted stove
+
+- 点燃的炉子。
+
+---
+
+### lighted
+
+来自：
+
+&gt; light
+
+这里：
+
+表示：
+
+被点燃的。
+
+例如：
+
+- a lighted candle
+
+点燃的蜡烛。
+
+---
+
+# 6. The burns changed her into a useless wife
+
+- 烧伤使她变成了一个无用的妻子。
+
+---
+
+## burns
+
+- 烧伤。
+
+例如：
+
+- serious burns
+
+严重烧伤。
+
+---
+
+## change somebody into something
+
+表示：
+
+&gt; 使某人变成……
+
+例如：
+
+- The experience changed him into a different person.
+
+这段经历改变了他。
+
+---
+
+## useless wife
+
+- 无法履行妻子职责的妻子。
+
+注意：
+
+这里的：
+
+&gt; useless
+
+不是说她作为人的价值不存在。
+
+而是在当时社会背景下：
+
+她无法完成传统婚姻中的角色。
+
+---
+
+# 7. for the rest of her days
+
+- 在她余下的日子里。
+
+---
+
+固定表达：
+
+&gt; for the rest of one's life/days
+
+表示：
+
+&gt; 余生。
+
+例如：
+
+- He stayed there for the rest of his life.
+
+他在那里度过余生。
+
+---
+
+# 📌 Sentence Structure
+
+## 第一句：
+
+时间：
+
+&gt; When the pirate Sir Francis Drake attacked Riohacha...
+
+当德雷克袭击里奥阿查时。
+
+↓
+
+主语：
+
+&gt; Úrsula Iguarán's great-great-grandmother
+
+乌尔苏拉的高祖母。
+
+↓
+
+结果：
+
+&gt; became so frightened...
+
+变得极度恐惧。
+
+↓
+
+原因：
+
+&gt; with the ringing... and firing...
+
+因为钟声和炮声。
+
+↓
+
+结果：
+
+&gt; that she lost control...
+
+以至于失去控制。
+
+↓
+
+动作：
+
+&gt; sat down on a lighted stove
+
+坐到了炉子上。
+
+---
+
+## 第二句：
+
+主语：
+
+&gt; The burns
+
+烧伤。
+
+↓
+
+动词：
+
+&gt; changed
+
+改变。
+
+↓
+
+宾语：
+
+&gt; her
+
+她。
+
+↓
+
+结果：
+
+&gt; into a useless wife
+
+成为无法履行妻子职责的人。
+
+---
+
+# 📌 Grammar Summary
+
+## 1. When 引导时间状语从句
+
+&gt; When A, B.
+
+当A发生时，B发生。
+
+---
+
+## 2. so + 形容词 + that...
+
+表示：
+
+&gt; 如此……以至于……
+
+例如：
+
+- He was so tired that he fell asleep.
+
+---
+
+## 3. lose control of
+
+表示：
+
+&gt; 失去对……的控制。
+
+---
+
+## 4. change A into B
+
+表示：
+
+&gt; 把A变成B。
+
+---
+
+## 5. for the rest of one's days
+
+表示：
+
+&gt; 余生。
+
+---
+
+# 📌 Language Note
+
+这一段解释了乌尔苏拉家族对于“诅咒”的恐惧来源。
+
+表面上：
+
+这是一个关于祖先受伤的故事。
+
+但在《百年孤独》中，它逐渐变成家族记忆中的创伤。
+
+一次历史事件：
+
+&gt; Sir Francis Drake attack
+
+导致一个女人：
+
+&gt; lost control of her nerves
+
+最终改变了整个家族后来的观念。
+
+尤其是后面乌尔苏拉害怕近亲婚姻会生出带猪尾巴的孩子，这种恐惧并不是凭空产生的，而来自一代代传下来的家族传说。
+
+马尔克斯经常把：
+
+- 历史；
+- 家族记忆；
+- 个人创伤；
+
+混合在一起，让过去一直影响现在。
+
+---
+
+# 📌 Key Expressions
+
+- in the sixteenth century —— 在十六世纪
+- pirate —— 海盗
+- attack a city —— 袭击城市
+- become frightened —— 变得害怕
+- ringing of bells —— 钟声
+- alarm bell —— 警钟
+- firing of cannons —— 大炮开火
+- lose control of —— 失去对……的控制
+- nerves —— 神经；心理承受力
+- sit down on —— 坐在……
+- lighted stove —— 点燃的炉子
+- burn —— 烧伤
+- change somebody into —— 使某人成为……
+- useless wife —— 无法履行妻子职责的人
+- for the rest of one's days —— 余生</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">当海盗弗朗西斯·德雷克爵士在十六世纪攻打奥阿查（位于哥伦比亚地区）时，乌尔苏拉·伊瓜兰的曾曾祖母受到了响亮的警报钟声和大炮的开火声的惊吓，神经失去控制，一下坐在了燃烧着的火炉上，烧伤使其余生都不能尽妻子之职。</p>
+    <div class="para-wrap"><p>She could only sit on one side, cushioned by pillows, and something strange must have happened to her way of walking, for she never walked again in public.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>她只能坐在一侧，被枕头垫着，而且她的走路方式一定发生了某种奇怪的变化，因为她再也没有在公众场合走过路。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>could only sit on one side</strong>
+= 只能坐在一侧
+（表示身体受限，只能采取特定姿势）</p>
+</li>
+<li><p><strong>cushioned by pillows</strong>
+= 被枕头垫着
+（过去分词短语作状语，表示方式）</p>
+</li>
+<li><p><strong>something strange must have happened to her way of walking</strong>
+= 她的走路方式一定发生了某种奇怪的变化
+（"must have + 过去分词"表示对过去事情的推测）</p>
+</li>
+<li><p><strong>for she never walked again in public</strong>
+= 因为她再也没有在公众场合走过路
+（"for"引导原因状语从句）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+她只能坐在一侧，被枕头垫着，而且她的走路方式一定发生了某种奇怪的变化，因为她再也没有在公众场合走过路。
+
+### 📌 Key Expressions
+
+- **could only sit on one side**
+  = 只能坐在一侧
+  （表示身体受限，只能采取特定姿势）
+
+- **cushioned by pillows**
+  = 被枕头垫着
+  （过去分词短语作状语，表示方式）
+
+- **something strange must have happened to her way of walking**
+  = 她的走路方式一定发生了某种奇怪的变化
+  （"must have + 过去分词"表示对过去事情的推测）
+
+- **for she never walked again in public**
+  = 因为她再也没有在公众场合走过路
+  （"for"引导原因状语从句）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她只能侧坐着，垫着坐垫，走路的方式也变得很奇怪，所以她再也没有在公共场合走过路。</p>
+    <div class="para-wrap"><p>She gave up all kinds of social activity, obsessed with the notion that her body gave off a singed odor.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>她放弃了各种社交活动，因为她坚信自己的身体散发出烧焦的气味。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>gave up</strong>
+= 放弃
+（表示停止或不再继续某事）</p>
+</li>
+<li><p><strong>all kinds of social activity</strong>
+= 各种社交活动
+（指所有类型的社交聚会和互动）</p>
+</li>
+<li><p><strong>obsessed with</strong>
+= 被...着迷/困扰
+（表示过度关注或沉迷于某种想法）</p>
+</li>
+<li><p><strong>notion</strong>
+= 想法，观念
+（指个人持有的信念或看法）</p>
+</li>
+<li><p><strong>gave off</strong>
+= 散发出
+（指释放出某种气味、热量等）</p>
+</li>
+<li><p><strong>singed odor</strong>
+= 烧焦的气味
+（指物体被轻微烧焦后产生的气味）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+她放弃了各种社交活动，因为她坚信自己的身体散发出烧焦的气味。
+
+### 📌 Key Expressions
+
+- **gave up**
+  = 放弃
+  （表示停止或不再继续某事）
+
+- **all kinds of social activity**
+  = 各种社交活动
+  （指所有类型的社交聚会和互动）
+
+- **obsessed with**
+  = 被...着迷/困扰
+  （表示过度关注或沉迷于某种想法）
+
+- **notion**
+  = 想法，观念
+  （指个人持有的信念或看法）
+
+- **gave off**
+  = 散发出
+  （指释放出某种气味、热量等）
+
+- **singed odor**
+  = 烧焦的气味
+  （指物体被轻微烧焦后产生的气味）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她放弃了所有的社交活动，固执认为自己的身体散发着烧焦的气味。</p>
+    <div class="para-wrap"><p>Dawn would find her in the courtyard, for she did not dare fall asleep lest she dream of the English and their ferocious attack dogs as they came through the windows of her bedroom to submit her to shameful tortures with their red-hot irons.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>黎明时分会发现她在庭院里，因为她不敢入睡，以免梦见英国人和他们凶猛的攻击犬，那些攻击犬会穿过她卧室的窗户，用烧红的铁器对她施加可耻的折磨。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Dawn would find her</strong>
+= 黎明会发现她
+（would find表示过去习惯性动作，暗示这是经常发生的情况）</p>
+</li>
+<li><p><strong>did not dare</strong>
+= 不敢
+（表示没有勇气做某事）</p>
+</li>
+<li><p><strong>lest she dream</strong>
+= 以免她梦见
+（lest表示"以免"，引导目的状语从句，后接动词原形）</p>
+</li>
+<li><p><strong>ferocious attack dogs</strong>
+= 凶猛的攻击犬
+（ferocious表示"凶猛的，残忍的"）</p>
+</li>
+<li><p><strong>submit her to</strong>
+= 使她遭受
+（submit sb. to sth.表示"使某人遭受某事"）</p>
+</li>
+<li><p><strong>shameful tortures</strong>
+= 可耻的折磨
+（shameful表示"可耻的，丢脸的"）</p>
+</li>
+<li><p><strong>red-hot irons</strong>
+= 烧红的铁器
+（red-hot表示"烧得通红的"）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+黎明时分会发现她在庭院里，因为她不敢入睡，以免梦见英国人和他们凶猛的攻击犬，那些攻击犬会穿过她卧室的窗户，用烧红的铁器对她施加可耻的折磨。
+
+### 📌 Key Expressions
+
+- **Dawn would find her**
+  = 黎明会发现她
+  （would find表示过去习惯性动作，暗示这是经常发生的情况）
+
+- **did not dare**
+  = 不敢
+  （表示没有勇气做某事）
+
+- **lest she dream**
+  = 以免她梦见
+  （lest表示"以免"，引导目的状语从句，后接动词原形）
+
+- **ferocious attack dogs**
+  = 凶猛的攻击犬
+  （ferocious表示"凶猛的，残忍的"）
+
+- **submit her to**
+  = 使她遭受
+  （submit sb. to sth.表示"使某人遭受某事"）
+
+- **shameful tortures**
+  = 可耻的折磨
+  （shameful表示"可耻的，丢脸的"）
+
+- **red-hot irons**
+  = 烧红的铁器
+  （red-hot表示"烧得通红的"）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她在院中呆到天明，未曾入睡，以免梦见英国人和他们凶猛的攻击犬，他们会翻进卧室的窗户，用烧红的烙铁让她受尽可耻的折磨。</p>
+    <div class="para-wrap"><p>Her husband, an Aragonese merchant by whom she had two children, spent half the value of his store on medicines and pastimes in an attempt to alleviate her terror. Finally he sold the business and took the family to live far from the sea in a settlement of peaceful Indians located in the foothills, where he built his wife a bedroom without windows so that the pirates of her dream would have no way to get in.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>她的丈夫是一位阿拉贡商人，她为他生了两个孩子。他花费了店铺价值一半的钱在药物和娱乐上，试图缓解她的恐惧。最终，他卖掉了生意，带着家人远离大海，住在位于山脚下的和平印第安人定居点，在那里他为妻子建造了一间没有窗户的卧室，这样她梦中的海盗就无法进入。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>an Aragonese merchant by whom she had two children</strong>
+= 一位阿拉贡商人，她为他生了两个孩子
+（定语从句，"by whom"表示"被谁"，修饰"Aragonese merchant"）</p>
+</li>
+<li><p><strong>alleviate her terror</strong>
+= 缓解她的恐惧
+（"alleviate"意为减轻、缓解，"terror"指极度的恐惧）</p>
+</li>
+<li><p><strong>in an attempt to</strong>
+= 试图
+（表示目的的短语）</p>
+</li>
+<li><p><strong>far from the sea</strong>
+= 远离大海
+（表示距离的短语）</p>
+</li>
+<li><p><strong>located in the foothills</strong>
+= 位于山脚下
+（"foothills"指山麓、山脚地带）</p>
+</li>
+<li><p><strong>a bedroom without windows</strong>
+= 一间没有窗户的卧室
+（简单名词短语）</p>
+</li>
+<li><p><strong>so that the pirates of her dream would have no way to get in</strong>
+= 这样她梦中的海盗就无法进入
+（目的状语从句，表示建造无窗卧室的目的）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+她的丈夫是一位阿拉贡商人，她为他生了两个孩子。他花费了店铺价值一半的钱在药物和娱乐上，试图缓解她的恐惧。最终，他卖掉了生意，带着家人远离大海，住在位于山脚下的和平印第安人定居点，在那里他为妻子建造了一间没有窗户的卧室，这样她梦中的海盗就无法进入。
+
+### 📌 Key Expressions
+
+- **an Aragonese merchant by whom she had two children**
+  = 一位阿拉贡商人，她为他生了两个孩子
+  （定语从句，"by whom"表示"被谁"，修饰"Aragonese merchant"）
+
+- **alleviate her terror**
+  = 缓解她的恐惧
+  （"alleviate"意为减轻、缓解，"terror"指极度的恐惧）
+
+- **in an attempt to**
+  = 试图
+  （表示目的的短语）
+
+- **far from the sea**
+  = 远离大海
+  （表示距离的短语）
+
+- **located in the foothills**
+  = 位于山脚下
+  （"foothills"指山麓、山脚地带）
+
+- **a bedroom without windows**
+  = 一间没有窗户的卧室
+  （简单名词短语）
+
+- **so that the pirates of her dream would have no way to get in**
+  = 这样她梦中的海盗就无法进入
+  （目的状语从句，表示建造无窗卧室的目的）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她的丈夫是一个阿拉贡商人，他们有两个孩子。为了缓和她的恐惧，丈夫耗费店铺一半的资产用于药品和休闲活动。最后，他转让了自己的生意，带着家庭远离大海，住在一个山麓下和睦的印第安人聚居地。在那里，他为妻子建造了一间没有窗户的卧室，这样妻子噩梦中的海盗就无法进入她的卧室了。</p>
+    <div class="para-wrap"><p>In that hidden village there was a native-born tobacco planter who lived there for some time, Don José Arcadio Buendía, with whom Úrsula's great-great-grandfather established a partnership that was so lucrative that within a few years they made a fortune.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>在那个偏僻的村庄里，住着一位土生烟草种植者，他在那里生活了一段时间，他就是何塞·阿尔卡蒂奥·布恩迪亚。乌尔苏拉的曾曾祖父与他建立了合伙关系，这个合伙关系非常有利可图，以至于在短短几年内他们就发了一笔财。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>hidden village</strong>
+= 偏僻的村庄
+（表示地理位置偏远、不为人知的村庄）</p>
+</li>
+<li><p><strong>native-born tobacco planter</strong>
+= 土生烟草种植者
+（指在当地出生并从事烟草种植的人）</p>
+</li>
+<li><p><strong>lived there for some time</strong>
+= 在那里生活了一段时间
+（表示居住的时间长度）</p>
+</li>
+<li><p><strong>Don José Arcadio Buendía</strong>
+= 何塞·阿尔卡蒂奥·布恩迪亚
+（人名，是哥伦比亚作家加西亚·马尔克斯的小说《百年孤独》中的主要角色之一）</p>
+</li>
+<li><p><strong>established a partnership</strong>
+= 建立了合伙关系
+（指商业上的合作关系）</p>
+</li>
+<li><p><strong>lucrative</strong>
+= 有利可图的
+（形容能带来丰厚利润的）</p>
+</li>
+<li><p><strong>made a fortune</strong>
+= 发了一笔财
+（指获得了大量财富）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+在那个偏僻的村庄里，住着一位土生烟草种植者，他在那里生活了一段时间，他就是何塞·阿尔卡蒂奥·布恩迪亚。乌尔苏拉的曾曾祖父与他建立了合伙关系，这个合伙关系非常有利可图，以至于在短短几年内他们就发了一笔财。
+
+### 📌 Key Expressions
+
+- **hidden village**
+  = 偏僻的村庄
+  （表示地理位置偏远、不为人知的村庄）
+
+- **native-born tobacco planter**
+  = 土生烟草种植者
+  （指在当地出生并从事烟草种植的人）
+
+- **lived there for some time**
+  = 在那里生活了一段时间
+  （表示居住的时间长度）
+
+- **Don José Arcadio Buendía**
+  = 何塞·阿尔卡蒂奥·布恩迪亚
+  （人名，是哥伦比亚作家加西亚·马尔克斯的小说《百年孤独》中的主要角色之一）
+
+- **established a partnership**
+  = 建立了合伙关系
+  （指商业上的合作关系）
+
+- **lucrative**
+  = 有利可图的
+  （形容能带来丰厚利润的）
+
+- **made a fortune**
+  = 发了一笔财
+  （指获得了大量财富）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">在这个隐蔽的村庄，一个本地烟草种植户何塞·阿尔卡蒂奥·布恩迪亚已经在此住了一段时间，乌尔苏拉的曾曾祖父和他建立合作关系，短短几年便发了大财。</p>
+    <div class="para-wrap"><p>Several centuries later the great-great-grandson of the native-born planter married the great-great-granddaughter of the Aragonese.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>几个世纪后，这位本土出生的种植者的曾曾孙与阿拉贡人的曾曾孙女结婚了。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Several centuries later</strong>
+= 几个世纪后
+（表示时间跨度的表达）</p>
+</li>
+<li><p><strong>great-great-grandson</strong>
+= 曾曾孙（玄孙）
+（第四代孙子）</p>
+</li>
+<li><p><strong>native-born</strong>
+= 本土出生的
+（形容词，表示在某个地方出生）</p>
+</li>
+<li><p><strong>planter</strong>
+= 种植者
+（特指种植园主或农作物种植者）</p>
+</li>
+<li><p><strong>great-great-granddaughter</strong>
+= 曾曾孙女（玄孙女）
+（第四代孙女）</p>
+</li>
+<li><p><strong>Aragonese</strong>
+= 阿拉贡人
+（指来自西班牙阿拉贡地区的人）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+几个世纪后，这位本土出生的种植者的曾曾孙与阿拉贡人的曾曾孙女结婚了。
+
+### 📌 Key Expressions
+
+- **Several centuries later**
+  = 几个世纪后
+  （表示时间跨度的表达）
+
+- **great-great-grandson**
+  = 曾曾孙（玄孙）
+  （第四代孙子）
+
+- **native-born**
+  = 本土出生的
+  （形容词，表示在某个地方出生）
+
+- **planter**
+  = 种植者
+  （特指种植园主或农作物种植者）
+
+- **great-great-granddaughter**
+  = 曾曾孙女（玄孙女）
+  （第四代孙女）
+
+- **Aragonese**
+  = 阿拉贡人
+  （指来自西班牙阿拉贡地区的人）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">几个世纪以后，本地种植户的玄孙和阿拉贡商人的玄孙女结婚了。</p>
+    <div class="para-wrap"><p>Therefore, every time that Úrsula went crazy with her husband's follies, she would leap back over three hundred years of coincidences and curse the day that Sir Francis Drake had  attacked Riohacha.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>因此，每当乌尔苏拉因为丈夫的荒唐行为而发疯时，她会跳过三百年的巧合，诅咒弗朗西斯·德雷克爵士袭击里奥阿查的那一天。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Therefore</strong>
+= 因此
+（表示结果或结论的连接词）</p>
+</li>
+<li><p><strong>every time that</strong>
+= 每当...的时候
+（表示频率的从属连词）</p>
+</li>
+<li><p><strong>went crazy with</strong>
+= 因为...而发疯
+（表示因某事而极度愤怒或情绪失控）</p>
+</li>
+<li><p><strong>follies</strong>
+= 荒唐行为；愚蠢的行为
+（指愚蠢、不合常理的行为）</p>
+</li>
+<li><p><strong>leap back over</strong>
+= 跳过；跨越
+（这里指时间上的跳跃，跨越了三百年的时间）</p>
+</li>
+<li><p><strong>coincidences</strong>
+= 巧合
+（指偶然发生的事件）</p>
+</li>
+<li><p><strong>curse the day</strong>
+= 诅咒那一天
+（表示对某一天或某事件的强烈不满或怨恨）</p>
+</li>
+<li><p><strong>Sir Francis Drake</strong>
+= 弗朗西斯·德雷克爵士
+（英国16世纪的海盗、探险家）</p>
+</li>
+<li><p><strong>attacked Riohacha</strong>
+= 袭击里奥阿查
+（Riohacha是哥伦比亚的一个城市）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+因此，每当乌尔苏拉因为丈夫的荒唐行为而发疯时，她会跳过三百年的巧合，诅咒弗朗西斯·德雷克爵士袭击里奥阿查的那一天。
+
+### 📌 Key Expressions
+
+- **Therefore**
+  = 因此
+  （表示结果或结论的连接词）
+
+- **every time that**
+  = 每当...的时候
+  （表示频率的从属连词）
+
+- **went crazy with**
+  = 因为...而发疯
+  （表示因某事而极度愤怒或情绪失控）
+
+- **follies**
+  = 荒唐行为；愚蠢的行为
+  （指愚蠢、不合常理的行为）
+
+- **leap back over**
+  = 跳过；跨越
+  （这里指时间上的跳跃，跨越了三百年的时间）
+
+- **coincidences**
+  = 巧合
+  （指偶然发生的事件）
+
+- **curse the day**
+  = 诅咒那一天
+  （表示对某一天或某事件的强烈不满或怨恨）
+
+- **Sir Francis Drake**
+  = 弗朗西斯·德雷克爵士
+  （英国16世纪的海盗、探险家）
+
+- **attacked Riohacha**
+  = 袭击里奥阿查
+  （Riohacha是哥伦比亚的一个城市）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">因此，每当乌尔苏拉因为丈夫荒唐的想法而几近疯狂的时候，她会越过三百年的巧合，诅咒弗朗西斯·德雷克爵士攻打奥阿查的那一天。（此句英文版翻译诘屈聱牙，根据西语重新翻译）</p>
+    <div class="para-wrap"><p>It was simply a way of giving herself some relief, because actually they were joined till death by a bond that was more solid than love: a common prick of conscience. They were cousins.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>这不过是她给自己找的一种解脱方式，因为实际上他们被一种比爱情更牢固的纽带联系在一起直至死亡：共同的良心谴责。他们是表亲。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>simply a way of giving herself some relief</strong>
+= 只不过是她给自己找的一种解脱方式
+（表达了一种无奈的自我安慰行为）</p>
+</li>
+<li><p><strong>joined till death</strong>
+= 直至死亡的联系在一起
+（表示一种永久性的关系或联系）</p>
+</li>
+<li><p><strong>a bond that was more solid than love</strong>
+= 比爱情更牢固的纽带
+（强调这种联系的强度超过了爱情）</p>
+</li>
+<li><p><strong>a common prick of conscience</strong>
+= 共同的良心谴责
+（"prick of conscience" 是习语，指良心上的不安或谴责）</p>
+</li>
+<li><p><strong>cousins</strong>
+= 表亲
+（指有血缘关系的亲属，但不是直系亲属）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+这不过是她给自己找的一种解脱方式，因为实际上他们被一种比爱情更牢固的纽带联系在一起直至死亡：共同的良心谴责。他们是表亲。
+
+### 📌 Key Expressions
+
+- **simply a way of giving herself some relief**
+  = 只不过是她给自己找的一种解脱方式
+  （表达了一种无奈的自我安慰行为）
+
+- **joined till death**
+  = 直至死亡的联系在一起
+  （表示一种永久性的关系或联系）
+
+- **a bond that was more solid than love**
+  = 比爱情更牢固的纽带
+  （强调这种联系的强度超过了爱情）
+
+- **a common prick of conscience**
+  = 共同的良心谴责
+  （"prick of conscience" 是习语，指良心上的不安或谴责）
+
+- **cousins**
+  = 表亲
+  （指有血缘关系的亲属，但不是直系亲属）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这仅仅只是一种缓解的方式，因为实际上他们通过一种比爱情更坚固的关系连接在一起，直到死亡：即良心上的共同点，他们是表兄妹。</p>
+    <div class="para-wrap"><p>They had grown up together in the old village that both of their ancestors, with their work and their good habits, had transformed into one of the finest towns in the province.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>他们一起在那个老村庄长大，而他们的祖先通过工作和良好的习惯，已经将这个村庄变成了省内最好的城镇之一。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>grown up together</strong>
+= 一起长大
+（表示共同成长的经历）</p>
+</li>
+<li><p><strong>old village</strong>
+= 老村庄
+（指历史悠久的居住地）</p>
+</li>
+<li><p><strong>ancestors</strong>
+= 祖先
+（指家族的前辈）</p>
+</li>
+<li><p><strong>transformed into</strong>
+= 变成，转变为
+（表示改变的过程和结果）</p>
+</li>
+<li><p><strong>one of the finest towns</strong>
+= 最好的城镇之一
+（最高级表达，表示优秀程度）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+他们一起在那个老村庄长大，而他们的祖先通过工作和良好的习惯，已经将这个村庄变成了省内最好的城镇之一。
+
+### 📌 Key Expressions
+
+- **grown up together**
+  = 一起长大
+  （表示共同成长的经历）
+
+- **old village**
+  = 老村庄
+  （指历史悠久的居住地）
+
+- **ancestors**
+  = 祖先
+  （指家族的前辈）
+
+- **transformed into**
+  = 变成，转变为
+  （表示改变的过程和结果）
+
+- **one of the finest towns**
+  = 最好的城镇之一
+  （最高级表达，表示优秀程度）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他们在那个古老的村庄一起长大，各自的先辈，凭借着他们的工作和良好的生活习惯，使那里成为省内最好的城镇之一。</p>
+    <div class="para-wrap"><p>Although their marriage was predicted from the time they had come into the world, when they expressed their desire to be married their own relatives tried to stop it.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>尽管他们的婚姻从他们出生时就被预言了，但当他们表达结婚的意愿时，自己的亲戚却试图阻止这桩婚事。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>was predicted</strong>
+= 被预言
+（被动语态结构，表示婚姻被预言）</p>
+</li>
+<li><p><strong>from the time they had come into the world</strong>
+= 从他们出生时起
+（时间状语从句，表示从生命开始的那一刻）</p>
+</li>
+<li><p><strong>expressed their desire</strong>
+= 表达他们的愿望
+（动词短语，表示明确表达意愿）</p>
+</li>
+<li><p><strong>to be married</strong>
+= 结婚的
+（不定式作后置定语，修饰desire）</p>
+</li>
+<li><p><strong>tried to stop it</strong>
+= 试图阻止它
+（"it"指代前面的"their marriage"）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+尽管他们的婚姻从他们出生时就被预言了，但当他们表达结婚的意愿时，自己的亲戚却试图阻止这桩婚事。
+
+### 📌 Key Expressions
+
+- **was predicted**
+  = 被预言
+  （被动语态结构，表示婚姻被预言）
+
+- **from the time they had come into the world**
+  = 从他们出生时起
+  （时间状语从句，表示从生命开始的那一刻）
+
+- **expressed their desire**
+  = 表达他们的愿望
+  （动词短语，表示明确表达意愿）
+
+- **to be married**
+  = 结婚的
+  （不定式作后置定语，修饰desire）
+
+- **tried to stop it**
+  = 试图阻止它
+  （"it"指代前面的"their marriage"）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他们来到这个世界，联姻便已注定，但是当他们表露出结婚的愿望时，他们的亲戚却试图阻止。</p>
+    <div class="para-wrap"><p>They were afraid that those two heathly products of two races that had interbred over the centuries would suffer the shame of breeding iguanas. There had already been a horrible precedent.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>他们害怕那两个经过几个世纪通婚的种族的健康后代，会遭受繁殖鬣蜥的羞耻。已经有过一个可怕的先例了。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>interbred</strong>
+= 通婚，杂交
+（指不同种族或品种之间的交配）</p>
+</li>
+<li><p><strong>products</strong>
+= 后代，产物
+（这里指种族通婚后产生的后代）</p>
+</li>
+<li><p><strong>suffer the shame</strong>
+= 遭受羞耻
+（表示因某事而感到羞耻或蒙受耻辱）</p>
+</li>
+<li><p><strong>breeding iguanas</strong>
+= 繁殖鬣蜥
+（这里可能是一种比喻，指产生低劣或不被接受的后代）</p>
+</li>
+<li><p><strong>horrible precedent</strong>
+= 可怕的先例
+（指过去发生过的类似不良事件，可以作为警示）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+他们害怕那两个经过几个世纪通婚的种族的健康后代，会遭受繁殖鬣蜥的羞耻。已经有过一个可怕的先例了。
+
+### 📌 Key Expressions
+
+- **interbred**
+  = 通婚，杂交
+  （指不同种族或品种之间的交配）
+
+- **products**
+  = 后代，产物
+  （这里指种族通婚后产生的后代）
+
+- **suffer the shame**
+  = 遭受羞耻
+  （表示因某事而感到羞耻或蒙受耻辱）
+
+- **breeding iguanas**
+  = 繁殖鬣蜥
+  （这里可能是一种比喻，指产生低劣或不被接受的后代）
+
+- **horrible precedent**
+  = 可怕的先例
+  （指过去发生过的类似不良事件，可以作为警示）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他们担心两个家族几个世纪以来的结合繁衍， 这两个健康的后代将会遭受生育出鬣蜥的可耻之事。事实上，已经有了一个可怕的先例。</p>
+    <div class="para-wrap"><p>An aunt of Úrsula's, married to an uncle of José Arcadio Buendía, had a son who went through life wearing loose, baggy trousers and who bled to death after having lived forty-two years in the purest state of virginity, for he had been born and had grown up with a cartilaginous tail in the shape of a corkscrew and with a small tuft of hair on the tip.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>乌苏拉的一个姨妈，嫁给了何塞·阿尔卡蒂奥·布恩迪亚的一个叔叔，她有一个儿子，他一生都穿着宽松肥大的裤子，并且在保持了四十二年纯洁的童贞状态后流血而死，因为他出生时和成长过程中都带着一个螺旋状的软骨尾巴，尾巴末端还有一小撮毛。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>An aunt of Úrsula's</strong>
+= 乌苏拉的一个姨妈
+（所有格结构，表示"乌苏拉的姨妈"）</p>
+</li>
+<li><p><strong>married to an uncle of José Arcadio Buendía</strong>
+= 嫁给了何塞·阿尔卡蒂奥·布恩迪亚的一个叔叔
+（过去分词短语作后置定语）</p>
+</li>
+<li><p><strong>went through life</strong>
+= 度过一生
+（习语，表示"度过一生"）</p>
+</li>
+<li><p><strong>loose, baggy trousers</strong>
+= 宽松肥大的裤子
+（形容词并列修饰trousers）</p>
+</li>
+<li><p><strong>bled to death</strong>
+= 流血而死
+（动词短语，表示因流血过多而死）</p>
+</li>
+<li><p><strong>in the purest state of virginity</strong>
+= 处于最纯洁的童贞状态
+（介词短语，表示状态）</p>
+</li>
+<li><p><strong>cartilaginous tail in the shape of a corkscrew</strong>
+= 螺旋状的软骨尾巴
+（名词短语，描述尾巴的材质和形状）</p>
+</li>
+<li><p><strong>a small tuft of hair</strong>
+= 一小撮毛
+（名词短语，表示少量毛发）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+乌苏拉的一个姨妈，嫁给了何塞·阿尔卡蒂奥·布恩迪亚的一个叔叔，她有一个儿子，他一生都穿着宽松肥大的裤子，并且在保持了四十二年纯洁的童贞状态后流血而死，因为他出生时和成长过程中都带着一个螺旋状的软骨尾巴，尾巴末端还有一小撮毛。
+
+### 📌 Key Expressions
+
+- **An aunt of Úrsula's**
+  = 乌苏拉的一个姨妈
+  （所有格结构，表示"乌苏拉的姨妈"）
+
+- **married to an uncle of José Arcadio Buendía**
+  = 嫁给了何塞·阿尔卡蒂奥·布恩迪亚的一个叔叔
+  （过去分词短语作后置定语）
+
+- **went through life**
+  = 度过一生
+  （习语，表示"度过一生"）
+
+- **loose, baggy trousers**
+  = 宽松肥大的裤子
+  （形容词并列修饰trousers）
+
+- **bled to death**
+  = 流血而死
+  （动词短语，表示因流血过多而死）
+
+- **in the purest state of virginity**
+  = 处于最纯洁的童贞状态
+  （介词短语，表示状态）
+
+- **cartilaginous tail in the shape of a corkscrew**
+  = 螺旋状的软骨尾巴
+  （名词短语，描述尾巴的材质和形状）
+
+- **a small tuft of hair**
+  = 一小撮毛
+  （名词短语，表示少量毛发）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">乌尔苏拉的一位姑妈嫁给了何塞·阿尔卡蒂奥·布恩迪亚的一位叔叔，他们有个儿子一生都穿着宽松肥大的裤子，在纯洁的童真中活了四十二年，最后失血而死。他一出生就长着一条螺旋状的软骨尾巴，末端还有一绺毛发。</p>
+    <div class="para-wrap"><p>A pig's tail that was never allowed to be seen by any woman and that cost him his life when a butcher friend did him the favor of chopping it off with his cleaver.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>一个猪尾巴，从未被允许被任何女人看见，而当一个屠夫朋友好心用砍刀把它砍下来时，这个猪尾巴却让他付出了生命的代价。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>was never allowed to be seen</strong>
+= 从未被允许被看见
+（被动语态，表示"不允许被看见"的状态）</p>
+</li>
+<li><p><strong>cost him his life</strong>
+= 让他付出生命的代价
+（固定表达，表示导致某人死亡）</p>
+</li>
+<li><p><strong>did him the favor of</strong>
+= 好心为他做某事
+（表示做某事是出于好意）</p>
+</li>
+<li><p><strong>chopping it off with his cleaver</strong>
+= 用砍刀把它砍下来
+（chop off表示"砍下"，with his cleaver表示工具）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+一个猪尾巴，从未被允许被任何女人看见，而当一个屠夫朋友好心用砍刀把它砍下来时，这个猪尾巴却让他付出了生命的代价。
+
+### 📌 Key Expressions
+- **was never allowed to be seen**
+  = 从未被允许被看见
+  （被动语态，表示"不允许被看见"的状态）
+
+- **cost him his life**
+  = 让他付出生命的代价
+  （固定表达，表示导致某人死亡）
+
+- **did him the favor of**
+  = 好心为他做某事
+  （表示做某事是出于好意）
+
+- **chopping it off with his cleaver**
+  = 用砍刀把它砍下来
+  （chop off表示"砍下"，with his cleaver表示工具）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">从未让任何一个女人看过他的猪尾巴，当屠夫朋友用剁肉刀帮他切掉尾巴后，他为此付出了生命的代价。</p>
+    <div class="para-wrap"><p>José Arcadio Buendía, with a single phrase: "I don't care if I have piglets as long as they can talk." So they were married amidst a festival of fireworks and a brass band that went on for three days.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>何塞·阿尔卡蒂奥·布恩迪亚，只用了一句话就表明了态度："我不在乎我生的是不是猪崽子，只要它们会说话就行。"于是，他们在一场持续了三天的烟花和铜管乐队庆典中结婚了。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>with a single phrase</strong>
+= 只用一句话
+（表示简洁明了地表达态度）</p>
+</li>
+<li><p><strong>I don't care if</strong>
+= 我不在乎是否
+（表示不在乎某种条件）</p>
+</li>
+<li><p><strong>as long as</strong>
+= 只要
+（表示条件关系）</p>
+</li>
+<li><p><strong>amidst a festival of</strong>
+= 在...的庆典中
+（表示在某种氛围或环境中）</p>
+</li>
+<li><p><strong>went on for</strong>
+= 持续了
+（表示时间长度）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+何塞·阿尔卡蒂奥·布恩迪亚，只用了一句话就表明了态度："我不在乎我生的是不是猪崽子，只要它们会说话就行。"于是，他们在一场持续了三天的烟花和铜管乐队庆典中结婚了。
+
+### 📌 Key Expressions
+
+- **with a single phrase**
+  = 只用一句话
+  （表示简洁明了地表达态度）
+
+- **I don't care if**
+  = 我不在乎是否
+  （表示不在乎某种条件）
+
+- **as long as**
+  = 只要
+  （表示条件关系）
+
+- **amidst a festival of**
+  = 在...的庆典中
+  （表示在某种氛围或环境中）
+
+- **went on for**
+  = 持续了
+  （表示时间长度）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥·布恩迪亚只说了一句话：“我不在乎生下的是猪崽，只要会说话就行”。在烟火和铜管乐队表演中，他们结婚了，婚礼持续了三天。</p>
+    <div class="para-wrap"><p>They would have been happy from then on if Úrsula's mother had not terrified her with all manner of sinister predictions about their offspring, even to the extreme of advising her to refuse to consummate the marriage.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>如果乌尔苏拉的母亲没有用各种不祥的预言恐吓她，甚至建议她拒绝完成婚姻，那么他们从此以后就会幸福了。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>would have been happy</strong>
+= 本会幸福
+（虚拟语气的过去完成时，表示与过去事实相反的假设结果）</p>
+</li>
+<li><p><strong>if ... had not terrified</strong>
+= 如果没有恐吓
+（虚拟条件句的从句部分，表示与过去事实相反的条件）</p>
+</li>
+<li><p><strong>all manner of</strong>
+= 各种各样的
+（表示多种类型或方式）</p>
+</li>
+<li><p><strong>sinister predictions</strong>
+= 不祥的预言
+（sinister意为"不祥的、邪恶的"）</p>
+</li>
+<li><p><strong>offspring</strong>
+= 后代
+（正式用语，指子孙后代）</p>
+</li>
+<li><p><strong>to the extreme of</strong>
+= 甚至到...的程度
+（表示程度的极端）</p>
+</li>
+<li><p><strong>consummate the marriage</strong>
+= 完成婚姻
+（特指性关系，使婚姻有效）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+如果乌尔苏拉的母亲没有用各种不祥的预言恐吓她，甚至建议她拒绝完成婚姻，那么他们从此以后就会幸福了。
+
+### 📌 Key Expressions
+
+- **would have been happy**
+  = 本会幸福
+  （虚拟语气的过去完成时，表示与过去事实相反的假设结果）
+
+- **if ... had not terrified**
+  = 如果没有恐吓
+  （虚拟条件句的从句部分，表示与过去事实相反的条件）
+
+- **all manner of**
+  = 各种各样的
+  （表示多种类型或方式）
+
+- **sinister predictions**
+  = 不祥的预言
+  （sinister意为"不祥的、邪恶的"）
+
+- **offspring**
+  = 后代
+  （正式用语，指子孙后代）
+
+- **to the extreme of**
+  = 甚至到...的程度
+  （表示程度的极端）
+
+- **consummate the marriage**
+  = 完成婚姻
+  （特指性关系，使婚姻有效）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">从那时起，如果乌尔苏拉的母亲没有用对他们后代的各种阴险预测来吓唬她，甚至极端地建议乌尔苏拉拒绝和丈夫发生性行为，他们本来会很幸福。</p>
+    <div class="para-wrap"><p>Fearing that her stout and willful husband would rape her while she slept, Úrsula, before going to bed, would put on a rudimentary kind of drawers that her mother had made out of sailcloth and had reinforced with a system of crisscrossed leather straps and that was closed for several months.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>担心她强壮而固执的丈夫会在她睡觉时强奸她，Úrsula在睡前会穿上一种她母亲用帆布制成的简易短裤，这种短裤用交叉的皮革带子加固，并且已经穿了数月。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Fearing that</strong>
+= 担心/害怕
+（引导原因状语从句，表示主语的心理状态）</p>
+</li>
+<li><p><strong>stout and willful</strong>
+= 强壮而固执的
+（描述丈夫的体格和性格特点）</p>
+</li>
+<li><p><strong>would rape her</strong>
+= 会强奸她
+（使用would表示习惯性或重复发生的动作）</p>
+</li>
+<li><p><strong>before going to bed</strong>
+= 在睡前
+（时间状语，表示动作发生的时间）</p>
+</li>
+<li><p><strong>put on</strong>
+= 穿上
+（动词短语，表示穿戴衣物）</p>
+</li>
+<li><p><strong>a rudimentary kind of drawers</strong>
+= 一种简易短裤
+（rudimentary表示原始的、初步的；drawers在此处指内裤或短裤）</p>
+</li>
+<li><p><strong>made out of sailcloth</strong>
+= 用帆布制成的
+（表示材料）</p>
+</li>
+<li><p><strong>reinforced with</strong>
+= 用...加固
+（表示增强强度的方式）</p>
+</li>
+<li><p><strong>a system of crisscrossed leather straps</strong>
+= 交叉的皮革带子系统
+（crisscrossed表示交叉的，形成十字形）</p>
+</li>
+<li><p><strong>was closed for several months</strong>
+= 已经关闭/穿了几个月
+（表示这种防护措施已经持续了一段时间）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+担心她强壮而固执的丈夫会在她睡觉时强奸她，Úrsula在睡前会穿上一种她母亲用帆布制成的简易短裤，这种短裤用交叉的皮革带子加固，并且已经穿了数月。
+
+### 📌 Key Expressions
+
+- **Fearing that**
+  = 担心/害怕
+  （引导原因状语从句，表示主语的心理状态）
+
+- **stout and willful**
+  = 强壮而固执的
+  （描述丈夫的体格和性格特点）
+
+- **would rape her**
+  = 会强奸她
+  （使用would表示习惯性或重复发生的动作）
+
+- **before going to bed**
+  = 在睡前
+  （时间状语，表示动作发生的时间）
+
+- **put on**
+  = 穿上
+  （动词短语，表示穿戴衣物）
+
+- **a rudimentary kind of drawers**
+  = 一种简易短裤
+  （rudimentary表示原始的、初步的；drawers在此处指内裤或短裤）
+
+- **made out of sailcloth**
+  = 用帆布制成的
+  （表示材料）
+
+- **reinforced with**
+  = 用...加固
+  （表示增强强度的方式）
+
+- **a system of crisscrossed leather straps**
+  = 交叉的皮革带子系统
+  （crisscrossed表示交叉的，形成十字形）
+
+- **was closed for several months**
+  = 已经关闭/穿了几个月
+  （表示这种防护措施已经持续了一段时间）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">由于担心强壮又任性的丈夫趁她熟睡之际强奸自己。乌尔苏拉睡觉前，都会穿上一条裤子，这是她母亲用简陋的帆布做的，采用纵横交错的皮带加固，几个月都没有解开过。</p>
+    <div class="para-wrap"><p>During the day he would take care of his fighting cocks and she would do frame embroidery with her mother. At night they would wrestle for several hours in an anguished violence that seemed to be a substitute for the act of love, until popular intuition got a whiff of something irregular and the rumor spread that Úrsula was still a virgin a year after her marriage because her husband was impotent. José Arcadio Buendía was the last one to hear the rumor.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>白天，他会照顾他的斗鸡，而她会和母亲一起做刺绣。晚上，他们会以痛苦的暴力方式摔打几个小时，这似乎是他们爱的行为的替代，直到大众的直觉嗅到了一些不寻常的事情，传言传开说Úrsula结婚一年后仍是处女，因为她的丈夫阳痿。José Arcadio Buendía是最后听到这个谣言的人。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>take care of</strong>
+= 照顾，照料
+（表示负责处理或照看某物或某人）</p>
+</li>
+<li><p><strong>fighting cocks</strong>
+= 斗鸡
+（用于斗鸡比赛的公鸡）</p>
+</li>
+<li><p><strong>frame embroidery</strong>
+= 框架刺绣
+（在框架内进行的刺绣工作）</p>
+</li>
+<li><p><strong>wrestle</strong>
+= 摔跤，扭打
+（指两人互相角力、扭打）</p>
+</li>
+<li><p><strong>anguished violence</strong>
+= 痛苦的暴力
+（形容充满痛苦和激烈冲突的行为）</p>
+</li>
+<li><p><strong>substitute for</strong>
+= 替代，代替
+（表示某物替代另一物的功能或作用）</p>
+</li>
+<li><p><strong>act of love</strong>
+= 爱的行为
+（指性行为）</p>
+</li>
+<li><p><strong>popular intuition</strong>
+= 大众直觉
+（指公众的直觉或感知）</p>
+</li>
+<li><p><strong>got a whiff of</strong>
+= 嗅到，察觉到
+（比喻性表达，指察觉到某事）</p>
+</li>
+<li><p><strong>irregular</strong>
+= 不寻常的，不正常的
+（这里指不寻常或异常的情况）</p>
+</li>
+<li><p><strong>rumor spread</strong>
+= 谣言传播
+（指谣言开始流传）</p>
+</li>
+<li><p><strong>still a virgin</strong>
+= 仍是处女
+（指女性尚未有过性行为）</p>
+</li>
+<li><p><strong>impotent</strong>
+= 阳痿的，性无能的
+（指男性无法进行正常的性行为）</p>
+</li>
+<li><p><strong>the last one to hear</strong>
+= 最后听到的人
+（表示某人是最晚得知某消息的人）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+白天，他会照顾他的斗鸡，而她会和母亲一起做刺绣。晚上，他们会以痛苦的暴力方式摔打几个小时，这似乎是他们爱的行为的替代，直到大众的直觉嗅到了一些不寻常的事情，传言传开说Úrsula结婚一年后仍是处女，因为她的丈夫阳痿。José Arcadio Buendía是最后听到这个谣言的人。
+
+### 📌 Key Expressions
+
+- **take care of**
+  = 照顾，照料
+  （表示负责处理或照看某物或某人）
+
+- **fighting cocks**
+  = 斗鸡
+  （用于斗鸡比赛的公鸡）
+
+- **frame embroidery**
+  = 框架刺绣
+  （在框架内进行的刺绣工作）
+
+- **wrestle**
+  = 摔跤，扭打
+  （指两人互相角力、扭打）
+
+- **anguished violence**
+  = 痛苦的暴力
+  （形容充满痛苦和激烈冲突的行为）
+
+- **substitute for**
+  = 替代，代替
+  （表示某物替代另一物的功能或作用）
+
+- **act of love**
+  = 爱的行为
+  （指性行为）
+
+- **popular intuition**
+  = 大众直觉
+  （指公众的直觉或感知）
+
+- **got a whiff of**
+  = 嗅到，察觉到
+  （比喻性表达，指察觉到某事）
+
+- **irregular**
+  = 不寻常的，不正常的
+  （这里指不寻常或异常的情况）
+
+- **rumor spread**
+  = 谣言传播
+  （指谣言开始流传）
+
+- **still a virgin**
+  = 仍是处女
+  （指女性尚未有过性行为）
+
+- **impotent**
+  = 阳痿的，性无能的
+  （指男性无法进行正常的性行为）
+
+- **the last one to hear**
+  = 最后听到的人
+  （表示某人是最晚得知某消息的人）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这段时间里，丈夫饲养他的斗鸡，她和母亲做刺绣。晚上在痛苦的暴力中和丈夫搏斗数小时，似乎以此代替了夫妻生活。直到直觉感受到了一股异常，谣言说因为丈夫的性无能，乌尔苏拉结婚一年了仍然是一个处女。何塞·阿尔卡蒂奥·布恩迪亚是最后一个听到这个谣言的人。</p>
+    <div class="para-wrap"><p>"Look at what people are going around saying, Úrsula," he told his wife very calmly.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>"看看人们在说什么，乌尔苏拉，"他非常平静地告诉他的妻子。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Look at what people are going around saying</strong>
+= 看看人们在说什么
+（这是一个what引导的宾语从句，"are going around saying"表示人们正在到处说某事）</p>
+</li>
+<li><p><strong>Úrsula</strong>
+= 乌尔苏拉
+（人名）</p>
+</li>
+<li><p><strong>told his wife very calmly</strong>
+= 非常平静地告诉他的妻子
+（"told"是tell的过去式，"very calmly"作为副词短语修饰动词told）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+"看看人们在说什么，乌尔苏拉，"他非常平静地告诉他的妻子。
+
+### 📌 Key Expressions
+
+- **Look at what people are going around saying**
+  = 看看人们在说什么
+  （这是一个what引导的宾语从句，"are going around saying"表示人们正在到处说某事）
+
+- **Úrsula**
+  = 乌尔苏拉
+  （人名）
+
+- **told his wife very calmly**
+  = 非常平静地告诉他的妻子
+  （"told"是tell的过去式，"very calmly"作为副词短语修饰动词told）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“瞧瞧周围的人说的是什么，乌尔苏拉”，他非常镇静地对妻子说。</p>
+    <div class="para-wrap"><p>"Let them talk," she said. "We know that it's not true."<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>"让他们说吧，"她说。"我们知道那不是真的。"</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Let them talk</strong>
+= 让他们说吧
+（祈使句，表示允许或不在乎他人的言论）</p>
+</li>
+<li><p><strong>she said</strong>
+= 她说
+（直接引语的引导语）</p>
+</li>
+<li><p><strong>We know</strong>
+= 我们知道
+（表示说话者对某事的确定性）</p>
+</li>
+<li><p><strong>it's not true</strong>
+= 那不是真的
+（否定陈述，表示某事不符合事实）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+"让他们说吧，"她说。"我们知道那不是真的。"
+
+### 📌 Key Expressions
+
+- **Let them talk**
+  = 让他们说吧
+  （祈使句，表示允许或不在乎他人的言论）
+
+- **she said**
+  = 她说
+  （直接引语的引导语）
+
+- **We know**
+  = 我们知道
+  （表示说话者对某事的确定性）
+
+- **it's not true**
+  = 那不是真的
+  （否定陈述，表示某事不符合事实）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“让他们说去吧，”她说。“我们知道这不是真的。”</p>
+    <div class="para-wrap"><p>So the situation went on the same way for another six months until that tragic Sunday when José Arcadio Buendía won a cockfight from Prudencio Aguilar. Furious, aroused by the blood of his bird, the loser backed away from José Arcadio Buendía so that everyone in the cockpit could hear what he was going to tell him.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>所以这种情况又持续了六个月，直到那个悲惨的星期天，何塞·阿尔卡蒂奥·布恩迪亚在与普鲁登西奥·阿吉拉尔的斗鸡比赛中获胜。输了的普鲁登西奥·阿吉拉尔被自己斗鸡的鲜血激怒，退后一步，以便斗鸡场里的每个人都能听到他要告诉何塞·阿尔卡蒂奥·布恩迪亚的话。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>went on the same way</strong>
+= 以同样的方式继续
+（表示情况持续不变）</p>
+</li>
+<li><p><strong>tragic Sunday</strong>
+= 悲惨的星期天
+（暗示接下来会发生不幸事件）</p>
+</li>
+<li><p><strong>won a cockfight</strong>
+= 赢了一场斗鸡比赛
+（"cockfight"指斗鸡比赛）</p>
+</li>
+<li><p><strong>Furious, aroused by the blood of his bird</strong>
+= 愤怒，被自己斗鸡的鲜血激怒
+（过去分词短语作状语，表示原因）</p>
+</li>
+<li><p><strong>backed away from</strong>
+= 从...后退
+（表示离开某人或某物）</p>
+</li>
+<li><p><strong>cockpit</strong>
+= 斗鸡场
+（此处指斗鸡比赛场地，非飞机驾驶舱）</p>
+</li>
+<li><p><strong>what he was going to tell him</strong>
+= 他要告诉他的话
+（间接引语，表示即将发生的事情）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+所以这种情况又持续了六个月，直到那个悲惨的星期天，何塞·阿尔卡蒂奥·布恩迪亚在与普鲁登西奥·阿吉拉尔的斗鸡比赛中获胜。输了的普鲁登西奥·阿吉拉尔被自己斗鸡的鲜血激怒，退后一步，以便斗鸡场里的每个人都能听到他要告诉何塞·阿尔卡蒂奥·布恩迪亚的话。
+
+### 📌 Key Expressions
+
+- **went on the same way**
+  = 以同样的方式继续
+  （表示情况持续不变）
+
+- **tragic Sunday**
+  = 悲惨的星期天
+  （暗示接下来会发生不幸事件）
+
+- **won a cockfight**
+  = 赢了一场斗鸡比赛
+  （"cockfight"指斗鸡比赛）
+
+- **Furious, aroused by the blood of his bird**
+  = 愤怒，被自己斗鸡的鲜血激怒
+  （过去分词短语作状语，表示原因）
+
+- **backed away from**
+  = 从...后退
+  （表示离开某人或某物）
+
+- **cockpit**
+  = 斗鸡场
+  （此处指斗鸡比赛场地，非飞机驾驶舱）
+
+- **what he was going to tell him**
+  = 他要告诉他的话
+  （间接引语，表示即将发生的事情）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这种情况持续了六个月，直到那个悲惨的星期天，何塞·阿尔卡蒂奥·布恩迪亚打败普鲁登西奥·阿吉拉尔，赢得了斗鸡比赛。失败者被他的斗鸡淋漓的鲜血激怒了，他从何塞·阿尔卡蒂奥·布恩迪亚身边后退几步，以便斗鸡场上的所有人能听清他要说的话。</p>
+    <div class="para-wrap"><p>"Congratulations!" he shouted. "Maybe that rooster of yours can do your wife a favor."<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>"恭喜啊！"他喊道。"也许你那只公鸡能帮你老婆一个忙。"</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Congratulations</strong>
+= 恭喜
+（表示祝贺的常用表达）</p>
+</li>
+<li><p><strong>rooster</strong>
+= 公鸡
+（雄性成年鸡）</p>
+</li>
+<li><p><strong>do someone a favor</strong>
+= 帮某人一个忙
+（固定表达，表示帮助某人）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+"恭喜啊！"他喊道。"也许你那只公鸡能帮你老婆一个忙。"
+
+### 📌 Key Expressions
+
+- **Congratulations**
+  = 恭喜
+  （表示祝贺的常用表达）
+
+- **rooster**
+  = 公鸡
+  （雄性成年鸡）
+
+- **do someone a favor**
+  = 帮某人一个忙
+  （固定表达，表示帮助某人）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“恭喜！”他说，“你的公鸡也许能得到你老婆的宠爱。”</p>
+    <div class="para-wrap"><p>José Arcadio Buendía serenely picked up his rooster. "I'll be right back," he told everyone. And then to Prudencio Aguilar:<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>何塞·阿尔卡蒂奥·布恩迪亚平静地拿起他的公鸡。"我马上就回来，"他告诉大家。然后对普鲁登西奥·阿吉拉尔说：</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>serenely</strong>
+= 平静地，安详地
+（修饰picked up，表示José Arcadio Buendía的动作从容不迫）</p>
+</li>
+<li><p><strong>picked up</strong>
+= 拿起，捡起
+（这里表示拿起公鸡的动作）</p>
+</li>
+<li><p><strong>I'll be right back</strong>
+= 我马上就回来
+（常用口语表达，表示短暂离开后会立即返回）</p>
+</li>
+<li><p><strong>Prudencio Aguilar</strong>
+= 普鲁登西奥·阿吉拉尔
+（人名，音译）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+何塞·阿尔卡蒂奥·布恩迪亚平静地拿起他的公鸡。"我马上就回来，"他告诉大家。然后对普鲁登西奥·阿吉拉尔说：
+
+### 📌 Key Expressions
+
+- **serenely**
+  = 平静地，安详地
+  （修饰picked up，表示José Arcadio Buendía的动作从容不迫）
+
+- **picked up**
+  = 拿起，捡起
+  （这里表示拿起公鸡的动作）
+
+- **I'll be right back**
+  = 我马上就回来
+  （常用口语表达，表示短暂离开后会立即返回）
+
+- **Prudencio Aguilar**
+  = 普鲁登西奥·阿吉拉尔
+  （人名，音译）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥·布恩迪亚镇静地抱起他的公鸡。“我马上回来，”他对所有人说，然后对普鲁登西奥·阿吉拉尔说：</p>
+    <div class="para-wrap"><p>"You go home and get a weapon, because I'm going to kill you."<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>你回家去拿武器，因为我要杀了你。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>go home and get a weapon</strong>
+= 回家去拿武器
+（这是一个祈使句，表示命令对方回家取武器）</p>
+</li>
+<li><p><strong>I'm going to kill you</strong>
+= 我要杀了你
+（表示说话者的意图，威胁对方的生命安全）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+你回家去拿武器，因为我要杀了你。
+
+### 📌 Key Expressions
+
+- **go home and get a weapon**
+  = 回家去拿武器
+  （这是一个祈使句，表示命令对方回家取武器）
+
+- **I'm going to kill you**
+  = 我要杀了你
+  （表示说话者的意图，威胁对方的生命安全）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“滚回家拿上武器，因为我要宰了你。”</p>
+    <div class="para-wrap"><p>Ten minutes later he returned with the notched spear that had belonged to his grandfather. At the door to the cockpit, where half the town had gathered, Prudencio Aguilar was waiting for him.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>十分钟后，他带着属于他祖父的有缺口的长矛回来了。在驾驶舱门口，半个镇上的人都聚集在那里，普鲁登西奥·阿吉拉尔正在等他。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Ten minutes later</strong>
+= 十分钟后
+（表示时间流逝，是一个时间状语）</p>
+</li>
+<li><p><strong>returned with</strong>
+= 带着...回来
+（表示伴随动作，"with"引导伴随状语）</p>
+</li>
+<li><p><strong>notched spear</strong>
+= 有缺口的长矛
+（"notched"表示有凹口或刻痕的，"spear"是长矛）</p>
+</li>
+<li><p><strong>that had belonged to</strong>
+= 属于
+（定语从句，表示所属关系，使用过去完成时表示过去的过去）</p>
+</li>
+<li><p><strong>At the door to the cockpit</strong>
+= 在驾驶舱门口
+（"cockpit"原意是飞机驾驶舱，但在这里可能指其他封闭空间）</p>
+</li>
+<li><p><strong>where half the town had gathered</strong>
+= 半个镇上的人都聚集在那里
+（定语从句，修饰"door to the cockpit"，说明地点情况）</p>
+</li>
+<li><p><strong>Prudencio Aguilar</strong>
+= 普鲁登西奥·阿吉拉尔
+（人名音译）</p>
+</li>
+<li><p><strong>was waiting for him</strong>
+= 正在等他
+（过去进行时，表示过去某一时刻正在进行的动作）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+十分钟后，他带着属于他祖父的有缺口的长矛回来了。在驾驶舱门口，半个镇上的人都聚集在那里，普鲁登西奥·阿吉拉尔正在等他。
+
+### 📌 Key Expressions
+
+- **Ten minutes later**
+  = 十分钟后
+  （表示时间流逝，是一个时间状语）
+
+- **returned with**
+  = 带着...回来
+  （表示伴随动作，"with"引导伴随状语）
+
+- **notched spear**
+  = 有缺口的长矛
+  （"notched"表示有凹口或刻痕的，"spear"是长矛）
+
+- **that had belonged to**
+  = 属于
+  （定语从句，表示所属关系，使用过去完成时表示过去的过去）
+
+- **At the door to the cockpit**
+  = 在驾驶舱门口
+  （"cockpit"原意是飞机驾驶舱，但在这里可能指其他封闭空间）
+
+- **where half the town had gathered**
+  = 半个镇上的人都聚集在那里
+  （定语从句，修饰"door to the cockpit"，说明地点情况）
+
+- **Prudencio Aguilar**
+  = 普鲁登西奥·阿吉拉尔
+  （人名音译）
+
+- **was waiting for him**
+  = 正在等他
+  （过去进行时，表示过去某一时刻正在进行的动作）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">十分钟后，他带着祖父的长矛回来了，在斗鸡场门口，聚集了村庄上一半的人，普鲁登西奥·阿吉拉尔正在等他。</p>
+    <div class="para-wrap"><p>There was no time to defend himself. José Arcadio Buendía's spear, thrown with the strength a bull and with the same good aim with which the first Aureliano Buendía had exterminated the jaguars in the region, pierced his throat.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>他没有时间为自己辩护。何塞·阿尔卡蒂奥·布恩迪亚的长矛，用公牛般的力量掷出，并以同样的精准度（就像第一个奥雷里亚诺·布恩迪亚消灭该地区美洲豹时的那种精准度），刺穿了他的喉咙。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>no time to defend himself</strong>
+= 没有时间为自己辩护
+（表示情况紧急，无法做出辩解或防御）</p>
+</li>
+<li><p><strong>thrown with the strength a bull</strong>
+= 用公牛般的力量掷出
+（原文此处缺少介词of，应为"strength of a bull"，形容力量巨大）</p>
+</li>
+<li><p><strong>with the same good aim</strong>
+= 以同样的精准度
+（指投掷长矛的精准度很高）</p>
+</li>
+<li><p><strong>exterminated the jaguars</strong>
+= 消灭美洲豹
+（表示彻底消灭或根除美洲豹）</p>
+</li>
+<li><p><strong>pierced his throat</strong>
+= 刺穿了他的喉咙
+（表示长矛直接刺穿喉咙，造成致命伤）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+他没有时间为自己辩护。何塞·阿尔卡蒂奥·布恩迪亚的长矛，用公牛般的力量掷出，并以同样的精准度（就像第一个奥雷里亚诺·布恩迪亚消灭该地区美洲豹时的那种精准度），刺穿了他的喉咙。
+
+### 📌 Key Expressions
+
+- **no time to defend himself**
+  = 没有时间为自己辩护
+  （表示情况紧急，无法做出辩解或防御）
+
+- **thrown with the strength a bull**
+  = 用公牛般的力量掷出
+  （原文此处缺少介词of，应为"strength of a bull"，形容力量巨大）
+
+- **with the same good aim**
+  = 以同样的精准度
+  （指投掷长矛的精准度很高）
+
+- **exterminated the jaguars**
+  = 消灭美洲豹
+  （表示彻底消灭或根除美洲豹）
+
+- **pierced his throat**
+  = 刺穿了他的喉咙
+  （表示长矛直接刺穿喉咙，造成致命伤）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">毫无时间自卫，何塞·阿尔卡蒂奥·布恩迪亚以公牛般的力量投掷出长矛，像第一代何塞·阿尔卡蒂奥·布恩迪亚射杀美洲豹一样的瞄准精确度，刺穿了普鲁登西奥·阿吉拉尔的喉咙。</p>
+    <div class="para-wrap"><p>That night, as they held a wake over the corpse in the cockpit, José Arcadio Buendía went into the bedroom as his wife was putting on her chastity pants. Pointing the spear at her he ordered: "Take them off." Úrsula had no doubt about her husband's decision. "You'll be responsible for what happens," she murmured. José Arcadio Buendía stuck the spear into the dirt floor.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>那天晚上，当他们正在驾驶舱的尸体旁守夜时，何塞·阿尔卡蒂奥·布恩迪亚走进卧室，看到他的妻子正在穿上贞裤。他用矛指着她命令道："脱掉它们。"乌尔苏拉对她丈夫的决定毫不怀疑。"你要为发生的一切负责，"她低声说道。何塞·阿尔卡蒂奥·布恩迪亚将矛插入泥土地板。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>held a wake</strong>
+= 守夜
+（在西方文化中，守夜是指在葬礼前夜为逝者守夜的活动）</p>
+</li>
+<li><p><strong>corpse</strong>
+= 尸体
+（指死者的身体）</p>
+</li>
+<li><p><strong>cockpit</strong>
+= 驾驶舱
+（这里可能是指飞机或船只的驾驶舱，但在文学作品中可能有特殊含义）</p>
+</li>
+<li><p><strong>chastity pants</strong>
+= 贞裤
+（一种传统的女性内衣，用于保护贞操）</p>
+</li>
+<li><p><strong>Pointing the spear at her</strong>
+= 用矛指着她
+（表示威胁或命令的姿态）</p>
+</li>
+<li><p><strong>Take them off</strong>
+= 脱掉它们
+（命令语气，指脱掉贞裤）</p>
+</li>
+<li><p><strong>had no doubt about</strong>
+= 毫不怀疑
+（表示确信无疑）</p>
+</li>
+<li><p><strong>be responsible for</strong>
+= 为...负责
+（表示承担某事的后果或责任）</p>
+</li>
+<li><p><strong>murmured</strong>
+= 低声说道
+（轻声说话，通常表示秘密或私下交流）</p>
+</li>
+<li><p><strong>stuck the spear into</strong>
+= 将矛插入
+（表示将矛刺入某物中）</p>
+</li>
+<li><p><strong>dirt floor</strong>
+= 泥土地板
+（指由泥土构成的地板）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+那天晚上，当他们正在驾驶舱的尸体旁守夜时，何塞·阿尔卡蒂奥·布恩迪亚走进卧室，看到他的妻子正在穿上贞裤。他用矛指着她命令道："脱掉它们。"乌尔苏拉对她丈夫的决定毫不怀疑。"你要为发生的一切负责，"她低声说道。何塞·阿尔卡蒂奥·布恩迪亚将矛插入泥土地板。
+
+### 📌 Key Expressions
+
+- **held a wake**
+  = 守夜
+  （在西方文化中，守夜是指在葬礼前夜为逝者守夜的活动）
+
+- **corpse**
+  = 尸体
+  （指死者的身体）
+
+- **cockpit**
+  = 驾驶舱
+  （这里可能是指飞机或船只的驾驶舱，但在文学作品中可能有特殊含义）
+
+- **chastity pants**
+  = 贞裤
+  （一种传统的女性内衣，用于保护贞操）
+
+- **Pointing the spear at her**
+  = 用矛指着她
+  （表示威胁或命令的姿态）
+
+- **Take them off**
+  = 脱掉它们
+  （命令语气，指脱掉贞裤）
+
+- **had no doubt about**
+  = 毫不怀疑
+  （表示确信无疑）
+
+- **be responsible for**
+  = 为...负责
+  （表示承担某事的后果或责任）
+
+- **murmured**
+  = 低声说道
+  （轻声说话，通常表示秘密或私下交流）
+
+- **stuck the spear into**
+  = 将矛插入
+  （表示将矛刺入某物中）
+
+- **dirt floor**
+  = 泥土地板
+  （指由泥土构成的地板）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">晚上，人们在斗鸡场尸体旁守灵，何塞·阿尔卡蒂奥·布恩迪亚走进卧室，妻子正在穿贞节裤，他指着长矛命令道：“脱掉它。”乌尔苏拉没有怀疑丈夫的决定，“你得为发生的事负责，”她小声地说。何塞·阿尔卡蒂奥·布恩迪亚将长矛插在地上。</p>
+    <div class="para-wrap"><p>"If you bear iguanas, we'll raise iguanas," he said. "But there'll be no more killings in this town because of you."<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>"如果你饲养鬣蜥，我们也会饲养鬣蜥，"他说，"但这个镇上将不会再有因你而起的杀戮了。"</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>bear iguanas</strong>
+= 饲养鬣蜥
+（"bear"在此处意为"饲养、养育"，而非"忍受"）</p>
+</li>
+<li><p><strong>raise iguanas</strong>
+= 饲养/养育鬣蜥
+（与"bear"在此语境中意思相近，表示饲养动物）</p>
+</li>
+<li><p><strong>no more killings</strong>
+= 不再有杀戮
+（"no more"表示不再，"killings"是"kill"的名词形式）</p>
+</li>
+<li><p><strong>because of you</strong>
+= 因为你
+（表示原因，"因你而起"）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+"如果你饲养鬣蜥，我们也会饲养鬣蜥，"他说，"但这个镇上将不会再有因你而起的杀戮了。"
+
+### 📌 Key Expressions
+
+- **bear iguanas**
+  = 饲养鬣蜥
+  （"bear"在此处意为"饲养、养育"，而非"忍受"）
+
+- **raise iguanas**
+  = 饲养/养育鬣蜥
+  （与"bear"在此语境中意思相近，表示饲养动物）
+
+- **no more killings**
+  = 不再有杀戮
+  （"no more"表示不再，"killings"是"kill"的名词形式）
+
+- **because of you**
+  = 因为你
+  （表示原因，"因你而起"）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“如果你生的是鬣蜥，我们就抚养鬣蜥，”他说。“至少以后村镇上不会有人因为你而被杀。”</p>
+    <div class="para-wrap"><p>It was a fine June night, cool a moon, and they were awake and frolicking in bed until dawn, indifferent to the breeze that passed through the bedroom, loaded with the weeping of Prudencio Aguilar's kin.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>这是一个美好的六月夜晚，凉爽的月光洒落，他们在床上清醒地嬉戏直到黎明，对穿过卧室的微风毫不在意，那微风中带着Prudencio Aguilar亲属的哭泣声。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>fine June night</strong>
+= 美好的六月夜晚
+（"fine"在这里表示美好的、宜人的）</p>
+</li>
+<li><p><strong>cool a moon</strong>
+= 凉爽的月光
+（可能是"cool moon"的特殊表达，表示凉爽的月光）</p>
+</li>
+<li><p><strong>awake and frolicking in bed</strong>
+= 在床上清醒地嬉戏
+（"frolicking"意为嬉戏、玩耍，通常带有欢乐的意味）</p>
+</li>
+<li><p><strong>indifferent to the breeze</strong>
+= 对微风毫不在意
+（"indifferent to"表示对...漠不关心、不在意）</p>
+</li>
+<li><p><strong>loaded with the weeping</strong>
+= 充满着哭泣声
+（"loaded with"在这里表示充满了某种声音或情绪）</p>
+</li>
+<li><p><strong>Prudencio Aguilar's kin</strong>
+= Prudencio Aguilar的亲属
+（"kin"表示亲属、家人）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+这是一个美好的六月夜晚，凉爽的月光洒落，他们在床上清醒地嬉戏直到黎明，对穿过卧室的微风毫不在意，那微风中带着Prudencio Aguilar亲属的哭泣声。
+
+### 📌 Key Expressions
+
+- **fine June night**
+  = 美好的六月夜晚
+  （"fine"在这里表示美好的、宜人的）
+
+- **cool a moon**
+  = 凉爽的月光
+  （可能是"cool moon"的特殊表达，表示凉爽的月光）
+
+- **awake and frolicking in bed**
+  = 在床上清醒地嬉戏
+  （"frolicking"意为嬉戏、玩耍，通常带有欢乐的意味）
+
+- **indifferent to the breeze**
+  = 对微风毫不在意
+  （"indifferent to"表示对...漠不关心、不在意）
+
+- **loaded with the weeping**
+  = 充满着哭泣声
+  （"loaded with"在这里表示充满了某种声音或情绪）
+
+- **Prudencio Aguilar's kin**
+  = Prudencio Aguilar的亲属
+  （"kin"表示亲属、家人）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这是六月里的一个美好夜晚，月色宜人，他们彻夜未眠，在床上嬉戏，直到天亮。任凭微风载着普鲁登西奥·阿吉拉尔家属的哭泣，吹过卧室。</p>
+    <div class="para-wrap"><p>The matter was put down as a duel of honor, but both of them were left with a twinge in their conscience.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>这件事被记录为一场荣誉决斗，但两人都良心上感到一阵刺痛。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>put down as</strong>
+= 记录为，归类为
+（被动语态结构，表示某事被官方或他人如此记录或分类）</p>
+</li>
+<li><p><strong>duel of honor</strong>
+= 荣誉决斗
+（指为维护荣誉而进行的决斗，常见于历史背景）</p>
+</li>
+<li><p><strong>twinge in their conscience</strong>
+= 良心上的刺痛
+（比喻因做错事而产生的内疚感）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+这件事被记录为一场荣誉决斗，但两人都良心上感到一阵刺痛。
+
+### 📌 Key Expressions
+
+- **put down as**
+  = 记录为，归类为
+  （被动语态结构，表示某事被官方或他人如此记录或分类）
+
+- **duel of honor**
+  = 荣誉决斗
+  （指为维护荣誉而进行的决斗，常见于历史背景）
+
+- **twinge in their conscience**
+  = 良心上的刺痛
+  （比喻因做错事而产生的内疚感）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这件事视为荣誉决斗而渐渐平息，但是给夫妻二人在良心上留下了不快。</p>
+    <div class="para-wrap"><p>One night, when she could not sleep, Úrsula went out into the courtyard to get some water and she saw Prudencio Aguilar by the water jar.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>一天晚上，当她无法入睡时，乌苏拉走到院子里去取水，她看见普鲁登西奥·阿吉拉尔在水罐旁。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>could not sleep</strong>
+= 无法入睡
+（表示失眠的状态）</p>
+</li>
+<li><p><strong>went out into the courtyard</strong>
+= 走到院子里
+（表示从室内到室外的动作）</p>
+</li>
+<li><p><strong>get some water</strong>
+= 取水
+（表示目的性动作）</p>
+</li>
+<li><p><strong>saw Prudencio Aguilar</strong>
+= 看见普鲁登西奥·阿吉拉尔
+（人名翻译）</p>
+</li>
+<li><p><strong>by the water jar</strong>
+= 在水罐旁
+（表示位置关系）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+一天晚上，当她无法入睡时，乌苏拉走到院子里去取水，她看见普鲁登西奥·阿吉拉尔在水罐旁。
+
+### 📌 Key Expressions
+
+- **could not sleep**
+  = 无法入睡
+  （表示失眠的状态）
+
+- **went out into the courtyard**
+  = 走到院子里
+  （表示从室内到室外的动作）
+
+- **get some water**
+  = 取水
+  （表示目的性动作）
+
+- **saw Prudencio Aguilar**
+  = 看见普鲁登西奥·阿吉拉尔
+  （人名翻译）
+
+- **by the water jar**
+  = 在水罐旁
+  （表示位置关系）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">某个晚上，乌尔苏拉睡不着，她走进院子里取水，在水缸旁边看见了普鲁登西奥·阿吉拉尔。</p>
+    <div class="para-wrap"><p>He was livid, a sad expression on his face, trying to cover the hole in his throat with a plug made esparto grass. It did not bring on fear in her, but pity. She went back to the room and told her husband what she had seen, but he did not think much of it.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>他脸色铁青，脸上带着悲伤的表情，试图用一根用西班牙草制成的塞子来堵住喉咙上的洞。这没有在她心中引起恐惧，而是怜悯。她回到房间，告诉丈夫她所看到的一切，但他对此并不在意。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>livid</strong>
+= 脸色铁青的，暴怒的
+（这里描述的是因愤怒或震惊而脸色发青的状态）</p>
+</li>
+<li><p><strong>a sad expression on his face</strong>
+= 脸上带着悲伤的表情
+（名词短语作为补充说明，描述他的面部表情）</p>
+</li>
+<li><p><strong>cover the hole in his throat</strong>
+= 堵住喉咙上的洞
+（动词短语，表示用某物覆盖或填补）</p>
+</li>
+<li><p><strong>a plug made esparto grass</strong>
+= 用西班牙草制成的塞子
+（名词短语，esparto grass是一种生长在地中海地区的植物，常用于制作绳索、塞子等）</p>
+</li>
+<li><p><strong>bring on fear</strong>
+= 引起恐惧
+（动词短语，表示导致某种情绪或状态）</p>
+</li>
+<li><p><strong>think much of it</strong>
+= 不在意，不重视
+（习语，表示认为某事不重要或值得关注）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+他脸色铁青，脸上带着悲伤的表情，试图用一根用西班牙草制成的塞子来堵住喉咙上的洞。这没有在她心中引起恐惧，而是怜悯。她回到房间，告诉丈夫她所看到的一切，但他对此并不在意。
+
+### 📌 Key Expressions
+
+- **livid**
+  = 脸色铁青的，暴怒的
+  （这里描述的是因愤怒或震惊而脸色发青的状态）
+
+- **a sad expression on his face**
+  = 脸上带着悲伤的表情
+  （名词短语作为补充说明，描述他的面部表情）
+
+- **cover the hole in his throat**
+  = 堵住喉咙上的洞
+  （动词短语，表示用某物覆盖或填补）
+
+- **a plug made esparto grass**
+  = 用西班牙草制成的塞子
+  （名词短语，esparto grass是一种生长在地中海地区的植物，常用于制作绳索、塞子等）
+
+- **bring on fear**
+  = 引起恐惧
+  （动词短语，表示导致某种情绪或状态）
+
+- **think much of it**
+  = 不在意，不重视
+  （习语，表示认为某事不重要或值得关注）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他浑身发青，脸上表情悲伤，试图用细茎针草堵住喉咙上的洞口。乌尔苏拉并没有感到害怕，而是充满了怜悯。她回到房间，把看到的告诉了丈夫，但他并没有多想。</p>
+    <div class="para-wrap"><p>"This just means that we can't stand the weight of our conscience." Two nights later Úrsula saw Prudencio Aguilar again, in the bathroom, using the esparto plug to wash the clotted blood from his throat.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>"这只是意味着我们无法承受良心的重量。"两天后，乌苏拉再次看到了普鲁登西奥·阿吉拉尔，在浴室里，用马鬃塞子清洗喉咙里凝结的血块。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>stand the weight of</strong>
+= 承受...的重量
+（表示"承受"或"忍受"的意思，是固定搭配）</p>
+</li>
+<li><p><strong>conscience</strong>
+= 良心
+（指道德意识，对是非的判断能力）</p>
+</li>
+<li><p><strong>two nights later</strong>
+= 两天后
+（表示时间推移）</p>
+</li>
+<li><p><strong>esparto plug</strong>
+= 马鬃塞子
+（esparto是一种植物，其纤维可用于制作塞子）</p>
+</li>
+<li><p><strong>clotted blood</strong>
+= 凝结的血块
+（指血液凝固形成的块状物）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+"这只是意味着我们无法承受良心的重量。"两天后，乌苏拉再次看到了普鲁登西奥·阿吉拉尔，在浴室里，用马鬃塞子清洗喉咙里凝结的血块。
+
+### 📌 Key Expressions
+
+- **stand the weight of**
+  = 承受...的重量
+  （表示"承受"或"忍受"的意思，是固定搭配）
+
+- **conscience**
+  = 良心
+  （指道德意识，对是非的判断能力）
+
+- **two nights later**
+  = 两天后
+  （表示时间推移）
+
+- **esparto plug**
+  = 马鬃塞子
+  （esparto是一种植物，其纤维可用于制作塞子）
+
+- **clotted blood**
+  = 凝结的血块
+  （指血液凝固形成的块状物）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“这只是我们无法承受良心上的压力。”两天以后，乌尔苏拉再次看到了普鲁登西奥·阿吉拉尔，他正在浴室里用细茎针草清洗喉咙上凝结的血块。</p>
+    <div class="para-wrap"><p>On another night she saw him strolling in the rain. José Arcadio Buendía, annoyed by his wife's hallucinations, went out into the courtyard armed with the spear. There was the dead man with his sad expression.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>在另一个夜晚，她看见他在雨中漫步。何塞·阿尔卡蒂奥·布恩迪亚被他妻子的幻觉所困扰，拿着矛走进了庭院。那里是那个死人，带着他悲伤的表情。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>strolling in the rain</strong>
+= 在雨中漫步
+（表示悠闲地行走，暗示一种超然或平静的状态）</p>
+</li>
+<li><p><strong>annoyed by</strong>
+= 被...所困扰/恼怒
+（表示因某事而感到烦恼或恼怒）</p>
+</li>
+<li><p><strong>hallucinations</strong>
+= 幻觉
+（指在没有外部刺激的情况下感知到不真实的事物）</p>
+</li>
+<li><p><strong>armed with</strong>
+= 武装着，拿着
+（这里指拿着武器，准备应对可能的威胁）</p>
+</li>
+<li><p><strong>sad expression</strong>
+= 悲伤的表情
+（描述面部表情传达的情绪状态）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+在另一个夜晚，她看见他在雨中漫步。何塞·阿尔卡蒂奥·布恩迪亚被他妻子的幻觉所困扰，拿着矛走进了庭院。那里是那个死人，带着他悲伤的表情。
+
+### 📌 Key Expressions
+
+- **strolling in the rain**
+  = 在雨中漫步
+  （表示悠闲地行走，暗示一种超然或平静的状态）
+
+- **annoyed by**
+  = 被...所困扰/恼怒
+  （表示因某事而感到烦恼或恼怒）
+
+- **hallucinations**
+  = 幻觉
+  （指在没有外部刺激的情况下感知到不真实的事物）
+
+- **armed with**
+  = 武装着，拿着
+  （这里指拿着武器，准备应对可能的威胁）
+
+- **sad expression**
+  = 悲伤的表情
+  （描述面部表情传达的情绪状态）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">在另一个晚上，她看见他在雨中漫步。何塞·阿尔卡蒂奥·布恩迪亚因妻子的幻觉而恼火，抄起长矛冲进院子里，看见那个死者，面带悲伤。</p>
+    <div class="para-wrap"><p>"You go to hell," José Arcadio Buendía shouted at him. "Just as many times as you come back, I'll kill you again."<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>"你去地狱吧，何塞·阿尔卡蒂奥·布恩迪亚对他喊道。'你回来多少次，我就杀你多少次。'"</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>"go to hell"</strong>
+= 下地狱吧
+（表示强烈愤怒或厌恶的常用表达）</p>
+</li>
+<li><p><strong>"shouted at him"</strong>
+= 对他喊叫
+（表示因愤怒或激动而大声说话）</p>
+</li>
+<li><p><strong>"Just as many times as you come back"</strong>
+= 你回来的次数
+（表示"和...一样多"的比较结构）</p>
+</li>
+<li><p><strong>"I'll kill you again"</strong>
+= 我会再次杀死你
+（"I'll"是"I will"的缩写，表示将来时）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+"你去地狱吧，何塞·阿尔卡蒂奥·布恩迪亚对他喊道。'你回来多少次，我就杀你多少次。'"
+
+### 📌 Key Expressions
+
+- **"go to hell"**
+  = 下地狱吧
+  （表示强烈愤怒或厌恶的常用表达）
+
+- **"shouted at him"**
+  = 对他喊叫
+  （表示因愤怒或激动而大声说话）
+
+- **"Just as many times as you come back"**
+  = 你回来的次数
+  （表示"和...一样多"的比较结构）
+
+- **"I'll kill you again"**
+  = 我会再次杀死你
+  （"I'll"是"I will"的缩写，表示将来时）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“你回地狱去吧，”何塞·阿尔卡蒂奥·布恩迪亚对他喊道。“你再回来几次，我就再杀你几次。”</p>
+    <div class="para-wrap"><p>Prudencio Aguilar did not go away, nor did José Arcadio Buendía dare throw the spear. He never slept well after that.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>普鲁登西奥·阿吉拉尔没有离开，何塞·阿尔卡蒂奥·布恩迪亚也不敢投掷长矛。从那以后，他再也没睡过好觉。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>did not go away</strong>
+= 没有离开
+（表示持续的状态）</p>
+</li>
+<li><p><strong>nor did... dare</strong>
+= 也不敢...
+（倒装结构，表示否定，nor连接两个否定情况）</p>
+</li>
+<li><p><strong>throw the spear</strong>
+= 投掷长矛
+（动词短语，表示动作）</p>
+</li>
+<li><p><strong>never slept well</strong>
+= 从未睡得好/再也没睡过好觉
+（表示持续性的负面状态）</p>
+</li>
+<li><p><strong>after that</strong>
+= 从那以后
+（时间状语，指代前面提到的事件之后）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+普鲁登西奥·阿吉拉尔没有离开，何塞·阿尔卡蒂奥·布恩迪亚也不敢投掷长矛。从那以后，他再也没睡过好觉。
+
+### 📌 Key Expressions
+
+- **did not go away**
+  = 没有离开
+  （表示持续的状态）
+
+- **nor did... dare**
+  = 也不敢...
+  （倒装结构，表示否定，nor连接两个否定情况）
+
+- **throw the spear**
+  = 投掷长矛
+  （动词短语，表示动作）
+
+- **never slept well**
+  = 从未睡得好/再也没睡过好觉
+  （表示持续性的负面状态）
+
+- **after that**
+  = 从那以后
+  （时间状语，指代前面提到的事件之后）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">普鲁登西奥·阿吉拉尔没有离开，何塞·阿尔卡蒂奥·布恩迪亚也没敢扔出长矛。从此，他再也睡不着了。</p>
+    <div class="para-wrap"><p>He was tormented by the immense desolation with which the dead man had looked at him through the rain, his deep nostalgia as he yearned for living people, the anxiety with which he searched through the house looking for some water with which to soak his esparto plug.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>他被死者透过雨投向他的那种极度的孤寂所折磨，死者对生者深深的怀旧之情，以及他焦急地在房子里寻找水来浸泡他的草绳塞的焦虑。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>tormented by</strong>
+= 被...折磨
+（被动语态，表示持续的状态）</p>
+</li>
+<li><p><strong>immense desolation</strong>
+= 极度的孤寂/荒凉
+（形容词+名词结构，强调程度）</p>
+</li>
+<li><p><strong>with which the dead man had looked at him</strong>
+= 死者投向他的（凝视）
+（定语从句，关系代词which指代前面的desolation）</p>
+</li>
+<li><p><strong>through the rain</strong>
+= 透过雨幕
+（介词短语，表示方式或媒介）</p>
+</li>
+<li><p><strong>deep nostalgia</strong>
+= 深深的怀旧之情
+（形容词+名词结构）</p>
+</li>
+<li><p><strong>as he yearned for living people</strong>
+= 当他渴望生者时
+（时间状语从句）</p>
+</li>
+<li><p><strong>the anxiety with which he searched</strong>
+= 他焦虑地寻找
+（定语从句，关系代词which指代anxiety）</p>
+</li>
+<li><p><strong>through the house</strong>
+= 在房子里
+（介词短语，表示地点）</p>
+</li>
+<li><p><strong>looking for some water</strong>
+= 寻找水
+（现在分词短语，表示伴随动作）</p>
+</li>
+<li><p><strong>with which to soak his esparto plug</strong>
+= 用来浸泡他的草绳塞
+（不定式短语，with which作为不定式的工具）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+他被死者透过雨投向他的那种极度的孤寂所折磨，死者对生者深深的怀旧之情，以及他焦急地在房子里寻找水来浸泡他的草绳塞的焦虑。
+
+### 📌 Key Expressions
+
+- **tormented by**
+  = 被...折磨
+  （被动语态，表示持续的状态）
+
+- **immense desolation**
+  = 极度的孤寂/荒凉
+  （形容词+名词结构，强调程度）
+
+- **with which the dead man had looked at him**
+  = 死者投向他的（凝视）
+  （定语从句，关系代词which指代前面的desolation）
+
+- **through the rain**
+  = 透过雨幕
+  （介词短语，表示方式或媒介）
+
+- **deep nostalgia**
+  = 深深的怀旧之情
+  （形容词+名词结构）
+
+- **as he yearned for living people**
+  = 当他渴望生者时
+  （时间状语从句）
+
+- **the anxiety with which he searched**
+  = 他焦虑地寻找
+  （定语从句，关系代词which指代anxiety）
+
+- **through the house**
+  = 在房子里
+  （介词短语，表示地点）
+
+- **looking for some water**
+  = 寻找水
+  （现在分词短语，表示伴随动作）
+
+- **with which to soak his esparto plug**
+  = 用来浸泡他的草绳塞
+  （不定式短语，with which作为不定式的工具）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他被无尽的孤寂折磨着，死者在雨中望着他，对活人生活深深地怀念，他焦急地在屋子里寻找水源，浸泡他的细茎针草。</p>
+    <div class="para-wrap"><p>"He must be suffering a great deal," he said to Úrsula. "You can see that he's so very lonely." She was so moved that the next time she saw the dead man uncovering the pots on the stove she understood what he was looking for, and from then on she placed water jugs all about the house.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>"他一定遭受着巨大的痛苦，"他对乌苏拉说。"你可以看得出他是如此孤独。"她深受感动，以至于下次她看到那个死人在炉子上揭开锅盖时，她明白了他在寻找什么，从那时起，她在房子各处都放置了水罐。"</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>must be suffering a great deal</strong>
+= 一定遭受着巨大的痛苦
+（表示对当前情况的推测，使用"must be"结构表示非常肯定的推测）</p>
+</li>
+<li><p><strong>so very lonely</strong>
+= 如此孤独
+（"so very"强调程度，表示非常孤独）</p>
+</li>
+<li><p><strong>was so moved that</strong>
+= 如此感动以至于
+（表示因果关系，"so...that"结构）</p>
+</li>
+<li><p><strong>the dead man uncovering the pots on the stove</strong>
+= 那个死人在炉子上揭开锅盖
+（现在分词短语作定语，修饰"the dead man"）</p>
+</li>
+<li><p><strong>understood what he was looking for</strong>
+= 明白了他在寻找什么
+（"what"引导的宾语从句）</p>
+</li>
+<li><p><strong>from then on</strong>
+= 从那时起
+（表示时间起点）</p>
+</li>
+<li><p><strong>placed water jugs all about the house</strong>
+= 在房子各处都放置了水罐
+（"all about"表示到处、各处）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+"他一定遭受着巨大的痛苦，"他对乌苏拉说。"你可以看得出他是如此孤独。"她深受感动，以至于下次她看到那个死人在炉子上揭开锅盖时，她明白了他在寻找什么，从那时起，她在房子各处都放置了水罐。"
+
+### 📌 Key Expressions
+
+- **must be suffering a great deal**
+  = 一定遭受着巨大的痛苦
+  （表示对当前情况的推测，使用"must be"结构表示非常肯定的推测）
+
+- **so very lonely**
+  = 如此孤独
+  （"so very"强调程度，表示非常孤独）
+
+- **was so moved that**
+  = 如此感动以至于
+  （表示因果关系，"so...that"结构）
+
+- **the dead man uncovering the pots on the stove**
+  = 那个死人在炉子上揭开锅盖
+  （现在分词短语作定语，修饰"the dead man"）
+
+- **understood what he was looking for**
+  = 明白了他在寻找什么
+  （"what"引导的宾语从句）
+
+- **from then on**
+  = 从那时起
+  （表示时间起点）
+
+- **placed water jugs all about the house**
+  = 在房子各处都放置了水罐
+  （"all about"表示到处、各处）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“他一定非常的痛苦，”他对乌尔苏拉说。“能看得出来他非常的孤独。”她非常地感动，下次当她看到死者揭开炉灶上的锅时，她明白了他在寻找什么。从那时起，她在房子周围放满了水坛。</p>
+    <div class="para-wrap"><p>One night when he found him washing his wound in his own room, José Anedio Buendía could no longer resist.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>一天晚上，当他发现他在自己房间里清洗伤口时，何塞·阿内迪奥·布恩迪亚再也无法抵抗了。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>could no longer resist</strong>
+= 无法再抵抗/忍住
+（表示持续到某时刻后终于无法控制自己的行为）</p>
+</li>
+<li><p><strong>washing his wound</strong>
+= 清洗伤口
+（现在分词短语作伴随状语）</p>
+</li>
+<li><p><strong>in his own room</strong>
+= 在他自己房间里
+（地点状语，修饰washing his wound）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+一天晚上，当他发现他在自己房间里清洗伤口时，何塞·阿内迪奥·布恩迪亚再也无法抵抗了。
+
+### 📌 Key Expressions
+
+- **could no longer resist**
+  = 无法再抵抗/忍住
+  （表示持续到某时刻后终于无法控制自己的行为）
+
+- **washing his wound**
+  = 清洗伤口
+  （现在分词短语作伴随状语）
+
+- **in his own room**
+  = 在他自己房间里
+  （地点状语，修饰washing his wound）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一天晚上，当何塞·阿尔卡蒂奥·布恩迪亚在自己的房间发现他正在清洗伤口，再也无法忍受。</p>
+    <div class="para-wrap"><p>"It's all right, Prudencio," he told him. "We're going to leave this town, just as far away as we can go, and we'll never come back. Go in peace now."<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>"没关系，普鲁登西奥，"他对他说。"我们要离开这个城镇，尽可能远地离开，而且我们永远不会回来。现在安心地走吧。"</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>It's all right</strong>
+= 没关系/没事
+（表示安慰或宽慰的表达）</p>
+</li>
+<li><p><strong>leave this town</strong>
+= 离开这个城镇
+（表示离开某个地方）</p>
+</li>
+<li><p><strong>just as far away as we can go</strong>
+= 尽可能远地离开
+（强调距离的远程度）</p>
+</li>
+<li><p><strong>never come back</strong>
+= 永远不回来
+（表示决不返回的决心）</p>
+</li>
+<li><p><strong>Go in peace</strong>
+= 安心地走/平安离去
+（祝福对方平安离开的表达）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+"没关系，普鲁登西奥，"他对他说。"我们要离开这个城镇，尽可能远地离开，而且我们永远不会回来。现在安心地走吧。"
+
+### 📌 Key Expressions
+
+- **It's all right**
+  = 没关系/没事
+  （表示安慰或宽慰的表达）
+
+- **leave this town**
+  = 离开这个城镇
+  （表示离开某个地方）
+
+- **just as far away as we can go**
+  = 尽可能远地离开
+  （强调距离的远程度）
+
+- **never come back**
+  = 永远不回来
+  （表示决不返回的决心）
+
+- **Go in peace**
+  = 安心地走/平安离去
+  （祝福对方平安离开的表达）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“好吧，普鲁登西奥，”他对死者说，“我们将离开这个城镇，尽可能的远离，永远不会回来，你现在安息吧。”</p>
+    <div class="para-wrap"><p>That was how they undertook the crossing of the mountains. Several friends of José Arcadio Buendía, young men like him, excited, by the adventure, dismantled their houses and packed up, along with their wives and children, to head toward the land that no one had promised them.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>那就是他们穿越山脉的方式。何塞·阿尔卡蒂奥·布恩迪亚的几个朋友，像他一样的年轻人，被冒险所兴奋，拆掉了他们的房子，打包起来，连同他们的妻子和孩子，一起前往那无人承诺给他们的土地。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>undertook the crossing</strong>
+= 进行穿越
+（undertook是undertake的过去式，表示"开始从事"或"着手做"）</p>
+</li>
+<li><p><strong>young men like him</strong>
+= 像他一样的年轻人
+（like him作为后置定语修饰young men）</p>
+</li>
+<li><p><strong>excited by the adventure</strong>
+= 被冒险所兴奋
+（过去分词短语作原因状语）</p>
+</li>
+<li><p><strong>dismantled their houses</strong>
+= 拆掉他们的房子
+（dismantle表示"拆除"或"拆散"）</p>
+</li>
+<li><p><strong>packed up</strong>
+= 打包
+（短语动词，表示收拾行李）</p>
+</li>
+<li><p><strong>along with their wives and children</strong>
+= 连同他们的妻子和孩子
+（along with表示"连同"）</p>
+</li>
+<li><p><strong>head toward the land</strong>
+= 前往那片土地
+（head toward表示"朝...前进"）</p>
+</li>
+<li><p><strong>that no one had promised them</strong>
+= 无人承诺给他们的
+（定语从句修饰the land）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+那就是他们穿越山脉的方式。何塞·阿尔卡蒂奥·布恩迪亚的几个朋友，像他一样的年轻人，被冒险所兴奋，拆掉了他们的房子，打包起来，连同他们的妻子和孩子，一起前往那无人承诺给他们的土地。
+
+### 📌 Key Expressions
+
+- **undertook the crossing**
+  = 进行穿越
+  （undertook是undertake的过去式，表示"开始从事"或"着手做"）
+
+- **young men like him**
+  = 像他一样的年轻人
+  （like him作为后置定语修饰young men）
+
+- **excited by the adventure**
+  = 被冒险所兴奋
+  （过去分词短语作原因状语）
+
+- **dismantled their houses**
+  = 拆掉他们的房子
+  （dismantle表示"拆除"或"拆散"）
+
+- **packed up**
+  = 打包
+  （短语动词，表示收拾行李）
+
+- **along with their wives and children**
+  = 连同他们的妻子和孩子
+  （along with表示"连同"）
+
+- **head toward the land**
+  = 前往那片土地
+  （head toward表示"朝...前进"）
+
+- **that no one had promised them**
+  = 无人承诺给他们的
+  （定语从句修饰the land）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这就是他们穿越山脉的原因。何塞·阿尔卡蒂奥·布恩迪亚的几个朋友，像他一样的年轻人，对即将的探险而兴奋，拆卸打包好他们的房屋，带上妻子和孩子，走向无人承诺的土地。</p>
+    <div class="para-wrap"><p>Before he left, José Arcadio Buendía buried the spear in the courtyard and, one after the other, he cut the throats of his magnificent fighting cocks, trusting that in that way he could give some measure of peace to Prudencio Aguilar.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>在他离开之前，何塞·阿尔卡蒂奥·布恩迪亚将长矛埋在院子里，然后一个接一个地割断了他那些雄伟的斗鸡的喉咙，相信通过这种方式他可以给普鲁登西奥·阿吉拉尔某种程度的安宁。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Before he left</strong>
+= 在他离开之前
+（时间状语从句，表示动作发生的时间点）</p>
+</li>
+<li><p><strong>buried the spear</strong>
+= 埋藏长矛
+（动词短语，表示将长矛埋入地下）</p>
+</li>
+<li><p><strong>one after the other</strong>
+= 一个接一个地
+（副词短语，表示连续进行的动作）</p>
+</li>
+<li><p><strong>cut the throats</strong>
+= 割断喉咙
+（动词短语，表示残忍的杀戮行为）</p>
+</li>
+<li><p><strong>magnificent fighting cocks</strong>
+= 雄伟的斗鸡
+（形容词+名词结构，描述被杀戮的对象）</p>
+</li>
+<li><p><strong>trusting that</strong>
+= 相信
+（现在分词短语作状语，表示伴随状态或原因）</p>
+</li>
+<li><p><strong>give some measure of peace</strong>
+= 给予某种程度的安宁
+（动词短语，表示意图或目的）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+在他离开之前，何塞·阿尔卡蒂奥·布恩迪亚将长矛埋在院子里，然后一个接一个地割断了他那些雄伟的斗鸡的喉咙，相信通过这种方式他可以给普鲁登西奥·阿吉拉尔某种程度的安宁。
+
+### 📌 Key Expressions
+
+- **Before he left**
+  = 在他离开之前
+  （时间状语从句，表示动作发生的时间点）
+
+- **buried the spear**
+  = 埋藏长矛
+  （动词短语，表示将长矛埋入地下）
+
+- **one after the other**
+  = 一个接一个地
+  （副词短语，表示连续进行的动作）
+
+- **cut the throats**
+  = 割断喉咙
+  （动词短语，表示残忍的杀戮行为）
+
+- **magnificent fighting cocks**
+  = 雄伟的斗鸡
+  （形容词+名词结构，描述被杀戮的对象）
+
+- **trusting that**
+  = 相信
+  （现在分词短语作状语，表示伴随状态或原因）
+
+- **give some measure of peace**
+  = 给予某种程度的安宁
+  （动词短语，表示意图或目的）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">离开前，何塞·阿尔卡蒂奥·布恩迪亚将长矛埋在院子里，一个接一个地，割开了雄赳赳的斗鸡的喉咙，相信用这种方式能给普鲁登西奥·阿吉拉尔带来一些和平。</p>
+    <div class="para-wrap"><p>All that Úrsula took along were a trunk bridal clothes, a few household utensils, and the small chest with the gold pieces that she had inherited from her father.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>乌尔苏拉带走的只有一口装着嫁衣的箱子，几件家用器具，以及一个装着她从父亲那里继承来的金币的小箱子。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>All that Úrsula took along</strong>
+= 乌尔苏拉带走的全部东西
+（这是一个倒装结构，正常语序应为"All that Úrsula took along were..."）</p>
+</li>
+<li><p><strong>a trunk bridal clothes</strong>
+= 一口装着嫁衣的箱子
+（这里"trunk"指大箱子，"bridal clothes"指嫁衣）</p>
+</li>
+<li><p><strong>a few household utensils</strong>
+= 几件家用器具
+（"a few"表示少量，"household utensils"指家用器具）</p>
+</li>
+<li><p><strong>the small chest with the gold pieces</strong>
+= 装着金币的小箱子
+（"chest"指小箱子，"gold pieces"指金币）</p>
+</li>
+<li><p><strong>that she had inherited from her father</strong>
+= 她从父亲那里继承来的
+（这是一个定语从句，修饰前面的"gold pieces"）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+乌尔苏拉带走的只有一口装着嫁衣的箱子，几件家用器具，以及一个装着她从父亲那里继承来的金币的小箱子。
+
+### 📌 Key Expressions
+- **All that Úrsula took along**
+  = 乌尔苏拉带走的全部东西
+  （这是一个倒装结构，正常语序应为"All that Úrsula took along were..."）
+
+- **a trunk bridal clothes**
+  = 一口装着嫁衣的箱子
+  （这里"trunk"指大箱子，"bridal clothes"指嫁衣）
+
+- **a few household utensils**
+  = 几件家用器具
+  （"a few"表示少量，"household utensils"指家用器具）
+
+- **the small chest with the gold pieces**
+  = 装着金币的小箱子
+  （"chest"指小箱子，"gold pieces"指金币）
+
+- **that she had inherited from her father**
+  = 她从父亲那里继承来的
+  （这是一个定语从句，修饰前面的"gold pieces"）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">乌尔苏拉的所有东西包括，一箱嫁衣，几件家具，以及继承自父亲的装着金币的小箱子。</p>
+    <div class="para-wrap"><p>They did not lay out any definite itinerary. They simply tried to go in a direction opposite to the road to Riohacha so that they would not leave any trace or meet any people they knew. It was an absurd journey. After fourteen months, her stomach corrupted by monkey meat and snake stew, Úrsula gave birth to a son who had all of his features human.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>他们没有制定任何明确的行程。他们只是试图朝着与里奥阿查相反的方向走，这样就不会留下任何痕迹或遇到任何他们认识的人。这是一次荒诞的旅程。十四个月后，由于吃了猴子肉和蛇肉炖菜而身体受损，乌苏拉生下了一个儿子，这个儿子的所有特征都像人一样。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>lay out</strong>
+= 制定，规划
+（表示详细安排或计划某事）</p>
+</li>
+<li><p><strong>definite itinerary</strong>
+= 明确的行程
+（指具体、详细的旅行计划）</p>
+</li>
+<li><p><strong>in a direction opposite to</strong>
+= 与...相反的方向
+（表示方向相反）</p>
+</li>
+<li><p><strong>leave any trace</strong>
+= 留下任何痕迹
+（指留下任何可见或可追踪的迹象）</p>
+</li>
+<li><p><strong>absurd journey</strong>
+= 荒诞的旅程
+（形容不合常理、荒谬的旅行）</p>
+</li>
+<li><p><strong>stomach corrupted by</strong>
+= 因...而受损/腐坏
+（表示因某种食物或物质导致身体受损）</p>
+</li>
+<li><p><strong>gave birth to</strong>
+= 生下
+（指分娩、生产）</p>
+</li>
+<li><p><strong>had all of his features human</strong>
+= 所有特征都像人一样
+（表示这个婴儿虽然可能是在特殊环境下出生，但外表完全正常，具有人类特征）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+他们没有制定任何明确的行程。他们只是试图朝着与里奥阿查相反的方向走，这样就不会留下任何痕迹或遇到任何他们认识的人。这是一次荒诞的旅程。十四个月后，由于吃了猴子肉和蛇肉炖菜而身体受损，乌苏拉生下了一个儿子，这个儿子的所有特征都像人一样。
+
+### 📌 Key Expressions
+
+- **lay out**
+  = 制定，规划
+  （表示详细安排或计划某事）
+
+- **definite itinerary**
+  = 明确的行程
+  （指具体、详细的旅行计划）
+
+- **in a direction opposite to**
+  = 与...相反的方向
+  （表示方向相反）
+
+- **leave any trace**
+  = 留下任何痕迹
+  （指留下任何可见或可追踪的迹象）
+
+- **absurd journey**
+  = 荒诞的旅程
+  （形容不合常理、荒谬的旅行）
+
+- **stomach corrupted by**
+  = 因...而受损/腐坏
+  （表示因某种食物或物质导致身体受损）
+
+- **gave birth to**
+  = 生下
+  （指分娩、生产）
+
+- **had all of his features human**
+  = 所有特征都像人一样
+  （表示这个婴儿虽然可能是在特殊环境下出生，但外表完全正常，具有人类特征）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他们没有规划明确的行程，只是试着朝奥阿查相反方向的路走，这样将不会留下任何踪迹，不会遇见任何认识他们的人，这是一段荒谬的旅程。十四个月以后，乌尔苏拉因猴子肉和蛇汤吃坏了肚子，生了一个儿子，带着人类所有的特征。</p>
+    <div class="para-wrap"><p>She had traveled half of the trip in a hammock that two men carried on their shoulders, because swelling had disfigured her legs and her varicose veins had puffed up like bubbles. Although it was pitiful to see them with their sunken stomachs and languid eyes, the children survived the journey better than their parents, and most of the time it was fun for them.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>她曾让两个男人用肩膀抬着的吊床完成了旅程的一半，因为肿胀使她的腿变形，静脉曲张像气泡一样鼓起。尽管看到他们凹陷的肚子和呆滞的眼睛令人同情，但孩子们比父母更好地完成了旅程，而且对他们来说，大部分时间都是有趣的。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>traveled half of the trip</strong>
+= 完成了旅程的一半
+（表示旅程进行了一半）</p>
+</li>
+<li><p><strong>in a hammock</strong>
+= 用吊床
+（表示使用吊床作为交通工具）</p>
+</li>
+<li><p><strong>that two men carried on their shoulders</strong>
+= 两个男人用肩膀抬着的
+（定语从句修饰hammock，说明吊床的搬运方式）</p>
+</li>
+<li><p><strong>swelling had disfigured her legs</strong>
+= 肿胀使她的腿变形
+（swelling表示肿胀，disfigured表示使变形）</p>
+</li>
+<li><p><strong>varicose veins</strong>
+= 静脉曲张
+（医学术语，指静脉扩张扭曲）</p>
+</li>
+<li><p><strong>puffed up like bubbles</strong>
+= 像气泡一样鼓起
+（比喻用法，形象描述静脉曲张的状态）</p>
+</li>
+<li><p><strong>sunken stomachs</strong>
+= 凹陷的肚子
+（描述营养不良或饥饿的状态）</p>
+</li>
+<li><p><strong>languid eyes</strong>
+= 呆滞的眼睛
+（languid表示无精打采的，疲倦的）</p>
+</li>
+<li><p><strong>survived the journey better than their parents</strong>
+= 比父母更好地完成了旅程
+（表示孩子们比父母更能忍受旅途的艰辛）</p>
+</li>
+<li><p><strong>most of the time it was fun for them</strong>
+= 大部分时间对他们来说都是有趣的
+（表明孩子们对旅途有积极的态度）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+她曾让两个男人用肩膀抬着的吊床完成了旅程的一半，因为肿胀使她的腿变形，静脉曲张像气泡一样鼓起。尽管看到他们凹陷的肚子和呆滞的眼睛令人同情，但孩子们比父母更好地完成了旅程，而且对他们来说，大部分时间都是有趣的。
+
+### 📌 Key Expressions
+
+- **traveled half of the trip**
+  = 完成了旅程的一半
+  （表示旅程进行了一半）
+
+- **in a hammock**
+  = 用吊床
+  （表示使用吊床作为交通工具）
+
+- **that two men carried on their shoulders**
+  = 两个男人用肩膀抬着的
+  （定语从句修饰hammock，说明吊床的搬运方式）
+
+- **swelling had disfigured her legs**
+  = 肿胀使她的腿变形
+  （swelling表示肿胀，disfigured表示使变形）
+
+- **varicose veins**
+  = 静脉曲张
+  （医学术语，指静脉扩张扭曲）
+
+- **puffed up like bubbles**
+  = 像气泡一样鼓起
+  （比喻用法，形象描述静脉曲张的状态）
+
+- **sunken stomachs**
+  = 凹陷的肚子
+  （描述营养不良或饥饿的状态）
+
+- **languid eyes**
+  = 呆滞的眼睛
+  （languid表示无精打采的，疲倦的）
+
+- **survived the journey better than their parents**
+  = 比父母更好地完成了旅程
+  （表示孩子们比父母更能忍受旅途的艰辛）
+
+- **most of the time it was fun for them**
+  = 大部分时间对他们来说都是有趣的
+  （表明孩子们对旅途有积极的态度）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她一半的旅程都在吊床上度过，两个男人把她担在肩上，因为肿胀使她的腿变形，静脉曲张鼓胀得像气泡。他们凹陷的腹部和疲倦的眼神，甚是可怜，但是孩子在旅程中活得比父母还好，对他们来说大部分时间都很有趣。</p>
+    <div class="para-wrap"><p>One morning, after almost two years of crossing, they became the first mortals to see the western slopes of the mountain range. From the cloudy summit they saw the immense aquatic expanse of the great swamp as it spread out toward the other side of the world. But they never found the sea.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>一天早上，在几乎两年的穿越之后，他们成为了第一批看到山脉西坡的凡人。从云雾缭绕的山顶，他们看到了广阔的水域，即大沼泽，它一直延伸到世界的另一端。但他们从未找到大海。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>mortals</strong>
+= 凡人
+（指普通人类，区别于神或超自然存在）</p>
+</li>
+<li><p><strong>western slopes</strong>
+= 西坡
+（山脉的西侧山坡）</p>
+</li>
+<li><p><strong>cloudy summit</strong>
+= 云雾缭绕的山顶
+（被云层覆盖的山顶）</p>
+</li>
+<li><p><strong>immense aquatic expanse</strong>
+= 广阔的水域
+（immense表示巨大的，aquatic表示水生的，expanse表示广阔区域）</p>
+</li>
+<li><p><strong>spread out</strong>
+= 延伸，展开
+（描述沼泽向远方延伸的动态）</p>
+</li>
+<li><p><strong>the other side of the world</strong>
+= 世界的另一端
+（指地球的另一边，非常遥远的地方）</p>
+</li>
+<li><p><strong>never found the sea</strong>
+= 从未找到大海
+（表示尽管他们穿越了很长的距离，但最终未能到达海洋）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+一天早上，在几乎两年的穿越之后，他们成为了第一批看到山脉西坡的凡人。从云雾缭绕的山顶，他们看到了广阔的水域，即大沼泽，它一直延伸到世界的另一端。但他们从未找到大海。
+
+### 📌 Key Expressions
+
+- **mortals**
+  = 凡人
+  （指普通人类，区别于神或超自然存在）
+
+- **western slopes**
+  = 西坡
+  （山脉的西侧山坡）
+
+- **cloudy summit**
+  = 云雾缭绕的山顶
+  （被云层覆盖的山顶）
+
+- **immense aquatic expanse**
+  = 广阔的水域
+  （immense表示巨大的，aquatic表示水生的，expanse表示广阔区域）
+
+- **spread out**
+  = 延伸，展开
+  （描述沼泽向远方延伸的动态）
+
+- **the other side of the world**
+  = 世界的另一端
+  （指地球的另一边，非常遥远的地方）
+
+- **never found the sea**
+  = 从未找到大海
+  （表示尽管他们穿越了很长的距离，但最终未能到达海洋）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一个清晨，经过近两年的跋涉，他们成为第一批看到山脉西面的人。从氤氲的山顶望去，辽阔的大沼泽延伸到世界的另一边。但是他们从未找到大海。</p>
+    <div class="para-wrap"><p>One night, after several months of lost wandering through the swamps, far away now from the last Indians they had met on their way, they camped on the banks of a stony river whose waters were like a torrent of frozen glass.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>一个夜晚，在迷失于沼泽地数月之后，此时他们已经远离了途中遇到的最后一批印第安人，他们在一条石质河岸边扎营，河里的水流如同冻结的玻璃般湍急。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>lost wandering</strong>
+= 迷失的漫游
+（表示迷失方向的漫游状态）</p>
+</li>
+<li><p><strong>swamps</strong>
+= 沼泽地
+（指低洼、潮湿的地区，通常被水覆盖）</p>
+</li>
+<li><p><strong>far away from</strong>
+= 远离
+（表示距离上的远离）</p>
+</li>
+<li><p><strong>Indians</strong>
+= 印第安人
+（美洲原住民）</p>
+</li>
+<li><p><strong>on their way</strong>
+= 在他们途中
+（表示在旅行的过程中）</p>
+</li>
+<li><p><strong>camped</strong>
+= 扎营
+（指在野外搭建临时住所）</p>
+</li>
+<li><p><strong>banks of a stony river</strong>
+= 石质河岸边
+（河岸由石头构成）</p>
+</li>
+<li><p><strong>whose waters were like</strong>
+= 河水如同...般
+（whose引导的定语从句，修饰river）</p>
+</li>
+<li><p><strong>a torrent of frozen glass</strong>
+= 冻结的玻璃般湍急的水流
+（比喻用法，形容水流湍急且清澈透明如冻结的玻璃）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+一个夜晚，在迷失于沼泽地数月之后，此时他们已经远离了途中遇到的最后一批印第安人，他们在一条石质河岸边扎营，河里的水流如同冻结的玻璃般湍急。
+
+### 📌 Key Expressions
+
+- **lost wandering**
+  = 迷失的漫游
+  （表示迷失方向的漫游状态）
+
+- **swamps**
+  = 沼泽地
+  （指低洼、潮湿的地区，通常被水覆盖）
+
+- **far away from**
+  = 远离
+  （表示距离上的远离）
+
+- **Indians**
+  = 印第安人
+  （美洲原住民）
+
+- **on their way**
+  = 在他们途中
+  （表示在旅行的过程中）
+
+- **camped**
+  = 扎营
+  （指在野外搭建临时住所）
+
+- **banks of a stony river**
+  = 石质河岸边
+  （河岸由石头构成）
+
+- **whose waters were like**
+  = 河水如同...般
+  （whose引导的定语从句，修饰river）
+
+- **a torrent of frozen glass**
+  = 冻结的玻璃般湍急的水流
+  （比喻用法，形容水流湍急且清澈透明如冻结的玻璃）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一天晚上，在大沼泽迷失游荡了几个月之后，远离途中遇到的最后一批印第安人，他们在布满石头的河岸边扎营，河水如凝固的玻璃。</p>
+    <div class="para-wrap"><p>Years later, during the second civil war, Colonel Aureliano Buendía tried to follow that same route in order to take Riohacha by surprise and after six days of traveling he understood that it was madness.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>多年以后，在第二次内战期间，奥雷里亚诺·布恩迪亚上校试图沿着同一条路线行军，希望出其不意地攻占里奥阿查。然而，在跋涉了六天之后，他意识到这简直是疯狂之举。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Years later</strong>
+= 多年以后</p>
+</li>
+<li><p><strong>during the second civil war</strong>
+= 在第二次内战期间</p>
+</li>
+<li><p><strong>civil war</strong>
+= 内战</p>
+</li>
+<li><p><strong>Colonel Aureliano Buendía</strong>
+= 奥雷里亚诺·布恩迪亚上校</p>
+</li>
+<li><p><strong>try to follow the same route</strong>
+= 试图沿着同一条路线前进</p>
+</li>
+<li><p><strong>follow a route</strong>
+= 沿着某条路线行进</p>
+</li>
+<li><p><strong>the same route</strong>
+= 同一条路线</p>
+</li>
+<li><p><strong>in order to do sth</strong>
+= 为了……；以便……</p>
+</li>
+<li><p><strong>take... by surprise</strong>
+= 出其不意地攻占……；打……一个措手不及</p>
+</li>
+<li><p><strong>take Riohacha by surprise</strong>
+= 出其不意地攻占里奥阿查</p>
+</li>
+<li><p><strong>Riohacha</strong>
+= 里奥阿查（哥伦比亚北部城市）</p>
+</li>
+<li><p><strong>after six days of traveling</strong>
+= 在跋涉了六天之后</p>
+</li>
+<li><p><strong>understand that...</strong>
+= 意识到……</p>
+</li>
+<li><p><strong>it was madness</strong>
+= 那简直是疯狂之举</p>
+</li>
+<li><p><strong>madness</strong>
+= 疯狂；荒唐；愚蠢至极的事情</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+多年以后，在第二次内战期间，奥雷里亚诺·布恩迪亚上校试图沿着同一条路线行军，希望出其不意地攻占里奥阿查。然而，在跋涉了六天之后，他意识到这简直是疯狂之举。
+
+
+### 📌 Key Expressions
+
+- **Years later**
+  = 多年以后
+
+- **during the second civil war**
+  = 在第二次内战期间
+
+- **civil war**
+  = 内战
+
+- **Colonel Aureliano Buendía**
+  = 奥雷里亚诺·布恩迪亚上校
+
+- **try to follow the same route**
+  = 试图沿着同一条路线前进
+
+- **follow a route**
+  = 沿着某条路线行进
+
+- **the same route**
+  = 同一条路线
+
+- **in order to do sth**
+  = 为了……；以便……
+
+- **take... by surprise**
+  = 出其不意地攻占……；打……一个措手不及
+
+- **take Riohacha by surprise**
+  = 出其不意地攻占里奥阿查
+
+- **Riohacha**
+  = 里奥阿查（哥伦比亚北部城市）
+
+- **after six days of traveling**
+  = 在跋涉了六天之后
+
+- **understand that...**
+  = 意识到……
+
+- **it was madness**
+  = 那简直是疯狂之举
+
+- **madness**
+  = 疯狂；荒唐；愚蠢至极的事情</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">多年以后，在第二次内战期间，奥雷里亚诺·布恩迪亚上校试图遵循同样的路线突袭奥阿查，经过六天的行军，他明白这是疯狂之举。</p>
+    <div class="para-wrap"><p>Nevertheless, the night on which they camped beside the river, his father's host had the look of ship-wrecked people with no escape, but their number had grown during the crossing and they were all prepared (and they succeeded) to die of old age.<span class="anno-toggle has-anno"></span><span class="ai-toggle" title="AI智能解析"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>然而，他们在河边露营的那一晚，他父亲的队伍看起来像是一群无路可逃的船难幸存者，但他们的数量在渡河过程中增加了，而且他们都准备好（并且他们确实做到了）安享天年。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Nevertheless</strong>
+= 然而，尽管如此
+（表示转折关系，引出与前文相反的情况）</p>
+</li>
+<li><p><strong>host</strong>
+= 队伍，人群
+（这里指跟随他父亲的一群人）</p>
+</li>
+<li><p><strong>had the look of</strong>
+= 看起来像
+（描述外表或状态）</p>
+</li>
+<li><p><strong>ship-wrecked people</strong>
+= 船难幸存者
+（指遭遇船只失事的人）</p>
+</li>
+<li><p><strong>with no escape</strong>
+= 无路可逃
+（表示绝望的处境）</p>
+</li>
+<li><p><strong>number had grown</strong>
+= 数量增加了
+（描述群体的变化）</p>
+</li>
+<li><p><strong>during the crossing</strong>
+= 在渡河过程中
+（指特定时间段）</p>
+</li>
+<li><p><strong>were all prepared</strong>
+= 都准备好
+（表示心理状态）</p>
+</li>
+<li><p><strong>to die of old age</strong>
+= 安享天年，寿终正寝
+（表示自然死亡，非暴力或意外死亡）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+然而，他们在河边露营的那一晚，他父亲的队伍看起来像是一群无路可逃的船难幸存者，但他们的数量在渡河过程中增加了，而且他们都准备好（并且他们确实做到了）安享天年。
+
+### 📌 Key Expressions
+
+- **Nevertheless**
+  = 然而，尽管如此
+  （表示转折关系，引出与前文相反的情况）
+
+- **host**
+  = 队伍，人群
+  （这里指跟随他父亲的一群人）
+
+- **had the look of**
+  = 看起来像
+  （描述外表或状态）
+
+- **ship-wrecked people**
+  = 船难幸存者
+  （指遭遇船只失事的人）
+
+- **with no escape**
+  = 无路可逃
+  （表示绝望的处境）
+
+- **number had grown**
+  = 数量增加了
+  （描述群体的变化）
+
+- **during the crossing**
+  = 在渡河过程中
+  （指特定时间段）
+
+- **were all prepared**
+  = 都准备好
+  （表示心理状态）
+
+- **to die of old age**
+  = 安享天年，寿终正寝
+  （表示自然死亡，非暴力或意外死亡）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">尽管如此，他们在河边扎营的那个晚上，他的父亲及同行者看着像是海难中无处逃生的人，但在旅途中他们的人数在不断增加，并且他们将长命百岁（事实上确实如此）。</p>
+    <p>José Arcadio Buendía dreamed that night that right there a noisy city with houses having mirror walls rose up. He asked what city it was and they answered him with a name that he had never heard, that had no meaning at all, but that had a supernatural echo in his dream: Macondo.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">那晚何塞·阿尔卡蒂奥·布恩迪亚梦见一座喧闹的城市，玻璃幕墙大厦拔地而起。他问这是什么城市，他们回答他的是一个从未听过的，没有任何意思的名字，但是在梦里有一个超自然的回声：马孔多。</p>
+    <p>On the following day he convinced his men that they would never find the sea. He ordered them to cut down the trees to make a clearing beside the river, at the coolest spot on the bank, and there they founded the village.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">第二天，他说服其他人，永远也找不到大海。他让人们砍掉树木，在河岸边清理出一片阴凉之地，建起了一座村庄。</p>
+    <p>José Arcadio Buendía did not succeed in deciphering the dream of houses with mirror walls until the day he discovered ice. Then he thought he understood its deep meaning. He thought that in the near future they would be able to manufacture blocks of ice on a large scale from such a common material as water them build the new houses of the village.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥·布恩迪亚直到认识了冰的那一天，才破译了关于玻璃幕墙大厦的梦。他认为自己理解了其中的深刻含义，在不远的将来，人们使用像水这样的普通材料能够大规模地制造冰块，从而建造村庄里的新房子。</p>
+    <p>Macondo would no longer be a burning place, where the hinges and door knockers twisted with the heat, but would be changed into a wintry city.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">马孔多不再是一个合叶和门环热得弯曲变形的酷热之地，将变成一个寒冷的城市。</p>
+    <p>He did not persevere in his attempts to build an ice factory, it was because at that time he was absolutely enthusiastic over the education of his sons, especially that of Aureliano, who from the first had revealed a strange intuition for alchemy.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他并没有坚持不懈地试图建造冰厂，因为当时他全身心投入在儿子们的教育中，特别是奥雷里亚诺，他从一开始就对炼金术流露出了好奇心。</p>
+    <p>The laboratory had been dusted off. Reviewing Melquíades' notes, serene now, without the exaltation of novelty, in prolonged and patient sessions they tried to separate Úrsula's gold from the debris that was stuck to the bottom of the pot.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">实验室已经打扫干净，安静地阅读梅尔基亚德斯的笔记，将新奇事物带来的兴奋置之度外。在长期和耐心的交流中，他们试图将乌尔苏拉的黄金从粘在锅底的废渣中分离出来。</p>
+    <p>Young José Arcadio scarcely took part in the process.While his father was involved body and soul with his water pipe, the willful first-born, who had always been too big for his age, had become a monumental  . His voice had changed. An incipient fuzz appeared on his upper lip.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">年轻的何塞·阿尔卡蒂奥几乎没有参与这个过程。当他的父亲倾注身心在他的仪器中时，这个任性的头生子，已经长大，成为一个青少年。他的声音变了，上唇刚长出了胡子。</p>
+    <p>One night, as Úrsula went into the room where he was undressing to go to bed, she felt a mingled sense of shame and pity: he was the first man that she had seen naked after her husband, and he was so well equipped for life that he seemed abnormal. Úrsula, pregnant for the third time, relived her newlywed terror.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一天晚上，乌尔苏拉进入房间，碰巧遇见他正脱衣准备睡觉，她感到一种羞涩和怜悯的混杂感受：她是在丈夫之后第一次看到裸体的男人，他生活条件很好，但是身体看上去很不正常。此时乌尔苏拉第三次怀孕，再次体验到了新婚时的恐惧。</p>
+    <p>Around that time a merry, foul-mouthed, provocative woman came to the house to help with the chorea, and she knew how to read the future in cards. Úrsula spoke to about her son. She thought that his disproportionate size was something as unnatural as her cousin's tail of a pig.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">那时，一个爽快、满嘴脏话、性感的女人来到她家诊治舞蹈症，此人知道如何通过纸牌预测未来。乌尔苏拉谈及到她的儿子，她认为他不成比例的身体大小就像她表兄弟的猪尾巴一样不正常。</p>
+    <p>The woman let out an expansive laugh that resounded through the house like a spray of broken glass. "Just the opposite," she said. "He'll be very lucky." In order to confirm her prediction she brought her cards to the house a few days later and locked herself up with José Arcadio in a granary off the kitchen.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">那个女人哈哈大笑起来，仿佛散落的玻璃碎片在房间中回响。“恰恰相反，”她说，“他会非常幸运。”为了证实她的预言，几天后她把纸牌带到乌尔苏拉家，把自己和何塞·阿尔卡蒂奥锁在厨房外的粮仓里。</p>
+    <p>She calmly placed her cards on an old carpenter's bench. saying anything that came into her head, while the boy waited beside her, more bored than intrigued. Suddenly she reached out touched him.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她不慌不忙地将纸牌摊在木工凳上，默念着什么，男孩在她旁边等待着，百无聊赖。突然，她伸手去抚摸他。</p>
+    <p>"Lordy!" she said, sincerely startled, and that was all she could say. José Arcadio felt his bones filling up with foam, a languid fear, and a terrible desire to weep. The woman made no insinuations.But José Arcadio kept looking for her all night long, for the smell of smoke that she had under her armpits and that had got caught under his skin.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“老天爷啊！”她说，着实吓了一跳，再也说不出话来了。何塞·阿尔卡蒂奥感觉自己的骨头里塞满了海绵，慵懒的畏惧和可怕的欲望让他哭泣。这个女人没有任何暗示，但是何塞·阿尔卡蒂奥整夜都在找寻她。她腋下的烟味沾染在他的皮肤上。</p>
+    <p>He wanted to be with her all the time, he wanted her to be his mother, for them never to leave the granary, for her to say "Lordy!" to him.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她想永远和她在一起，让她做他的母亲，为了永远不离开那个粮仓，为了能对他说“我的老天爷”。</p>
+    <p>One day he could not stand it any more and he went looking for her at her house: He made a formal visit, sitting uncomprehendingly in the living room without saying a word. At that moment he had no desire for her. He found her different, entirely foreign to the image that her smell brought on, as if she were someone else.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一天，他再也不能忍受了，去她家找她：他做了一个正式的访问，不知不觉，没说一句话就坐在了起居室里，那一刻他对她没有欲望。他发现了差异，她的气味带来的完全是异域的形象，仿佛是另外一个人。</p>
+    <p>He drank his coffee and left the house in depression. That night, during the frightful time of lying awake, he desired her again with a brutal anxiety, but he did not want her that time as she had been in the granary but as she had been that afternoon.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他喝着咖啡，把房间弄得一团糟。晚上，醒后无精打采的时间里，强烈的焦虑让他再次恢复了欲望，但他渴望的不是在粮仓里的她，而是下午时候的她。</p>
+    <p>Days later the woman suddenly called him to her house, where she was alone with her mother, and she had him come into the bedroom with the pretext showing him a deck of cards. Then she touched such freedom that he suffered a delusion after the initial shudder, and he felt more fear than pleasure.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">几天后，那个女人忽然叫他来她家，她单独和她母亲在一起。以向他展示一副纸牌为由，把他带进卧室。接着她尽情地抚摸他，在最初的颤抖之后他感觉到了失落，恐惧大于快乐。</p>
+    <p>She asked him to come and see her that night. He agreed. in order to get away, knowing that he was incapable of going. But that night, in his burning bed, he understood that he had to go we her, even if he were not capable.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她让何塞·阿尔卡蒂奥晚上再来，他答应了。他只是为了赶紧逃离，因为他知道自己不会再来了。但是夜晚，欲火焚身的床上，他明白必须要去找她，即使他不能这么做。</p>
+    <p>He got dressed by feel, listening in the dark to his brother's calm breathing, the dry cough of his father in the next room, the asthma of the hens in the courtyard, the buzz of the mosquitoes, the beating of his heart, and the inordinate bustle of a world that he had not noticed until then, and he went out into the sleeping street.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他凭着感觉穿上衣服，黑暗中听到弟弟平静的呼吸声，隔壁房间父亲的干咳声，院子里母鸡的气喘声，蚊子的嗡嗡声，自己的心跳声，以及之前从未注意到的喧嚣世界。然后他走到酣然入梦的街道。</p>
+    <p>With all his heart he wanted the door to be barred and not just closed as she had promised him. But it was open. He pushed it the tips of his fingers and the hinges yielded with a mournful and articulate moan that left a frozen echo inside of him. From the moment he entered, sideways and trying not to make a noise, he caught the smell.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他真心的希望门是关闭着的，而不是她承诺的那样虚掩着，但门是开着的。他用指尖推开门，合叶发出悲切清晰的呻吟声，在他身上留下冰冷的回声。从进门那刻开始，他侧着身子，尽量不发出声响，接着捕获到了那股气味。</p>
+    <p>He was still in the hallway, where the woman's three brothers had their hammocks in positions that he could not see and that he could not determine in the darkness as he felt his way along the hall to push open the bedroom door and get his bearings there so as not to mistake the bed.He found it.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他仍然呆在走廊上，女人的三个兄弟把吊床支在他看不见的位置，黑暗中也无法确定。他沿着大厅，摸索着行走，推开卧室的门，找准方位，以免明弄错床的位置。最终他找到了。</p>
+    <p>He bumped against the ropes of the hammocks, which were lower than he had suspected, and a man who had been snoring until then turned in his sleep and said in a kind of delusion, "It was Wednesday."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他绊到了吊床的绳索，因为比他猜测的要低。一个打着呼噜的男人在睡梦中翻了一个身，恍恍惚惚说了句“今天星期三”。</p>
+    <p>When he pushed open the bedroom door, he could not prevent it from scraping against the uneven floor. Suddenly, in the absolute darkness, he understood with a hopeless nostalgia that he was completely disoriented.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他推开卧室的门，不可避免地刮到不平坦的地板上。突然，在一团漆黑中，绝望地明白自己完全迷失了方向。</p>
+    <p>Sleeping in the narrow room were the mother, another daughter with her husband and two children, the woman, who may not have been there. He could have guided himself by the smell if the smell had not been all over the house, so devious and at the same time so definite, as it had always been on his skin.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">睡在这个狭小房间里的有她的母亲，她的姐妹以及她的丈夫和两个孩子。那个女人也许并没有在这里。他能通过气味引导自己找到她，如果气味没有弥漫整个房子，令人迷惑又如此的明确，就像一直存在于皮肤上一样。</p>
+    <p>He did not move for a long time, wondering in fright how he had ever got to that abyss of abandonment, when a hand with all its fingers extended and feeling about in the darkness touched his face. He was not surprised, for without knowing, he had been expecting it.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他一动不动地待了许久，惊骇中想知道自己如何陷入放弃的深渊，这时，他感觉到一只手伸过来了，在黑暗中触摸她的脸。他措手不及，但并不惊讶，他期待这一刻。</p>
+    <p>Then he gave himself over to that hand, and in a terrible state of exhaustion he let himself be led to a shapeless place where his clothes were taken off and he was heaved about like a sack of potatoes and thrown from one side to the other in a bottomless darkness in which his arms were useless, where it no longer smelled of woman but of ammonia, and where he tried to remember her face and found before him the face of Úrsula, confusedly aware that he was doing something that for a very long time he had wanted to do but that he had imagined could really never be done, not knowing what he was doing because he did not know where his feet were or where his head was, or whose feet or whose head, and feeling that he could no longer resist the glacial rumbling of his kidneys and the air of his intestines, and fear, and the bewildered anxiety to flee and at the same time stay forever in that exasperated silence and that fearful solitude.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">然后，在几近虚脱的糟糕状态中，他把自己托付给了这只手，跟随着到了一个无形之处。他的衣服被脱掉，像一袋土豆一样被举起，从一边扔到另一边，无尽的黑暗中他的手毫无用处。那里不再有那个女人的气味，只有一股氨气。他试图回忆她的样子，但出现的却是乌尔苏拉的样子。他稀里糊涂地察觉到自己正在做一件很久就想做的事情，只是从未想像到自己真的能做到。他不知道自己在做什么，因为他不知道自己的脚在哪里，头在哪里，或者是谁的脚，谁地头。他感觉抗拒不了肾脏中冰冷的声响和肠中的空气，恐惧和不知所措的焦虑让他逃离，同时又希望永远呆在这恼怒的沉寂和可怕的孤独中。</p>
+    <p>Her name was Pilar Ternera. She had been part of the exodus that ended with the founding of Macondo, dragged along by her family in order to separate her from the man who had raped her at fourteen and had continued to love her until she was twenty-two, but who never made up his mind to make the situation public because he was a man apart.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她的名字叫皮拉尔·特尔内拉，她参与过离开奥阿查到最后建立马孔多这一段旅程，不过是被家人强迫的，为了离开在她十四岁时强奸过她的那个男人。直到她二十二岁，那个男人依然爱着她，但从来没有下定决心公开他们的情况，因为他不是本地人。</p>
+    <p>He promised to follow her to the ends of the earth, but only later on, when he put his affairs in order, and she had become tired of waiting for him, always identifying him with the tall and short, blond and brunet men that her cards promised from land and sea within three days, three months, or three years.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他承诺跟随她到天涯海角，但不是现在，等他处理完自己的事情，她厌倦了等待。她总能在或高大或矮小，或金发或黑发的人群中把他辨认出来。纸牌预测他将在三天、三个月或三年内从陆地或海上来。</p>
+    <p>With her waiting she had lost the strength of her thighs, the firmness of her breasts, her habit of tenderness, but she kept the madness of her heart intact. Maddened by that prodigious plaything, José Arcadio followed her path every night through the labyrinth of the room.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">等待中，她的大腿不再强壮，乳房不再坚挺，性格不再温柔，但依然保持着内心的狂野。何塞·阿尔卡蒂奥痴迷于这个尤物，每晚都要穿过迷宫般的房屋。</p>
+    <p>On a certain occasion he found the door barred, and he knocked several times, knowing that if he had the boldness to knock the first time he would have had to knock until the last, and after an interminable wait she opened the door for him.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一次他发现门被关上了，他敲了好几次，如果他有勇气敲第一次，便会一直往下敲下去，在无休止的等待之后，她为他开了门。</p>
+    <p>During the day, lying down to dream, he would secretly enjoy the memories of the night before. But when she came into the house, merry, indifferent, chatty, he did not have to make any effort to hide his tension, because that woman, whose explosive laugh frightened off the doves, had nothing to do with the invisible power that taught him how to breathe from within and control his heartbeats, and that had permitted him to understand why man are afraid of death.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">白天，躺下做梦，他会偷偷地享受前一晚的回忆。当她来到他家，爽快，不拘小节，健谈，他甚至不必花费任何功夫去掩饰自己的紧张，因为这个爽朗的笑声能惊飞鸽子的女人与教他憋气呼吸和如何控制心跳，让他明白人为什么害怕死亡的无形力量毫无关系。</p>
+    <p>He was so wrapped up in himself that he did not even understand the joy of everyone when his father and his brother aroused the household with the news that they had succeeded in penetrating the metallic debris and had separated Úrsula's gold.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他沉浸在自己的世界里，当他的父亲和弟弟成功地把乌尔苏拉的黄金从金属废渣中彻底分离出来的好消息让全家激动万分时，他甚至不理解人们在高兴什么。</p>
+    <p>They had succeeded, as a matter of fact, after putting in complicated and persevering days at it. Úrsula was happy, and she even gave thanks to God for the invention of alchemy, while the people of the village crushed into the laboratory, and they served them guava jelly on crackers to celebrate the wonder, and José Arcadio Buendía let them see the crucible with the recovered gold, as if he had just invented it.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">事实上，经历了繁复辛勤的几天时间，他们终于成功了。乌尔苏拉高兴极了，她甚至感谢上帝发明了炼金术。村庄里的人都簇拥在实验室里，他们用番石榴果冻饼干款待村民，以此庆祝这个奇迹。何塞·阿尔卡蒂奥·布恩迪亚把坩锅展示给他们看，里面有提取出来的黄金，就像是他制造出来的一样。</p>
+    <p>Showing it all around, he ended up in front of his older son, who during the past few days had barely put in an appearance in the laboratory. He put the dry and yellowish mass in front of his eyes and asked him: "What does it look like to you?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">展示了一圈，他最终停在了过去几天几乎没在实验室露过面的大儿子面前，他将干燥的淡黄色金属块放到儿子眼前，并问他：“你觉得怎么样？”</p>
+    <p>José Arcadio answered sincerely:"Dog shit."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥诚恳地回答说：“像狗屎。”</p>
+    <p>His father gave him a blow with the back of his hand that brought out blood and tears. That night Pilar Ternera put arnica compresses on the swelling, feeling about for the bottle and cotton in the dark, and she did everything she wanted with him as long as it did not bother him, making an effort to love him without hurting him. They reached such a state of intimacy that later, without realizing it, they were whispering to each other.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他的父亲反手给了他一巴掌，顿时鲜血眼泪直流。晚上皮拉尔·特尔内拉在黑暗中摸索药瓶和棉签，将山金草敷在肿胀处，她做任何想做的事，只要不惊扰他，努力爱他，不伤害他，他们最后达到了如此的亲密状态，不一会，他们就开始互相窃窃私语。</p>
+    <p>"I want to be alone with you," he said. "One these days I'm going to tell everybody we can stop all of this sneaking around."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我想单独和你在一起。”他说。“总有一天，我要告诉所有人，这样我们就不用再四处偷偷摸摸。”</p>
+    <p>She did not try to calm him down.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她并没有劝其冷静。</p>
+    <p>"That would be fine," she said "If we're alone, we'll leave the lamp lighted so that we can see each other, and I can holler as much as I want without anybody's having to butt in, and you can whisper in my ear any crap you can think of."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“太好了，如果我们单独在一起，我们就可以点亮灯，能看到彼此，我们可以随心所欲地大喊大叫，没有任何人能插手，你可以在我耳边想说什么说什么。”</p>
+    <p>That conversation, the biting rancor that he felt against his father, and the imminent possibility of wild love inspired a serene courage in him. In a spontaneous way, without any preparation, he told everything to his brother.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">那次谈话中，对父亲尖刻的怨恨和即将来临的狂野性爱，让他鼓起了一种坦然的勇气。没有任何准备，他直接就把这一切告诉了自己的弟弟。</p>
+    <p>At first young Aureliano understood only the risk, the immense possibility danger that his brother's adventures implied, and he could not understand the fascination of the subject. Little by little he became contaminated with the anxiety.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">起初年轻的奥雷里亚诺只意识到了风险，哥哥的冒险可能带来巨大的危险，他并不理解这方面的魅力，渐渐的，开始被哥哥的焦虑所感染。</p>
+    <p>He wondered about the details of the dangers, he identified himself with the suffering and enjoyment of his brother, he felt frightened and happy.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他想知道危险的细节，他认同哥哥的苦楚和享受，也为他感到担心和快乐。</p>
+    <p>He would stay awake waiting for him until dawn in the solitary bed that seemed to have a bottom of live coals, they would keep on talking until it was time to get up, so that both of them soon suffered from the same drowsiness, felt the same lack of interest in alchemy and the wisdom of their father, and they took refuge in solitude. "Those kids are out of their heads," Úrsula said. "They must have worms."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他保持着清醒，在孤单的床上等待着哥哥，直到天亮，翻来覆去好像床底下烧着炭火似的。他们夜谈到起床时分，以至于整天昏昏沉沉，对炼金术和父亲的聪明才智失去了兴趣，渐渐变得孤僻。“孩子们心不在焉，”乌尔苏拉说。“肚子里一定有蛔虫。”</p>
+    <p>She prepared a repugnant potion for them made out of mashed wormseed, which they both drank with unforeseen stoicism, and they sat down at the same time on their pots eleven times in a single day, expelling some rosecolored parasites that they showed to everybody with great jubilation, for it allowed them to deceive Úrsula as to the origin of their distractions and drowsiness.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她为他们准备了一剂令人恶心的药水，是用捣碎的驱虫籽制成的。他们俩用意想不到的坚忍喝掉了，与此同时他们一天内坐了十一次便池，并排出了一些玫瑰色的寄生虫。他们欢呼着展示给每个人看，为的是糊弄乌尔苏拉追究他们焦虑和困倦的起因。</p>
+    <p>Aureliano not only understood by then, he also lived his brother's experiences as something of his own, for on one occasion when the latter was explaining in great detail the mechanism of love, he interrupted him to ask: "What does it feel like?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">奥雷里亚诺不仅理解了，对哥哥的经历感同身受，因为有一次当哥哥向他详细解释爱的原理时，他打断哥哥问道：“这是什么感觉？”</p>
+    <p>José Arcadio gave an immediate reply: "It's like an earthquake."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥立即回答：“好像地震一般。”</p>
+    <p>One January Thursday at two o'clock in the morning, Amaranta was born. Before anyone came into the room, Úrsula examined her carefully. She was light and watery, like a newt, but all of her parts were human: Aureliano did not notice the new thing except when the house became full of people.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">在一月的星期四的凌晨两点，阿玛兰塔出生了。人们进入房间之前，乌尔苏拉仔细的检查了一番。阿玛兰塔轻盈水润，犹如一条蝾螈，但是她身体的所有部位都是人的：奥雷里亚诺直到家里站满了人，才意识到这个新闻。</p>
+    <p>Protected by the confusion, he went off in search of his brother, who had not been in bed since eleven o'clock, it was such an impulsive decision that he did not even have time to ask himself how he could get him out of Pilar Ternera's bedroom.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">趁着混乱，他溜出去寻找哥哥，哥哥早上十一点就不在床上了，如此冲动的决定甚至让他没有时间问自己如何让哥哥离开特尔内拉的卧室。</p>
+    <p>He circled the house for several hours, whistling private calls, until the proximity of dawn forced him to go home. In his mother's room, playing with the newborn little sister and with a face that drooped with innocence, he found José Arcadio.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他在房子周围盘旋了好几个小时，吹着口哨打暗号，直到快天亮了才迫使他回家。在母亲的房间里，他发现了何塞·阿尔卡蒂奥，他正在和小妹妹玩耍，一脸的天真无邪。</p>
+    <p>Úrsula was barely over her forty days' rest when the gypsies returned. They were the same acrobats and jugglers that had brought the ice. Unlike Melquíades' tribe, they had shown very quickly that they were not heralds of progress but purveyors of amusement.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">当吉普赛人回来的时候，乌尔苏拉休息时间还没超过四十天。他们是一群带着冰的杂技演员和杂耍演员，与梅尔基亚德斯的部落不同，他们很快表明他们不是进步的先驱，而是娱乐的制造者。</p>
+    <p>Even when they brought the ice they did not advertise it for its usefulness in the life of man but as a simple circus curiosity. This time, along with many other artifices, they brought a flying carpet. But they did not offer it as a fundamental contribution to the development of transport, rather as an object of recreation.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">即使他们带来了冰，却并没有宣扬它在生活上给人带来的用处，只是简单的作为马戏团好奇心。与其他许多发明人一起，他们还带来了一条飞行毯，但是他们没有把它作为交通发展的基本贡献，而是作为娱乐的对象。</p>
+    <p>The people at once dug up their last gold pieces to take advantage of a quick flight over the houses of the village. Protected by the delightful cover of collective disorder, José Arcadio and Pilar passed many relaxing hours. They were two happy lovers among the crowd, and they even came to suspect that love could be a feeling that was more relaxing and deep than the happiness, wild but momentary, of their secret nights.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">人们立刻挖出他们最后的金币，体验一番在村庄的房顶上快速飞行。在混乱全体的愉悦掩护下，何塞·阿尔卡蒂奥和皮拉尔度过了许多轻松的时光。人群中的这两个幸福恋人，甚至怀疑爱情是一种相比秘密之夜的幸福、短暂的狂野更放松和更深刻的感觉。</p>
+    <p>Pilar, however, broke the spell. Stimulated by the enthusiasm that José Arcadio showed in her companionship, she confused the form and the occasion, and all of a sudden she threw the whole world on top of him. "Now you really are a man," she told him. And since he did not understand what she meant, she spelled it out to him.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">然而，皮拉尔打破了这个咒语。在他们交往过程中何塞·阿尔卡蒂奥表现出来的热情的刺激下，她弄错了形式和场合，突然间让他的世界天翻地覆。“你现在真的是一个男人了，”她告诉他。因为他没有理解她这句话的意思，所以她就一字一句拼写给他看。</p>
+    <p>"You're going to be a father."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">你将要做父亲了。</p>
+    <p>José Arcadio did not dare leave the house for several days. It was enough for him to hear the rocking laughter of Pilar in the kitchen to run and take refuge in the laboratory, where the artifacts of alchemy had come alive again with Úrsula's blessing.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥好几天不敢离开家，他能够听过厨房隐约传来的皮拉尔笑声，于是躲避到实验室去了。在乌尔苏拉的祝福下，炼金术的器物又重新使用起来了。</p>
+    <p>José Arcadio Buendía received his errant son with joy and initiated him in the search for the philosopher's stone, which he had finally undertaken. One afternoon the boys grew enthusiastic over the flying carpet that went swiftly by the laboratory at window level carrying the gypsy who was driving it and several children from the village who were merrily waving their hands, but José Arcadio Buendía did not even look at it.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥·布恩迪亚高兴地接受了这个犯过错误的儿子，最终他允诺，开始寻找哲学家之石。一天下午，越来越热衷飞行毯的男孩们，带着驾驶飞行毯的吉普赛人和几个村里的孩子，欢快地挥动他们的手，迅速地掠过实验室的窗外，但是何塞·阿尔卡蒂奥·布恩迪亚看都没看一眼。</p>
+    <p>"Let them dream," he said. "We'll do better flying than they are doing, and with more scientific resources than a miserable bedspread." In spite of his feigned interest, José Arcadio never understood the powers of the philosopher's egg, which to him looked like a poorly blown bottle.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“让他们做梦去吧，”他说。“我们会用更好的方法实现飞行，用的是比凄惨的床罩更科学的材料。”尽管假装很感兴趣，何塞·阿尔卡蒂奥从未理解“哲学家之卵”的威力，在他看来像一个糟糕的瓶子。</p>
+    <p>He did not succeed in escaping from his worries. He lost his appetite and he could not sleep. He fell into an ill humor, the same as his father's over the failure of his undertakings, and such was his upset that José Arcadio Buendía himself relieved him of his duties in the laboratory, thinking that he had taken alchemy too much to heart.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他没能摆脱自己的忧愁，没有胃口，睡不着觉,感觉自己就是一个笑话，就像父亲在事业上受到挫折一样。他忧愁万分，以至于何塞·阿尔卡蒂奥·布恩迪亚减轻了他在实验室的工作，认为他太专注于炼金术了。</p>
+    <p>Aureliano, of course, understood that his brother's affliction did not have its source in the search for the philosopher's stone but he could not get into his confidence. He had lost his former spontaneity. From an accomplice and a communicative person he had become withdrawn and hostile. Anxious for solitude, bitten by a virulent rancor against the world, one night he left his bed as usual, but he did not go to Pilar Ternera's house, but to mingle is the tumult of the fair.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">奥雷里亚诺当然明白哥哥的痛苦并不是因为寻找“哲学家之石”导致的，但是哥哥已不再信任他，已不再像以前那样率真。从合伙人和一个乐于沟通的人变成了一个沉闷的充满敌意的人。对孤独的焦虑，被一种对世界的恶毒怨恨所困扰。一天晚上他像往常一样离开床，暗示他没有去皮拉尔·特尔内拉的家，而是混迹于混乱的展会中。</p>
+    <p>After wandering about among all kinds of contraptions without becoming interested in any of them, he spotted something that was not a part of it all: a very young gypsy girl, almost a child, who was weighted down by beads was the most beautiful woman that José Arcadio had ever seen in his life.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">走过各种各样的玩意儿，对它们毫无兴趣。他注意到某个不属于这里的东西：一个非常年轻的吉普赛女郎，几乎是个孩子，她戴着沉重的珠子，这是何塞·阿尔卡蒂奥人生中见过最美的女人。</p>
+    <p>She was in the crowd that was witnessing the sad spectacle of the man who had been turned into a snake for having disobeyed his parents.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她正在人群中观看一个人因为忤逆父母而变成蛇的场景。</p>
+    <p>José Arcadio paid no attention. While the sad interrogation of the snakeman was taking place, he made his way through the crowd up to the front row, where the gypsy girl was, and he stooped behind her.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥并不在意此事，当蛇人正在被审讯时，他穿过人群来到前排吉普赛女郎在的地方，俯身站在她后面。</p>
+    <p>He pressed against her back. The girl tried to separate herself, but José Arcadio pressed more strongly against her back. Then she felt him. She remained motionless against him, trembling with surprise and fear, unable to believe the evidence, and finally she turned her head and looked at him with a tremulous smile.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他紧贴在她背后，女郎试图走开，但是何塞·阿尔卡蒂奥更紧地贴在她背后，她感觉到了。她一动不动地贴着，惊讶畏惧地颤抖着，无法相信这个事实，最后她转过头，带着颤抖着的微笑看着他。</p>
+    <p>At that instant two gypsies put the snake-man into his cage and carried him into the tent. The gypsy who was conducting the show announced:</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">此时，两个吉普赛人将蛇人装入笼中，带去了帐篷。主持这场演出的吉普赛人宣布：</p>
+    <p>"And now, ladies and gentlemen, we are going to show the terrible test of the woman who must have head chopped off every night at this time for one hundred and fifty years as punishment for having seen what she should not have."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">现在，女士们先生们，我们将展示可怕的表演，一个女人在一百五十年里的每个晚上都要被砍头，以此惩罚她看了不该看的东西。</p>
+    <p>José Arcadio and the gypsy girl did not witness the decapitation. They went to her tent, where they kissed each other with a desperate anxiety while they took off their clothes.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥和吉普赛女郎并没有观看斩首表演。他们躲进了她的帐篷，脱掉衣服，急不可耐地亲吻。</p>
+    <p>The gypsy girl removed the starched lace corsets she had on and there she was, changed into practically nothing. She was a languid little frog, with incipient breasts and legs so thin that they did not even match the size of José Arcadio's arms, but she had a decision and a warmth that compensated for her fragility.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">吉普赛女郎脱掉浆过花边的紧身胸衣和所有的衣服，身体几乎没有，像一只瘦弱的小青蛙。乳房刚刚发育，纤细的腿甚至没有何塞·阿尔卡蒂奥的胳膊粗。但是她的果断和热情弥补了她的羸弱。</p>
+    <p>Nevertheless, José Arcadio could not respond to her because they were in a kind of public tent where the gypsies passed through with their circus things and did their business, and would even tarry by the bed for a game dice.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">然而，何塞·阿尔卡蒂奥没有回应她，因为他们在一个公共帐篷，吉普赛人带着马戏团道具经过，忙于他们的生意，甚至在床边停下来玩骰子游戏。</p>
+    <p>The lamp hanging from the center pole lighted the whole place up. During a pause in the caresses, José Arcadio stretched out naked on the bed without knowing what to do, while the girl tried to inspire him.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">悬挂在木杆顶部的灯照亮了整个帐篷，爱抚间隙，何塞·阿尔卡蒂奥赤身裸体在床上伸着懒腰，无所事事，而女郎试图勾引她。</p>
+    <p>A gypsy woman with splendid flesh came in a short time after accompanied by a man who was not of the caravan but who was not from the village either, they both began to undress in front of the bed. Without meaning to, the woman looked at José Arcadio and examined his magnificent animal in repose with a kind of pathetic fervor.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">不一会儿，一个身姿绰约的吉普赛妇女在一个男人的陪同下突然进来，这个男人不属于商队也不是来自这个村庄。他们在床前开始宽衣解带。这个女人以一种感伤的热情看着休息中的何塞·阿尔卡蒂奥，检查他健壮的肉体。</p>
+    <p>"My boy," she exclaimed, "may God preserve you just as you are."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我的孩子，”她大声喊道，“愿上帝保佑你。”</p>
+    <p>José Arcadio's companion asked them to leave them alone, and the couple lay down on the ground, close to the bed. The passion of the others woke up José Arcadio's fervor.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥的伴侣让他们离开这里，这两人却靠近床边，纷纷躺在地上。他们的激情唤醒了何塞·阿尔卡蒂奥的热情。</p>
+    <p>On the first contact the bones of the girl seemed to become disjointed with a disorderly crunch like the sound of a box of dominoes, and her skin broke out into a pale sweat and her eyes filled with tears as her whole body exhaled a lugubrious lament and a vague smell of mud. But she bore the impact with a firmness of character and a bravery that were admirable.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">刚一接触，女郎的骨头纷纷紧缩脱节，像多米诺骨牌的声音，她的皮肤流出晶莹的汗珠，眼睛里充满了泪水，整个身体发出悲伤的哀叹和淡淡的污泥气息。但是她的性格坚毅，胆识令人钦佩。</p>
+    <p>José Arcadio felt himself lifted up into the air toward a state of seraphic inspiration, where his heart burst forth with an outpouring of tender obscenities that entered the girl through her ears and came out of her mouth translated into her language. It was Thursday.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥感觉自己身悬空中，达到一种无比快乐的状态。他的内心向外涌出温柔的下流话，通过耳朵进入她的身体，翻译成她的语言从嘴里说出来。这时是星期四。</p>
+    <p>On Saturday night, José Arcadio wrapped a red cloth around his head and left with the gypsies.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">在星期六的晚上，何塞·阿尔卡蒂奥在自己头上包裹上一块红布，跟随吉普赛人离开了。</p>
+    <p>When Úrsula discovered his absence she searched for him all through the village. In the remains of the gypsy camp there was nothing but a garbage pit among the still smoking ashes of the extinguished campfires.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">乌尔苏拉发现儿子失踪了，在村庄四处寻找他。在吉普赛人营地的废墟中，什么都没留下，除了一堆垃圾堆，篝火灰烬仍在冒着烟。</p>
+    <p>Someone who was there looking for beads among the trash told Úrsula that the night before he had seen her son in the tumult of the caravan pushing the snakeman's cage on a cart.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">有人在垃圾堆中搜寻珠子，那人告诉乌尔苏拉，前一天晚上他看见她的儿子在商队的喧闹中，将装有蛇人的笼子推到车上。</p>
+    <p>"He's become a gypsy" she shouted to her husband, who had not shown the slightest sign of alarm over the disappearance.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“他变成了一个吉普赛人。”她对丈夫喊道，但是她的丈夫对儿子的失踪并没有表现出丝毫的焦急。</p>
+    <p>"I hope it's true," José Arcadio Buendía said, grinding in his mortar the material that had been ground a thousand times and reheated and ground again. "That way he'll learn to be a man."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我倒希望这是真的，”何塞·阿尔卡蒂奥·布恩迪亚说道，一边研磨研钵中已经研磨过一千次的材料，并重新即热，再次研磨，“那样他就会成为一个男人。”</p>
+    <p>Úrsula asked where the gypsies had gone. She went along asking and following the road she had been shown, thinking that she still had time to catch up to them. She kept getting farther away from the village until she felt so far away that she did not think about returning.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">乌尔苏拉打听吉普赛人去向何方，沿着道路一直往前，一直询问，希望自己仍有时间赶上他们。她离村庄越来越远，最后由于太远她就没想着回去。</p>
+    <p>José Arcadio Buendía did not discover that his wife was missing until eight o'clock at night, when he left the material warming in a bed of manure and went to see what was wrong with little Amaranta, who was getting hoarse from crying. In a few hours he gathered a group of well-equipped men, put Amaranta in the hands a woman who offered to nurse her, and was lost on invisible paths in pursuit of Úrsula.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">晚上八点，何塞·阿尔卡蒂奥·布恩迪亚把材料放在肥料基上保温，然后去看看哭声变得沙哑的小阿玛兰塔出了什么问题，此时他才发现妻子不见了。几个小时后，他召集了一群装备精良的男人，把阿玛兰塔托付给了一个自动提出愿意看护她的女人，便迷失在了追寻乌尔苏拉的无形道路上。</p>
+    <p>Aureliano went with them. Some Indian fishermen, whose language they could not understand, told them with signs that they had not seen anyone pass. After three days of useless searching they returned to the village.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">奥雷里亚诺和他们一起去了。一些语言不通的印第安渔民比划着告诉他们，没有看到有人经过此处。经历了三天毫无收获的搜索，他们回到了村庄。</p>
+    <p>For several weeks José Arcadio Buendía let himself be overcome by consternation. He took care of little Amaranta like a mother. He bathed and dressed her, took her to be nursed four times a day, and even sang to her at night the songs that Úrsula never knew how to sing.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">几个星期以来，何塞·阿尔卡蒂奥·布恩迪亚惊恐万分。他像母亲一般照顾小阿玛兰塔，给她洗澡穿衣服，一天四次带她去喂奶，甚至每晚给她唱乌尔苏拉不知道如何唱的歌。</p>
+    <p>On a certain occasion Pilar Ternera volunteered to do the household chores until Úrsula came back. Aureliano, whose mysterious intuition had become sharpened with the misfortune, felt a glow of clairvoyance when he saw her come in.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">某次，皮拉尔·特尔内拉自愿过来帮忙做家务，直到乌尔苏拉回来。奥雷里亚诺的神秘直觉因家中厄运变得更加敏锐，当他看到她进来的时候，就更加明显了。</p>
+    <p>Then he knew that in some inexplicable way she was to blame for his brother's flight and the consequent disappearance his mother, and he harassed her with a silent and implacable hostility in such a way that the woman did not return to the house.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">然后他明白，以某些费解的原因，她对哥哥的逃亡和母亲的消失负有责任。用无声刻薄的敌意骚扰她，通过这种方式让她再也没来他家。</p>
+    <p>Time put things in their place. José Arcadio Buendía and his son did not know exactly when they returned to the laboratory, dusting things, lighting the water pipe, involved once more in the patient manipulation of the material that had been sleeping for several months in its bed of manure.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">岁月流逝，何塞·阿尔卡蒂奥·布恩迪亚和他的儿子不知道究竟是什么时候回到实验室的，拂拭灰尘，擦亮水管，再次耐心地操作放在肥料基上好几个月的材料。</p>
+    <p>Even Amaranta, lying in a wicker basket, observed with curiosity the absorbing work of her father and her brother in the small room where the air was rarefied by mercury vapors. On a certain occasion, months after Úrsula's departure, strange things began to happen.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">阿玛兰塔躺在柳条框中，好奇地看着父亲和哥哥在空气被汞蒸气稀释的小房间里入神地工作。忽然之间，在乌尔苏拉离开后的几个月后，奇怪的事情开始发生。</p>
+    <p>An empty flask that had been forgotten in a cupboard for a long time became so heavy that it could not be moved. A pan of water on the worktable boiled without any fire under it for a half hour until it completely evaporated. José Arcadio Buendía and his son observed those phenomena with startled excitement, unable to explain them but interpreting them as predictions of the material.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">橱柜里一个遗忘很长时间的空烧瓶变得沉重，难以移动。工作台上锅里的水在没有火的情况下沸腾了半个小时，直到被完全蒸发。何塞·阿尔卡蒂奥·布恩迪亚和他的儿子惊讶又激动地观察这些现象，无法解释，只能解释为新材料诞生的预兆。</p>
+    <p>One day Amaranta's basket began to move by itself and made a complete turn about the room, to the consternation of Auerliano, who hurried to stop it. But his father did not get upset. He put the basket in its place and tied it to the leg of a table, convinced that the longawaited event was imminent.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一天，阿玛兰塔的篮子开始移动，在整个房间里兜圈，奥雷里亚诺惊讶无比，匆忙阻拦住。但是他的父亲没有惊慌。他把篮子放回原处，并把它绑在桌腿上，确信期待已经的事情即将发生。</p>
+    <p>It was on that occasion that Auerliano heard him say:</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">此时奥雷利亚诺听到他说：</p>
+    <p>"If you don't fear God, fear him through the metals."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“如果你不敬畏上帝，也该敬畏金属。”</p>
+    <p>Suddenly, almost five months after her disappearance, Úrsula came back. She arrived exalted, rejuvenated, with new clothes in a style that was unknown in the village. José Arcadio Buendía could barely stand up under the impact. "That was it!" he shouted. "I knew it was going to happen."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">消失近五个月后，乌尔苏拉突然回来了。她高贵，年轻有活力，新衣服的款式在村庄里从来没有见过，何塞·阿尔卡蒂奥·布恩迪亚激动地差点站不起来。“就是这样！”他喊道。“我就知道会发生。”</p>
+    <p>And he really believed it, for during his prolonged imprisonment as he manipulated the material, he begged in the depth of his heart that the longed-for miracle should not be the discovery of the philosopher's stone, or the freeing of the breath that makes metals live, or the faculty to convert the hinges and the locks of the house into gold, but what had just happened:</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他确信这一点，因为在他操作材料的长期幽闭期间，内心深处恳求，渴望奇迹的发生，不是发现“哲学家之石”，也不是，而是刚刚发生的事情：</p>
+    <p>Úrsula's return. But she did not share his excitement. She gave him a conventional kiss, as if she had been away only an hour, and she told him:</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">乌尔苏拉回来了，但是她没有分享他的激动之情。她给了他一个惯例般的吻，就像她仅仅离开一个小时一样。她告诉他说：</p>
+    <p>"Look out the door."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“看看门外。”</p>
+    <p>José Arcadio Buendía took a long time to get out of his perplexity when he went out into the street and saw the crowd. They were not gypsies. They were men and women like them, with straight hair and dark skin, who spoke the same language and complained the same pains.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">何塞·阿尔卡蒂奥·布恩迪亚走上街头，看见人群，好长时间才解开疑惑。他们不是吉普赛人，男男女女跟他们一样，直发深色皮肤，说着同样的语言，抱怨着同样的烦恼。</p>
+    <p>They had mules loaded down with things to eat, oxcarts with furniture and domestic utensils, pure and simple earthly accessories put on sale without any fuss by peddlers of everyday reality.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他们的骡子载着吃的东西，牛车载着家具和器具，商贩们每天不慌不忙地兜售着摆放在上面的简单纯碎的世俗饰品。</p>
+    <p>They came from the other side of the swamp, only two days away, where there were towns that received mail every month in the year where they were familiar with the implements of good living.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">他们来自沼泽的另一面，相隔两天的距离，那里的集镇一年中每个月都能收到邮件，他们熟练使用生活器具。</p>
+    <p>Úrsula had not caught up with the gypsies, but she had found the route that her husband had been unable to discover in his frustrated search for the great inventions.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">乌尔苏拉没有追赶上吉普赛人，但是她意外发现了丈夫苦苦寻找伟大发明时没能发现的路线。</p>    </div>
+    <script>
+        var STORAGE_KEY = 'bio_reader_prefs_' + location.pathname.replace(/[^a-zA-Z0-9]/g, '');
+        var prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { font: 1.0, dictEnabled: true, barHidden: true, highlightEnabled: true, blurEnabled: true };
+        var bar = document.getElementById('top-bar');
+        var content = document.getElementById('content-container');
+        var dictBtn = document.getElementById('dict-btn');
+        var hlBtn = document.getElementById('hl-btn');
+        var blurBtn = document.getElementById('blur-btn');
+        function applyPrefs() {
+            content.style.fontSize = prefs.font + 'em';
+            if (prefs.barHidden) { bar.classList.add('hidden'); document.body.classList.add('bar-hidden'); } else { bar.classList.remove('hidden'); document.body.classList.remove('bar-hidden'); }
+            if (prefs.dictEnabled) { document.body.classList.add('dict-enabled'); dictBtn.innerText = "查词: 开"; dictBtn.style.background = "#34C759"; dictBtn.style.color = "#fff"; } else { document.body.classList.remove('dict-enabled'); dictBtn.innerText = "查词: 关"; dictBtn.style.background = "#E5E5EA"; dictBtn.style.color = "#1C1C1E"; }
+            if (prefs.highlightEnabled) { document.body.classList.add('highlights-enabled'); hlBtn.innerText = "高亮: 开"; hlBtn.style.background = "#FF3B30"; hlBtn.style.color = "#fff"; } else { document.body.classList.remove('highlights-enabled'); hlBtn.innerText = "高亮: 关"; hlBtn.style.background = "#E5E5EA"; hlBtn.style.color = "#1C1C1E"; }
+            if (prefs.blurEnabled) { document.body.classList.add('global-blur-enabled'); blurBtn.innerText = "模糊: 开"; blurBtn.style.background = "#AF52DE"; blurBtn.style.color = "#fff"; document.querySelectorAll('.zh-para').forEach(function(el){el.classList.add('blurred');}); } else { document.body.classList.remove('global-blur-enabled'); blurBtn.innerText = "模糊: 关"; blurBtn.style.background = "#E5E5EA"; blurBtn.style.color = "#1C1C1E"; }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        }
+        document.addEventListener('dblclick', function(e) {
+            if(e.target.closest('#top-bar') || e.target.classList.contains('zh-para')) return;
+            prefs.barHidden = !prefs.barHidden; applyPrefs();
+        });
+        function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); }
+        function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); }
+        function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); }
+        function toggleBlur() { prefs.blurEnabled = !prefs.blurEnabled; applyPrefs(); }
+        window.addEventListener('DOMContentLoaded', function() {
+            applyPrefs(); var savedScroll = localStorage.getItem(STORAGE_KEY + '_scroll');
+            if (savedScroll) { setTimeout(function(){ window.scrollTo(0, parseFloat(savedScroll)); }, 150); }
+        });
+        var scrollTimer;
+        window.addEventListener('scroll', function() {
+            if (scrollTimer) clearTimeout(scrollTimer); scrollTimer = setTimeout(function(){ localStorage.setItem(STORAGE_KEY + '_scroll', window.scrollY); }, 300);
+        });
+        var highlightWords = new Set();
+        async function initCloudHighlights() {
+            var cacheKey = 'bio_remote_hl_words_v2'; var cached = localStorage.getItem(cacheKey); var now = Date.now();
+            if (cached) { try { var parsed = JSON.parse(cached); if (now - parsed.time < 24 * 60 * 60 * 1000 && Array.isArray(parsed.data)) { highlightWords = new Set(parsed.data); applyHighlightsToDOM(); return; } } catch(e){} }
+            try {
+                var urls = ['https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://ghproxy.net/https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://fastly.jsdelivr.net/gh/moodHappy/HelloWorld@master/Notes/one.txt'];
+                var text = ''; for (var i=0; i<urls.length; i++) { try { var res = await fetch(urls[i]); if (res.ok) { text = await res.text(); if (text && !text.includes('<html') && !text.includes('Cloudflare')) break; } } catch(err){} }
+                if (!text) throw new Error(); var arr = text.split('\n').map(function(w){return w.trim().toLowerCase();}).filter(function(w){return w;});
+                if (arr.length > 0) { highlightWords = new Set(arr); localStorage.setItem(cacheKey, JSON.stringify({data: arr, time: now})); applyHighlightsToDOM(); }
+            } catch(e){}
+        }
+        function applyHighlightsToDOM() {
+            if(highlightWords.size === 0) return;
+            document.querySelectorAll('.tm-word').forEach(function(span){ if(highlightWords.has(span.textContent.trim().toLowerCase())) span.classList.add('is-highlight'); });
+        }
+        var GM_getValue = function(key, def) { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; };
+        var GM_setValue = function(key, val) { localStorage.setItem(key, JSON.stringify(val)); };
+        var GM_xmlhttpRequest = function(opt) {
+            var url = opt.url; if(url.includes('dict.youdao.com') || url.includes('cambridge.org')) {
+                var isYoudao = url.includes('dict.youdao.com');
+                var proxies = [url, 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), 'https://corsproxy.io/?' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)];
+                var currentProxyIdx = 0;
+                var tryNext = function() {
+                    if (currentProxyIdx >= proxies.length) { if(opt.onerror) opt.onerror(new Error()); return; }
+                    fetch(proxies[currentProxyIdx++], { headers: opt.headers || {} })
+                    .then(async function(r) { var t = ''; try{t = await r.text();}catch(e){} if(!r.ok || t.includes('Cloudflare')) throw new Error(); if(isYoudao && !t.trim().startsWith('{')) throw new Error(); if(opt.onload) opt.onload({status:200, responseText:t}); })
+                    .catch(function(){ tryNext(); });
+                };
+                tryNext(); return;
+            }
+            fetch(url, { headers: opt.headers || {} }).then(async function(r){ var t = ''; try{t = await r.text();}catch(e){} if(opt.onload) opt.onload({status:r.status, responseText:t}); }).catch(opt.onerror);
+        };
+        (function() {
+            var ttsConfig = { voices: ["en-US-AdamNeural", "en-US-AriaNeural", "en-US-AnaNeural", "en-US-JennyNeural", "en-US-GuyNeural"], apis: [ { url: "https://read-aloud-bay.vercel.app/api/synthesis", type: "read-aloud" }, { url: "https://libre-tts-nu.vercel.app/api/tts", type: "libre" } ] };
+            var globalResultCache = GM_getValue('tm_dict_cache', {}); var saveTimeout = null;
+            function saveToGlobalCache(wordKey, resultData) { globalResultCache[wordKey] = resultData; var keys = Object.keys(globalResultCache); if (keys.length > 2000) delete globalResultCache[keys[0]]; clearTimeout(saveTimeout); saveTimeout = setTimeout(function(){ GM_setValue('tm_dict_cache', globalResultCache); }, 1500); }
+            var cefrStaticCache = {};
+            function initCEFRStaticDict() {
+                var staticUrls = ["https://fastly.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json","https://cdn.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json"];
+                var idx = 0; var tryFetch = function() { if (idx >= staticUrls.length) return; fetch(staticUrls[idx++]).then(function(r){return r.json();}).then(function(data){ if (Array.isArray(data)) data.forEach(function(item){ if (item.word && item.cefr) cefrStaticCache[item.word.toLowerCase()] = item.cefr.toUpperCase(); }); }).catch(tryFetch); };
+                tryFetch();
+            }
+            function fetchCEFR(word) {
+                return new Promise(function(resolve) {
+                    var w = word.toLowerCase(); if (cefrStaticCache[w]) { resolve(cefrStaticCache[w]); return; }
+                    GM_xmlhttpRequest({ method: "GET", url: 'https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(w), onload: function(res) { if (res.status === 200) { var match = res.responseText.match(/(?:epp-xref|dxref)[^>]*>\s*([A-C][1-2])\s*<\/span>/i) || res.responseText.match(/title="CEFR[^>]*>\s*([A-C][1-2])\s*<\/span>/i); if (match && match[1]) { cefrStaticCache[w] = match[1].toUpperCase(); resolve(cefrStaticCache[w]); return; } } resolve(null); }, onerror: function(){resolve(null);} });
+                });
+            }
+            function fetchTranslation(text) { return new Promise(function(resolve, reject) { GM_xmlhttpRequest({ method: "GET", url: 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&q=' + encodeURIComponent(text), onload: function(res) { if (res.status === 200) resolve(JSON.parse(res.responseText)); else reject(new Error()); }, onerror: reject }); }); }
+            function fetchPhonetics(text) { return new Promise(function(resolve) { GM_xmlhttpRequest({ method: "GET", url: 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(text), onload: function(res) { if (res.status === 200) { var data = JSON.parse(res.responseText); if (data && data.length > 0) { var pObj = data[0].phonetics.find(function(p){return p.text;}) || data[0]; resolve(pObj.text || null); return; } } resolve(null); }, onerror: function(){resolve(null);} }); }); }
+            function fetchWordLevel(text) { return new Promise(function(resolve) { GM_xmlhttpRequest({ method: "GET", url: 'https://dict.youdao.com/jsonapi?q=' + encodeURIComponent(text), onload: function(res) { var result = { stars: 0, tags: [] }; try { var data = JSON.parse(res.responseText); if (data.ec && data.ec.exam_type) result.tags = data.ec.exam_type; if (data.collins && data.collins.collins_entries && data.collins.collins_entries.length > 0) { var starStr = data.collins.collins_entries[0].star; if (starStr) { var parsedNum = parseInt(String(starStr).replace(/[^0-9]/g, ''), 10); result.stars = isNaN(parsedNum) ? 0 : parsedNum; } } } catch (e) {} resolve(result); }, onerror: function(){resolve({ stars: 0, tags: [] });} }); }); }
+            var globalAudioPlayer = null; var currentPlayingBtn = null;
+            function initAudioPlayer() { if (!globalAudioPlayer) { globalAudioPlayer = document.createElement('audio'); globalAudioPlayer.style.display = 'none'; document.body.appendChild(globalAudioPlayer); } }
+            function playTTS(apiIndex, text, voice, btn) {
+                if (apiIndex >= ttsConfig.apis.length) { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); return; }
+                if (currentPlayingBtn && currentPlayingBtn !== btn) currentPlayingBtn.classList.remove('playing');
+                currentPlayingBtn = btn; btn.classList.add('playing'); var api = ttsConfig.apis[apiIndex]; var params = new URLSearchParams();
+                if (api.type === "read-aloud") { params.append("text", text); params.append("voiceName", voice); } else { params.append("t", text); params.append("v", voice); params.append("r", "0"); params.append("p", "0"); }
+                globalAudioPlayer.src = api.url + '?' + params.toString(); globalAudioPlayer.onended = function() { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); };
+                globalAudioPlayer.onerror = function() { playTTS(apiIndex + 1, text, voice, btn); }; var p = globalAudioPlayer.play(); if (p !== undefined) p.catch(function(){ playTTS(apiIndex + 1, text, voice, btn); });
+                }
+            function wrapTextNodesToWord(rootNode) {
+                var ignoreTags = new Set(['SCRIPT', 'STYLE', 'BUTTON', 'A']);
+                var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, { acceptNode: function(currentNode) { var parent = currentNode.parentNode; if (!parent || ignoreTags.has(parent.nodeName.toUpperCase()) || parent.closest('.tm-word') || parent.closest('.zh-para')) return NodeFilter.FILTER_REJECT; if (!currentNode.nodeValue.trim() || !/\b[a-zA-Z'-]+\b/.test(currentNode.nodeValue)) return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; } });
+                var nodesToWrap = []; let currNode; while ((currNode = walker.nextNode())) { nodesToWrap.push(currNode); }
+                nodesToWrap.forEach(function(textNode) {
+                    var text = textNode.nodeValue; var fragment = document.createDocumentFragment(); var lastIndex = 0;
+                    text.replace(/\b([a-zA-Z'-]+)\b/g, function(match, p1, offset) { if (offset > lastIndex) fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset))); var span = document.createElement('span'); span.className = 'tm-word'; span.textContent = match; fragment.appendChild(span); lastIndex = offset + match.length; return match; });
+                    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.substring(lastIndex))); if (fragment.childNodes.length > 0) textNode.parentNode.replaceChild(fragment, textNode);
+                });
+            }
+            function formatDictData(originalWord, data) {
+                var transData = data.transData; var ipaText = data.ipaText; var levelData = data.levelData; var cefrLevel = data.cefrLevel; var tagsHtml = '';
+                if (cefrLevel || (levelData && (levelData.stars > 0 || (levelData.tags && levelData.tags.length > 0)))) {
+                    tagsHtml += '<div class="dict-tags-row">'; if (levelData && levelData.stars > 0) tagsHtml += '<span class="dict-tag star-tag">' + '★'.repeat(levelData.stars) + '☆'.repeat(5 - levelData.stars) + '</span>'; if (cefrLevel) tagsHtml += '<span class="dict-tag cefr-' + cefrLevel + '">CEFR ' + cefrLevel + '</span>'; if (levelData && levelData.tags) levelData.tags.forEach(function(tag){ tagsHtml += '<span class="dict-tag">' + tag + '</span>'; }); tagsHtml += '</div>';
+                }
+                var basicTrans = (transData && transData[0] && transData[0][0]) ? transData[0][0][0] : '';
+                var html = '<div class="dict-header-row"><div class="dict-word-line"><span class="dict-head-word Casting">' + originalWord + '</span>' + (ipaText ? '<span class="dict-ipa">' + ipaText + '</span>' : '') + '<span class="dict-speaker-btn" data-word="' + originalWord.replace(/"/g, '&quot;') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span></div>' + tagsHtml + '<div class="dict-basic-trans">' + basicTrans + '</div></div>';
+                var dictEntries = transData ? transData[1] : null;
+                if (dictEntries && dictEntries.length > 0) {
+                    html += '<div class="dict-details">'; dictEntries.forEach(function(entry){ var pos = entry[0]; var displayDefs = entry[1].slice(0, 3); html += '<div class="dict-pos-block"><span class="dict-pos-tag">' + pos + '.</span><ul class="dict-def-list">'; displayDefs.forEach(function(def){ html += '<li class="dict-def-item">' + def + '</li>'; }); html += '</ul></div>'; }); html += '</div>';
+                } else if (!basicTrans) { html += '<div style="padding:5px; color:#666; font-size:13px;">无释义结果...</div>'; }
+                return html;
+            }
+            function setupTippyDelegate() {
+                tippy.delegate(document.body, { 
+                    target: '.tm-word', trigger: 'click', interactive: true, theme: 'light-border', placement: 'bottom', appendTo: function(){return document.body;}, maxWidth: 320,
+                    onShow: function(instance) {
+                        if (!document.body.classList.contains('dict-enabled')) return false;
+                        var word = instance.reference.innerText.trim(); var wordKey = word.toLowerCase();
+                        var renderContent = function(data) { if (instance.reference.innerText.trim() !== word) return; var contentDiv = document.createElement('div'); contentDiv.className = 'dict-popup'; contentDiv.innerHTML = formatDictData(word, data); ['mousedown', 'touchstart', 'click'].forEach(function(evt){ contentDiv.addEventListener(evt, function(e){e.stopPropagation();}, { capture: true }); }); var btn = contentDiv.querySelector('.dict-speaker-btn'); if (btn) { btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var text = btn.getAttribute('data-word'); if (!text || btn.classList.contains('playing')) return; playTTS(0, text.trim(), ttsConfig.voices[Math.floor(Math.random() * ttsConfig.voices.length)], btn); }); } instance.setContent(contentDiv); };
+                        if (globalResultCache[wordKey]) { renderContent(globalResultCache[wordKey]); } else {
+                            var loadingDiv = document.createElement('div'); loadingDiv.className = 'dict-popup'; loadingDiv.innerHTML = '<div class="dict-loading">极速查询中...</div>'; instance.setContent(loadingDiv);
+                            var pTrans = fetchTranslation(word).catch(function(){return [[['API Error']]];}); var pPhon = fetchPhonetics(word).catch(function(){return null;}); var pLevel = fetchWordLevel(word).catch(function(){return {stars:0, tags:[]};}); var pCefr = Promise.race([fetchCEFR(word), new Promise(function(r){setTimeout(function(){r(null);},1500);})]).catch(function(){return null;});
+                            Promise.all([pTrans, pPhon, pLevel, pCefr]).then(function(arr){ var resultData = { transData: arr[0], ipaText: arr[1], levelData: arr[2], cefrLevel: arr[3] }; saveToGlobalCache(wordKey, resultData); if (instance.state.isVisible) renderContent(resultData); });
+                        }
+                    }
+                });
+            }
+            setTimeout(function() { initAudioPlayer(); initCEFRStaticDict(); var container = document.getElementById('content-container'); if(container) wrapTextNodesToWord(container); setupTippyDelegate(); initCloudHighlights(); }, 500);
+        })();
+    </script>
+
+</body></html>
