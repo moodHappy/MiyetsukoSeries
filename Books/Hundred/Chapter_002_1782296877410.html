@@ -4364,10 +4364,29 @@ that 从句被省略。
             if (prefs.blurEnabled) { document.body.classList.add('global-blur-enabled'); blurBtn.innerText = "模糊: 开"; blurBtn.style.background = "#AF52DE"; blurBtn.style.color = "#fff"; document.querySelectorAll('.zh-para').forEach(function(el){el.classList.add('blurred');}); } else { document.body.classList.remove('global-blur-enabled'); blurBtn.innerText = "模糊: 关"; blurBtn.style.background = "#E5E5EA"; blurBtn.style.color = "#1C1C1E"; }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
         }
-        document.addEventListener('dblclick', function(e) {
-            if(e.target.closest('#top-bar') || e.target.classList.contains('zh-para')) return;
-            prefs.barHidden = !prefs.barHidden; applyPrefs();
-        });
+        // [Nexus] 原生底层手势替换：双指左滑唤出顶部栏
+        var barTouchStartX = 0, barTouchStartY = 0, barActiveFingers = 0;
+        document.addEventListener('touchstart', function(e) {
+            barActiveFingers = e.touches.length;
+            if (barActiveFingers === 2) {
+                barTouchStartX = e.touches[0].clientX;
+                barTouchStartY = e.touches[0].clientY;
+            }
+        }, {passive: true});
+        document.addEventListener('touchmove', function(e) {
+            if (barActiveFingers !== 2) return;
+            var diffX = barTouchStartX - e.touches[0].clientX;
+            var diffY = Math.abs(barTouchStartY - e.touches[0].clientY);
+            if (diffX > 60 && diffY < 40) {
+                if(e.target.closest('#top-bar') || (e.target.classList && e.target.classList.contains('zh-para'))) return;
+                prefs.barHidden = !prefs.barHidden;
+                if(typeof applyPrefs === 'function') applyPrefs();
+                barActiveFingers = 0; // 阻止连续触发
+            }
+        }, {passive: true});
+        document.addEventListener('touchend', function(e) {
+            if (e.touches.length === 0) barActiveFingers = 0;
+        }, {passive: true});
         function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); }
         function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); }
         function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); }
