@@ -4502,4 +4502,44 @@ that 从句被省略。
         })();
     </script>
 
-<script id="nexus-static-script">window.addEventListener('DOMContentLoaded', function() { var wraps = document.querySelectorAll('.para-wrap'); for (var i = 0; i < wraps.length; i++) { (function(wrap) { var toggle = wrap.querySelector('.anno-toggle'); var box = wrap.querySelector('.anno-box'); if (toggle && box) { toggle.onclick = function(e) { e.stopPropagation(); if (box.style.display === 'block') { box.style.display = 'none'; } else { box.style.display = 'block'; } }; } })(wraps[i]); } });</script></body></html>
+<script id="nexus-static-script">
+            window.addEventListener('DOMContentLoaded', function() {
+                var wraps = document.querySelectorAll('.para-wrap');
+                for (var i = 0; i < wraps.length; i++) {
+                    (function(wrap) {
+                        var toggle = wrap.querySelector('.anno-toggle');
+                        var box = wrap.querySelector('.anno-box');
+                        var view = wrap.querySelector('.anno-view');
+
+                        if (toggle && box) {
+                            toggle.onclick = function(e) {
+                                e.stopPropagation();
+                                box.style.display = box.style.display === 'block' ? 'none' : 'block';
+                            };
+                        }
+
+                        // 为脱机状态同步注入最完善的双击关闭功能
+                        if (view && box) {
+                            // 1. 兼容 PC 鼠标双击
+                            view.addEventListener('dblclick', function(e) {
+                                e.stopPropagation();
+                                box.style.display = 'none';
+                                if (window.getSelection) window.getSelection().removeAllRanges();
+                            });
+
+                            // 2. 兼容 移动端极速双击
+                            var lastTap = 0;
+                            view.addEventListener('touchstart', function(e) {
+                                var now = new Date().getTime();
+                                if (now - lastTap < 300) {
+                                    e.stopPropagation();
+                                    box.style.display = 'none';
+                                    if (window.getSelection) window.getSelection().removeAllRanges();
+                                }
+                                lastTap = now;
+                            }, {passive: true});
+                        }
+                    })(wraps[i]);
+                }
+            });
+        </script></body></html>
