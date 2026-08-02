@@ -534,21 +534,40 @@
                     const cleanImportedData = importedData.filter(wp => !wp.url.includes("picsum.photos/1920/1080?random=101"));
 
                     if (Array.isArray(cleanImportedData) && cleanImportedData.length > 0 && cleanImportedData[0].url) {
-                        wallpapers = wallpapers.concat(cleanImportedData);
+                        
+                        // --- 自动去重逻辑 ---
+                        const newWallpapers = [];
+                        cleanImportedData.forEach(importedWp => {
+                            // 比对目前列表中的 url，确保不重复
+                            const isDuplicate = wallpapers.some(existingWp => existingWp.url === importedWp.url);
+                            if (!isDuplicate) {
+                                newWallpapers.push(importedWp);
+                            }
+                        });
 
-                        // 导入后跳转到刚导入的第一张壁纸
-                        selectionMode = (wallpapers.length - cleanImportedData.length).toString();
+                        if (newWallpapers.length > 0) {
+                            // 只将去重后确实新增的壁纸加进数组
+                            wallpapers = wallpapers.concat(newWallpapers);
 
-                        saveData();
-                        renderSelect();
-                        applyCurrentWallpaper();
-                        alert('导入成功！');
+                            // 导入后跳转到刚导入的第一张壁纸
+                            selectionMode = (wallpapers.length - newWallpapers.length).toString();
+
+                            saveData();
+                            renderSelect();
+                            applyCurrentWallpaper();
+                            alert(`导入成功！共新增 ${newWallpapers.length} 张壁纸。`);
+                        } else {
+                            // 所有的链接在本地都已经有了
+                            alert('导入的壁纸已全部存在于列表中，无需重复导入。');
+                        }
+
                     } else {
                         alert('JSON 格式不正确，或全为系统默认图，无有效数据导入。');
                     }
                 } catch (err) {
                     alert('文件读取或解析失败。请确保是有效的 JSON 文件。');
                 }
+                // 清空 input 允许重复选同一个文件触发 onChange
                 event.target.value = '';
             };
             reader.readAsText(file);
@@ -592,5 +611,4 @@
     </script>
 
 </body>
-
 </html>
