@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chapter 001</title>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <style>
+        body { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; max-width: 800px; margin: 0 auto; padding: 50px 24px; font-size: 20px; line-height: 1.8; letter-spacing: 0.05em; background-color: #F8F4E6; color: #4A3F35; } h1 { text-align: left !important; font-size: 28px; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #D5CBBB; padding-bottom: 20px; color: #2C241B; } p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
+        body { padding-top: 70px !important; transition: padding-top 0.3s cubic-bezier(0.4,0,0.2,1); }
+        body.bar-hidden { padding-top: 20px !important; }
+        .reader-bar { position: fixed; top: 0; left: 0; right: 0; min-height: 50px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 1px 8px rgba(0,0,0,0.08); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 5px; }
+        .reader-bar.hidden { transform: translateY(-100%); }
+        .reader-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .reader-btn { background: #E5E5EA; color: #1C1C1E; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+        .reader-btn:active { transform: scale(0.95); }
+        #content-container { transition: font-size 0.2s; }
+        .zh-para { transition: filter 0.3s ease, opacity 0.3s ease; }
+        .global-blur-enabled .zh-para { cursor: pointer; }
+        .global-blur-enabled .zh-para.blurred { filter: blur(0.35em); opacity: 0.5; user-select: none; }
+        .global-blur-enabled .zh-para.blurred:hover { filter: blur(0.2em); opacity: 0.7; }
+        body.highlights-enabled .tm-word.is-highlight { color: #FF3B30 !important; font-weight: 700; background-color: rgba(255, 59, 48, 0.05); border-radius: 3px; padding: 0 2px; }
+        .dict-enabled .tm-word { cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 3px; }
+        .dict-enabled .tm-word:hover, .dict-enabled .tm-word[aria-expanded="true"] { background-color: #E3F2FD; color: #1565C0 !important; }
+        .tippy-box[data-theme~='light-border'] { background-color: #fff; color: #333; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+        .tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before { border-top-color: #ccc; }
+        .tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: #ccc; }
+        .tippy-content { padding: 8px; }
+        .dict-popup { text-align: left; font-size: 14px; line-height: 1.4; max-width: 280px; min-width: 200px; color: #333; font-family: -apple-system, sans-serif; }
+        .dict-header-row { border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
+        .dict-word-line { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .dict-head-word { font-weight: bold; color: #D32F2F; font-size: 18px; }
+        .dict-ipa { font-family: sans-serif; color: #666; font-size: 13px; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
+        .dict-speaker-btn { display: inline-flex; cursor: pointer; color: #1976D2; padding: 2px; border-radius: 50%; transition: background 0.2s; }
+        .dict-speaker-btn:hover { background-color: rgba(25, 118, 210, 0.1); }
+        .dict-speaker-btn svg { width: 18px; height: 18px; pointer-events: none; }
+        .dict-speaker-btn.playing { color: #E91E63; animation: tm-pulse 1s infinite; }
+        .dict-tags-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;}
+        .dict-tag { background: #F0F4F8; color: #476582; font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #D9E2EC; font-weight: 500; }
+        .dict-tag.star-tag { color: #F59E0B; background: #FEF3C7; border-color: #FDE68A; letter-spacing: 1px; padding: 2px 4px; }
+        .dict-tag.cefr-A1 { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+        .dict-tag.cefr-A2 { background: #E0F2F1; color: #00695C; border-color: #B2DFDB; }
+        .dict-tag.cefr-B1 { background: #FFF8E1; color: #F57F17; border-color: #FFECB3; }
+        .dict-tag.cefr-B2 { background: #FFF3E0; color: #E65100; border-color: #FFE0B2; }
+        .dict-tag.cefr-C1 { background: #FCE4EC; color: #C2185B; border-color: #F8BBD0; }
+        .dict-tag.cefr-C2 { background: #F3E5F5; color: #7B1FA2; border-color: #E1BEE7; }
+        .dict-basic-trans { font-size: 14px; color: #444; margin-top: 4px; }
+        .dict-pos-block { margin-bottom: 4px; }
+        .dict-pos-tag { font-style: italic; color: #1976D2; font-weight: bold; font-size: 12px; margin-right: 4px; }
+        .dict-def-list { margin: 0; padding: 0; list-style: none; display: inline; }
+        .dict-def-item { display: inline; }
+        .dict-def-item::after { content: "; "; color: #999; }
+        .dict-def-item:last-child::after { content: ""; }
+        .dict-loading { color: #666; font-style: italic; font-size: 13px; padding: 5px; text-align: center; }
+        @keyframes tm-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    </style>
+<style id="matrix-core-styles">
+        .para-wrap { position: relative; margin-bottom: 1.5em; }
+        .para-wrap > p { margin-bottom: 0 !important; }
+        .anno-toggle, .ai-toggle {
+            display: inline-flex;
+            margin-left: 6px;
+            cursor: pointer;
+            opacity: 0.2;
+            font-size: 0.8rem;
+            vertical-align: middle;
+            transition: all 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .anno-toggle:hover, .ai-toggle:hover { opacity: 0.8; transform: scale(1.1); }
+        .anno-toggle.has-anno { opacity: 1; }
+        .anno-toggle::after { content: "🔴"; }
+        .ai-toggle { margin-left: 4px; opacity: 0.5; }
+        .ai-toggle::after { content: "🤖"; }
+        .ai-toggle.loading::after {
+            content: "⏳";
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .anno-box {
+            display: none;
+            margin-top: 10px;
+            background: #f8f6ff;
+            border-left: 4px solid #8e7cc3;
+            padding: 12px 16px;
+            border-radius: 0 6px 6px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .anno-view {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #4a4a4a;
+            min-height: 24px;
+            font-family: -apple-system, sans-serif;
+            text-align: left;
+            text-indent: 0;
+        }
+        .anno-edit {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 1rem;
+            border: 1px dashed #8e7cc3;
+            border-radius: 6px;
+            box-sizing: border-box;
+            resize: vertical;
+            display: none;
+            background: #fff;
+            color: #333;
+            outline: none;
+            text-align: left;
+            -webkit-appearance: none;
+        }
+        .anno-edit:focus {
+            border: 1px solid #8e7cc3;
+            box-shadow: 0 0 0 3px rgba(142,124,195,0.1);
+        }
+        .markdown-body p { margin-top: 0; margin-bottom: 8px; text-indent: 0; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            color: #8e7cc3;
+            font-size: 1.15rem;
+            margin: 10px 0 8px 0;
+            border-bottom: 1px dashed #e0d8f0;
+            padding-bottom: 4px;
+        }
+        .markdown-body blockquote {
+            margin: 0 0 10px 0;
+            padding: 10px 15px;
+            background: rgba(142,124,195,0.1);
+            border-left: 4px solid #8e7cc3;
+            color: #555;
+        }
+        #matrix-sync-status {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            display: none;
+            z-index: 2147483647;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+    </style><style id="nexus-global-styles">
+            /* 1. 防干扰样式：消除翻译段落的批注红点 */
+            p.zh-para-auto .anno-toggle,
+            p.zh-para .anno-toggle,
+            .zh-para-auto + .anno-toggle,
+            .zh-para + .anno-toggle {
+                display: none !important; opacity: 0 !important; pointer-events: none !important;
+            }
+
+            /* 2. 翻译段落默认模糊状态 */
+            .zh-para-auto {
+                filter: blur(5px); transition: filter 0.3s ease; cursor: pointer;
+                -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+            }
+            .zh-para-auto.unblurred {
+                filter: none !important; -webkit-user-select: auto; user-select: auto;
+            }
+
+            </style></head>
+<body class="bar-hidden global-blur-enabled dict-enabled highlights-enabled">
+    <div class="reader-bar hidden" id="top-bar">
+        <div class="reader-controls">
+            <button class="reader-btn" onclick="adjustFont(-0.1)">A-</button>
+            <button class="reader-btn" onclick="adjustFont(0.1)">A+</button>
+            <button id="blur-btn" class="reader-btn" style="background:#AF52DE; color:white;" onclick="toggleBlur()">模糊: 开</button>
+            <button id="hl-btn" class="reader-btn" style="background:#FF3B30; color:white;" onclick="toggleHighlight()">高亮: 开</button>
+            <button id="dict-btn" class="reader-btn" style="background:#34C759; color:white;" onclick="toggleDict()">查词: 开</button>
+        </div>
+    </div>
+    <div id="content-container">
+    <h1 style="text-align: left !important;">Chapter 001</h1>
+    <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">发布时间：2026/8/7 19:09:30</div>
+    <div class="para-wrap"><p>He woke to the taste of blood and the agony of a sharp, terrifying pain. His ears rang. His head pounded. His bare chest was pressed to the carpet his parents had installed in their new apartment just a week ago.<span class="anno-toggle has-anno"></span></p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他在血腥味和剧烈可怕的疼痛中醒来。他的耳朵响了。他的头很痛。他裸露的胸部压在父母一周前在新公寓里安装的地毯上。</p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>他醒来时尝到血腥的味道，感受到一阵尖锐而恐怖的剧痛。耳中嗡鸣，头部剧痛。他赤裸的胸膛贴在父母一周前刚装好的新公寓地毯上。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>woke to the taste of</strong>
+= 醒来时感受到…的味道<br>（常用于描述醒来时的感官体验）</p>
+</li>
+<li><p><strong>agony</strong>
+= 极度痛苦<br>（名词，形容极端的身体或精神痛苦）</p>
+</li>
+<li><p><strong>sharp, terrifying pain</strong>
+= 剧烈、令人恐惧的疼痛<br>（形容词短语，强调疼痛的强度和恐怖感）</p>
+</li>
+<li><p><strong>ears rang</strong>
+= 耳中嗡鸣<br>（动词短语，指耳朵发出嗡嗡声，常因冲击或噪音引起）</p>
+</li>
+<li><p><strong>head pounded</strong>
+= 头部剧痛<br>（动词短语，形容头部像被重击一样疼痛）</p>
+</li>
+<li><p><strong>bare chest</strong>
+= 赤裸的胸膛<br>（形容词+名词，指没有衣物覆盖的胸部）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+他醒来时尝到血腥的味道，感受到一阵尖锐而恐怖的剧痛。耳中嗡鸣，头部剧痛。他赤裸的胸膛贴在父母一周前刚装好的新公寓地毯上。
+
+### 📌 Key Expressions
+
+- **woke to the taste of**
+  = 醒来时感受到…的味道  
+  （常用于描述醒来时的感官体验）
+
+- **agony**
+  = 极度痛苦  
+  （名词，形容极端的身体或精神痛苦）
+
+- **sharp, terrifying pain**
+  = 剧烈、令人恐惧的疼痛  
+  （形容词短语，强调疼痛的强度和恐怖感）
+
+- **ears rang**
+  = 耳中嗡鸣  
+  （动词短语，指耳朵发出嗡嗡声，常因冲击或噪音引起）
+
+- **head pounded**
+  = 头部剧痛  
+  （动词短语，形容头部像被重击一样疼痛）
+
+- **bare chest**
+  = 赤裸的胸膛  
+  （形容词+名词，指没有衣物覆盖的胸部）</textarea></div></div>
+    <div class="para-wrap"><p>It still smelled funny. Gluey and artificial.<span class="anno-toggle has-anno"></span></p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">它仍然闻起来很有趣。胶状和人造的。</p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>它闻起来还是有点怪。粘稠，而且不自然。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>smell funny</strong>
+= 闻起来很怪 / 闻起来不对劲
+（注意：此处 funny 意为奇怪，而非好笑）</p>
+</li>
+<li><p><strong>gluey</strong>
+= 粘稠的 / 像胶水一样的</p>
+</li>
+<li><p><strong>artificial</strong>
+= 人造的 / 假的 / 不自然的</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+它闻起来还是有点怪。粘稠，而且不自然。
+
+### 📌 Key Expressions
+
+- **smell funny**
+  = 闻起来很怪 / 闻起来不对劲
+  （注意：此处 funny 意为奇怪，而非好笑）
+
+- **gluey**
+  = 粘稠的 / 像胶水一样的
+
+- **artificial**
+  = 人造的 / 假的 / 不自然的</textarea></div></div>
+    <div class="para-wrap"><p>“Daddy!” he screamed. “Momma!”<span class="anno-toggle has-anno"></span></p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">“爸爸！”他尖叫道。 “妈妈！”</p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>“爸爸！”他大声喊道。“妈妈！”</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>screamed</strong>
+= 喊叫，喊道
+（表示大声呼喊的动作）</p>
+</li>
+<li><p><strong>Daddy</strong>
+= 爸爸
+（口语中对父亲的称呼）</p>
+</li>
+<li><p><strong>Momma</strong>
+= 妈妈
+（口语中对母亲的称呼）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+“爸爸！”他大声喊道。“妈妈！”
+
+### 📌 Key Expressions
+- **screamed**
+  = 喊叫，喊道
+  （表示大声呼喊的动作）
+
+- **Daddy**
+  = 爸爸
+  （口语中对父亲的称呼）
+
+- **Momma**
+  = 妈妈
+  （口语中对母亲的称呼）</textarea></div></div>
+    <div class="para-wrap"><p>Blood fell from his mouth onto the carpet. One of his arms was caught under his body, and he couldn’t move it. Something had pierced the side of his stomach. It hurt.<span class="anno-toggle has-anno"></span></p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">血从他嘴里流到了地毯上。他的一只手臂被卡在身下，动弹不得。有什么东西刺穿了他的腹部一侧。很痛。</p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>血从他的嘴里滴落到地毯上。他的一只手臂被压在身体下面，动弹不得。有什么东西刺穿了他胃的侧面，疼痛剧烈。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>fell from</strong>
+= 从……掉落
+（常用于描述物体从高处或上方落下）</p>
+</li>
+<li><p><strong>caught under</strong>
+= 被压在……下面
+（表示被某物压住，无法移动）</p>
+</li>
+<li><p><strong>couldn’t move</strong>
+= 不能移动
+（表达身体部位失去活动能力）</p>
+</li>
+<li><p><strong>pierced the side of his stomach</strong>
+= 刺穿了他胃的侧面
+（“pierced”指用尖锐物体刺入）</p>
+</li>
+<li><p><strong>It hurt</strong>
+= 疼痛
+（简短的感受表达）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+血从他的嘴里滴落到地毯上。他的一只手臂被压在身体下面，动弹不得。有什么东西刺穿了他胃的侧面，疼痛剧烈。
+
+### 📌 Key Expressions
+
+- **fell from**
+  = 从……掉落
+  （常用于描述物体从高处或上方落下）
+
+- **caught under**
+  = 被压在……下面
+  （表示被某物压住，无法移动）
+
+- **couldn’t move**
+  = 不能移动
+  （表达身体部位失去活动能力）
+
+- **pierced the side of his stomach**
+  = 刺穿了他胃的侧面
+  （“pierced”指用尖锐物体刺入）
+
+- **It hurt**
+  = 疼痛
+  （简短的感受表达）</textarea></div></div>
+    <div class="para-wrap"><p>It hurt so much.<span class="anno-toggle has-anno"></span></p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">太痛了。</p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>痛得厉害。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>It hurt</strong>
+= 痛 / 伤害
+（不规则动词 hurt 的过去式，表示身体或情感上的疼痛）</p>
+</li>
+<li><p><strong>so much</strong>
+= 非常 / 太多
+（修饰 hurt，强调疼痛的程度）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+痛得厉害。
+
+### 📌 Key Expressions
+
+- **It hurt**
+  = 痛 / 伤害
+  （不规则动词 hurt 的过去式，表示身体或情感上的疼痛）
+
+- **so much**
+  = 非常 / 太多
+  （修饰 hurt，强调疼痛的程度）</textarea></div></div>
+    <div class="para-wrap"><p>He called again for his parents. But his own voice sounded weird. Distant.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>他再次呼唤他的父母。但他自己的声音听起来很怪异，很遥远。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><strong>call for</strong>
+= 呼唤，请求（此处指呼唤父母）</li>
+<li><strong>sounded</strong>
+= 听起来（系动词）</li>
+<li><strong>weird</strong>
+= 奇怪的，怪异的</li>
+<li><strong>distant</strong>
+= 遥远的，疏离的（此处作形容词修饰声音，形容声音听起来很遥远）</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+他再次呼唤他的父母。但他自己的声音听起来很怪异，很遥远。
+
+### 📌 Key Expressions
+- **call for**
+  = 呼唤，请求（此处指呼唤父母）
+- **sounded**
+  = 听起来（系动词）
+- **weird**
+  = 奇怪的，怪异的
+- **distant**
+  = 遥远的，疏离的（此处作形容词修饰声音，形容声音听起来很遥远）</textarea></div></div><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他再次打电话找他的父母。但他自己的声音听起来很奇怪。遥远。</p>
+    <div class="para-wrap"><p>On the floor all around him, shards of glass sparkled in the orange glow of his nightlight. There was wind in the room.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>在他四周的地板上，玻璃碎片在夜灯的橙色光晕中闪烁着光芒。房间里刮着风。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>shards of glass</strong>
+= 玻璃碎片
+（指破碎的玻璃）</p>
+</li>
+<li><p><strong>sparkle</strong>
+= 闪烁 / 闪闪发光</p>
+</li>
+<li><p><strong>orange glow</strong>
+= 橙色的光晕
+（形容光线柔和）</p>
+</li>
+<li><p><strong>nightlight</strong>
+= 夜灯</p>
+</li>
+<li><p><strong>There was wind in the room</strong>
+= 房间里刮着风
+（There be 句型）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+在他四周的地板上，玻璃碎片在夜灯的橙色光晕中闪烁着光芒。房间里刮着风。
+
+### 📌 Key Expressions
+
+- **shards of glass**
+  = 玻璃碎片
+  （指破碎的玻璃）
+
+- **sparkle**
+  = 闪烁 / 闪闪发光
+
+- **orange glow**
+  = 橙色的光晕
+  （形容光线柔和）
+
+- **nightlight**
+  = 夜灯
+
+- **There was wind in the room**
+  = 房间里刮着风
+  （There be 句型）</textarea></div></div><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">在他周围的地板上，玻璃碎片在夜灯的橙色光芒下闪闪发光。房间里有风。</p>
+    <div class="para-wrap"><p>The window must have broken, but he couldn’t see it from here.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>窗户肯定碎了，但他无法从这里看到。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>must have done</strong>
+= 对过去情况的推测（一定已经……）
+（表示基于现有证据对过去发生的事情进行的逻辑推断）</p>
+</li>
+<li><p><strong>from here</strong>
+= 从这里
+（表示位置或视角的介词短语）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+窗户肯定碎了，但他无法从这里看到。
+
+### 📌 Key Expressions
+
+- **must have done**
+  = 对过去情况的推测（一定已经……）
+  （表示基于现有证据对过去发生的事情进行的逻辑推断）
+
+- **from here**
+  = 从这里
+  （表示位置或视角的介词短语）</textarea></div></div><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">窗户一定是破了，但他从这里看不到。</p>
+    <div class="para-wrap"><p>He looked around as best he could and spotted Wummy, plump and smiling, lying beside him. The stuffed wombat was half hidden by a comforter that had spilled over the side of the bed.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>他尽力环顾四周，发现了 Wummy，它胖乎乎、笑盈盈地躺在他身旁。那只填充袋熊被一条垂到床边的被子半遮半掩着。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>as best he could</strong>
+= 尽力地 / 尽其所能
+（表示在某种限制或困难下努力去做某事）</p>
+</li>
+<li><p><strong>spot</strong>
+= 发现 / 看见
+（通常指在杂乱或困难的环境中找到某物）</p>
+</li>
+<li><p><strong>plump</strong>
+= 胖乎乎的 / 丰满的
+（通常用来形容人或动物可爱、圆润的体态）</p>
+</li>
+<li><p><strong>half hidden</strong>
+= 半遮半掩 / 隐约可见
+（表示部分被遮挡的状态）</p>
+</li>
+<li><p><strong>spill over</strong>
+= 溢出 / 垂落
+（常用于液体溢出，也可指物体超出边界垂下）</p>
+</li>
+<li><p><strong>comforter</strong>
+= 被子 / 床罩
+（指床上用来保暖的厚被子）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+他尽力环顾四周，发现了 Wummy，它胖乎乎、笑盈盈地躺在他身旁。那只填充袋熊被一条垂到床边的被子半遮半掩着。
+
+### 📌 Key Expressions
+
+- **as best he could**
+  = 尽力地 / 尽其所能
+  （表示在某种限制或困难下努力去做某事）
+
+- **spot**
+  = 发现 / 看见
+  （通常指在杂乱或困难的环境中找到某物）
+
+- **plump**
+  = 胖乎乎的 / 丰满的
+  （通常用来形容人或动物可爱、圆润的体态）
+
+- **half hidden**
+  = 半遮半掩 / 隐约可见
+  （表示部分被遮挡的状态）
+
+- **spill over**
+  = 溢出 / 垂落
+  （常用于液体溢出，也可指物体超出边界垂下）
+
+- **comforter**
+  = 被子 / 床罩
+  （指床上用来保暖的厚被子）</textarea></div></div><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他尽可能地环顾四周，发现了胖乎乎、微笑着的乌米躺在他身边。毛绒袋熊的一半被散落在床边的被子遮住了。</p>
+    <p>Sobbing, he reached for Wummy with his good arm and grabbed him by the ear. Beneath them, the building shook. A fire alarm began to shriek.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他抽泣着，用那只完好的手臂抓住了乌米，抓住了他的耳朵。在他们脚下，建筑物摇晃起来。火警警报开始响起。</p>
+    <p>Suddenly, there was a deep thoom of sound. The boy felt an awful pain in his ears as the world exploded around him. Something—someone—blasted through the exterior wall of his bedroom. The ceiling crumbled. Chunks of concrete flew through the air like cannonballs.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">突然，一声低沉的闷响传来。当周围的世界爆炸时，男孩感到耳朵里一阵剧痛。有什么东西——某个人——炸穿了他卧室的外墙。天花板崩塌了。大块的混凝土像炮弹一样在空中飞舞。</p>
+    <p>With his face pressed to the floor, the boy didn’t see any of it.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">男孩的脸贴在地板上，什么也没看到。</p>
+    <p>But he felt small pieces of rubble hitting his back. Then, he felt a crushing, smothering weight as the mattress from his bed landed on top of him. Pain from whatever was stabbing into his side shot through him, making every muscle spasm.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">但他感觉到小块碎石击中了他的背。然后，当他床上的床垫落在他身上时，他感到一股令人窒息的重量。刺入他侧身的东西所带来的疼痛传遍了他全身，让每一块肌肉都痉挛起来。</p>
+    <p>He screamed as loud as he could. In response, he heard nothing but a terrible rushing noise and an endless high-pitched whine.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他尽可能大声地尖叫。作为回应，他只听到了可怕的冲撞声和无尽的高音哀鸣。</p>
+    <p>Something heavy landed on the mattress. The air was pressed from his lungs. He couldn’t breathe.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">有什么重物落在了床垫上。空气被从他的肺里挤出来。他无法呼吸。</p>
+    <p>I’m going to die. I’m going to die. Help.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">我要死了。我要死了。帮助。</p>
+    <p>Dying was painful.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">死亡是痛苦的。</p>
+    <p>It was dark.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">天黑了。</p>
+    <p>He wanted his mother. He wanted…</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他想要他的母亲。他想要……</p>
+    <p>Light.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">光。</p>
+    <p>The boy didn’t know what had happened. Maybe he had passed out. Maybe he’d been struck on the head, and his memories were having a hard time sticking. The only thing he knew for sure was that he was awake now, and there was light all around him. A semi-transparent globe of it encased him, glittering like a bubble full of silver stars.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">男孩不知道发生了什么事。也许他已经昏过去了。也许他的头部被击中了，他的记忆很难保留。他唯一确定的是，他现在已经醒了，而且他的周围有光。一个半透明的球体包围了他，像充满银色星星的气泡一样闪闪发光。</p>
+    <p>He was suspended inside the bubble, his body frozen. He tried to twitch his fingers or turn his head. But his mind was the only part of him that could still move, and it seemed to be moving more sluggishly than it should.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他悬浮在气泡内，身体被冻结。他试图抽动手指或转过头。但他的心智是他体内唯一还能动的部分，而且似乎比应有的动作更加迟缓。</p>
+    <p>There was no pain. He couldn’t even blink, but his eyes didn’t feel dry.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">没有疼痛。他甚至无法眨眼，但眼睛却不觉得干燥。</p>
+    <p>He and the bubble slowly spun in place. And that place was…where was he?</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他和泡泡在原地缓缓旋转。而那个地方是……他在哪里？</p>
+    <p>There was so much wreckage in the room that he only gradually recognized it as his own. A gaping hole in the wall looked out onto the ruin of a building. The night was full of smoke, dust, and flashes of red and white light.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">房间里的残骸太多了，他才渐渐认出这是自己的。墙上的一个大洞可以看到一座建筑物的废墟。夜晚充满了烟雾、灰尘和红色和白色的光芒。</p>
+    <p>Firetruck lights, he thought.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">消防车灯，他想。</p>
+    <p>There was a station near their apartment. He loved to watch the trucks pass by on the street below.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他们的公寓附近有一个车站。他喜欢看卡车在下面的街道上驶过。</p>
+    <p>“It is exciting, bud,” his father always said. “But remember to say a prayer for the people they’re going to help.”</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">“这很令人兴奋，伙计，”他的父亲总是说。 “但请记住为他们要帮助的人祈祷。”</p>
+    <p>His father was a pastor. His mother had just gotten a job as a nurse in the Artonan House of Healing. The son of a pastor and a consecrated nurse was supposed to say prayers for all kinds of things. It was important, but sometimes he forgot.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他的父亲是一位牧师。他的母亲刚刚在阿托南疗养院找到了一份护士的工作。一位牧师和一位献身护士的儿子应该为各种事情祈祷。这很重要，但有时他会忘记。</p>
+    <p>Dear God, he thought now, as the bubble slowly rotated. I think something bad is happening. Please keep me and my family and Wummy safe. Please be with the firemen and don’t let them get burned. Please take care of the people the firemen are going to help.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">天啊，当气泡慢慢旋转时，他想。我认为有些不好的事情正在发生。请保证我和我的家人以及 Wummy 的安全。请与消防员在一起，不要让他们被烧伤。请照顾消防员要帮助的人。</p>
+    <p>Amen.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">阿门。</p>
+    <p>Next, an Artonan wordchain to call good fortune from other worlds. He only knew a few of them, and he only knew them in English. Most people said that was useless, but his mother’s boss said no faithful intention went completely unrewarded.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">接下来是一个阿托南字链，可以召唤来自其他世界的好运。他只认识其中的几个，而且只认识英语。大多数人都说这没用，但他母亲的老板说，任何忠诚的意图都会得到完全的回报。</p>
+    <p>My heart calls out to another in good faith. Spare me your luck under tonight’s moons, and tomorrow I will spare you an equal portion of mine.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">我的心真诚地呼唤着另一个人。今晚的月光下，请饶恕我你的好运，明天我也会饶恕你同样的运气。</p>
+    <p>Frozen in place as he was, he couldn’t make the accompanying hand gesture. Hopefully it would still help.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他僵在原地，无法做出相应的手势。希望它仍然有帮助。</p>
+    <p>As his bubble continued to spin, more of the broken world around him came into view.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">随着他的泡泡继续旋转，他周围更多破碎的世界映入眼帘。</p>
+    <p>He could see through one of his bedroom walls into the apartment’s main living area. There was a band of destruction through the center of the room. The wood flooring was ripped up and splintered. The sofa was turned on its side beside the breakfast counter that separated the kitchen from the den. The coffee table was missing.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他可以透过卧室的一堵墙看到公寓的主要起居区。房间中央有一道毁灭带。木地板被撕裂并碎裂。沙发侧放在早餐柜台旁边，将厨房和书房隔开。咖啡桌不见了。</p>
+    <p>The front door was missing, too, along with part of the surrounding wall. Through the gap, he could see the hall. Dim emergency light strips near the ceiling illuminated a neighbor’s door. Dark liquid was spattered across the pale paint and the shiny brass number plate.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">前门以及周围墙壁的一部分也不见了。透过缝隙，他可以看到大厅。天花板附近昏暗的应急灯条照亮了邻居的门。深色液体溅在浅色油漆和闪亮的黄铜车牌上。</p>
+    <p>The boy knew something was very wrong. He remembered his own terror. But his fear was almost as muffled as his pain now, and he felt only curiosity and a faint unease as more and more of the disaster was revealed.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">男孩知道事情非常不对劲。他想起了自己的恐惧。但现在他的恐惧几乎和他的痛苦一样压抑，随着越来越多的灾难被揭露，他只感到好奇和一丝不安。</p>
+    <p>There were strange people in his room. Two of them.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他的房间里有一些奇怪的人。其中两个。</p>
+    <p>No. Three.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">不，三。</p>
+    <p>They were against the wall, beside the small bookcase he and his mother had decorated with animal stickers on the day they moved in.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">它们靠墙，旁边就是他和母亲搬进来那天用动物贴纸装饰的小书柜。</p>
+    <p>First, he noticed their clothes. The woman, her brown hair braided around her head like a crown, wore combat boots and what looked like a blue motorcycle jacket that sparkled with the unmistakable glitter of real magic. She crouched beside a seated man with black hair and a sculpted beard. He was dressed in an armored bodysuit in the same shade of dark blue.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">首先，他注意到他们的衣服。这个女人，棕色的头发像王冠一样编在头上，穿着军靴和看起来像蓝色机车夹克的东西，闪闪发光，毫无疑问闪烁着真正的魔法。她蹲在一个坐着的男人身边，他有着黑发和雕刻的胡须。他穿着同样深蓝色的装甲连体衣。</p>
+    <p>No visible magic sparkled over him, but a sigil was emblazoned into the suit’s chest.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他身上没有任何可见的魔法闪烁，但套装的胸前却刻有一个印记。</p>
+    <p>They’re superheroes, thought the boy. Real ones.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他们是超级英雄，男孩想。真实的。</p>
+    <p>Excitement stirred inside him for the briefest instant before stilling.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他内心的兴奋短暂地激起，然后又平静下来。</p>
+    <p>The man was weeping and shaking his head, staring down at the palms of his trembling hands as if they didn’t belong to him. The woman reached out toward him, biting her lip. He jerked away.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">男人一边哭泣一边摇头，低头看着自己颤抖的手掌，仿佛它们不属于他。女人向他伸出手，咬着嘴唇。他猛地走开。</p>
+    <p>On the floor at their feet, the third stranger lay still. He was a teenager, the boy thought, though it was hard to tell in flashing lights. He wore a black hoodie, and his pale face stared up at the ceiling, unblinking.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">第三个陌生人一动不动地躺在他们脚边的地板上。他是个十几岁的孩子，男孩想，尽管在闪烁的灯光下很难辨别。他穿着一件黑色的连帽衫，苍白的脸盯着天花板，一眨不眨。</p>
+    <p>Is he frozen like me?</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他也和我一样被冻住了吗？</p>
+    <p>But no. The person in the hoodie wasn’t inside a silvery bubble. He was sprawled across the carpet, and as more of his body came into view, the boy saw that it had been ripped nearly in half.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">但没有。穿连帽衫的人并不在银色气泡内。他趴在地毯上，当他的身体越来越清晰时，男孩发现他的身体几乎被撕成两半。</p>
+    <p>Horror rose, filling him, only to drain away as if someone had pulled a plug.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">恐惧升腾起来，充满了他，但又像有人拔掉了插头一样消失了。</p>
+    <p>The man gestured toward the dead body, his face agonized. His mouth opened wide, as if he were shouting. But inside the bubble, there was no sound.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">男人指着尸体，一脸痛苦。他的嘴巴张得大大的，仿佛在喊叫。但气泡内，却没有任何声音。</p>
+    <p>The woman looked toward the body, too. Her face was serious and sad. She reached over and gently shut the dead boy’s eyes.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">女人也看向尸体。她的表情严肃而悲伤。她伸手轻轻地闭上了死去男孩的眼睛。</p>
+    <p>She closed her own and said something.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">她关上自己的门，说了些什么。</p>
+    <p>Maybe she's praying, too.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">也许她也在祈祷。</p>
+    <p>Then, she stood. As she did, she glanced up and looked at the boy in the bubble. Their eyes met. She seemed startled and upset for a moment before taking a deep breath and hurrying toward him, smiling broadly.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">然后，她站了起来。说着，她抬起头，看向泡泡里的男孩。他们的目光相遇了。她似乎感到惊讶和不安，然后深吸了一口气，冲向他，脸上露出灿烂的笑容。</p>
+    <p>It’s a fake smile, he thought.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">这是假笑，他想。</p>
+    <p>It was the smile adults used when they were trying to convince you that something wasn’t as bad as it really was. The one they wore before they gave you shots at the doctor’s office.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">这是成年人试图让你相信事情并不像实际情况那么糟糕时所使用的微笑。他们在医生办公室给你打针之前穿的那一款。</p>
+    <p>The smiling woman positioned herself between him and the dead body, then she pulled a small pad of paper and a marker out of her jacket. She wrote something and held it up for him to read. The print was clear and large.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">微笑的女人站在他和尸体之间，然后从夹克里拿出一小张纸和一支记号笔。她写了一些东西并举起来让他读。印刷品清晰且大。</p>
+    <p>DON’T BE AFRAID. WE ARE HERE TO HELP YOU.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">不要害怕。我们随时为您提供帮助。</p>
+    <p>She gave him plenty of time to read it, then she wrote on a new page.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">她给了他足够的时间来阅读，然后她在新的一页上写下了。</p>
+    <p>MY NAME IS HANNAH. MY FRIEND IS ARJUN.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">我的名字是汉娜。我的朋友是阿琼。</p>
+    <p>He was faintly disappointed they had real names. Lots of superheroes used code names but not all of them.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他对他们有真名感到有点失望。许多超级英雄都使用代号，但并非全部。</p>
+    <p>I WILL COVER YOUR BUBBLE. THEN WE WILL TAKE YOU TO A SAFE PLACE.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">我会遮盖你的泡沫。然后我们会带您到安全的地方。</p>
+    <p>My name’s Alden, he thought. What place? Where are my parents? Will they be there?</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">我叫奥尔登，他想。什么地方？我的父母在哪里？他们会在那里吗？</p>
+    <p>But he had no way of speaking.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">但他却没有办法说话。</p>
+    <p>Hannah gave Alden another strained smile and a thumbs up. Then, she bent down to the floor. She popped back up a moment later holding Wummy. She unzipped her jacket part way and made a show of carefully tucking the wombat inside before zipping it back up so that his smiling face peeked out just under her chin.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">汉娜又对奥尔登露出了勉强的微笑，并竖起了大拇指。然后，她弯下身子跪在地板上。过了一会儿，她又突然站起来，抱着 Wummy。她拉开夹克的拉链，小心翼翼地将袋熊塞进去，然后再拉上拉链，让他的笑脸从她的下巴下面露出来。</p>
+    <p>She gave the bubble another thumbs up.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">她又对泡泡竖起大拇指。</p>
+    <p>Alden caught a glimpse of Arjun and the nameless dead boy as she bent again. The superhero’s face was hidden by one shaking hand. Then a blanket—Alden's own comforter, stained with blood—was tossed over the whole silver bubble.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">当奥尔登再次弯下腰时，她瞥见了阿琼和那个无名的死去的男孩。超级英雄的脸被一只颤抖的手遮住了。然后一条毯子——奥尔登自己的被子，沾满了血——被扔到了整个银色的泡泡上。</p>
+    <p>And he couldn’t see anything anymore.</p><p class="zh-para-auto" onclick="this.classList.toggle('unblurred')" style="color: rgb(0, 0, 0); font-size: 0.95em; margin-top: 0.2em; margin-bottom: 1.5em; text-indent: 2em; text-align: justify; font-weight: bold; font-family: SimHei, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, sans-serif;">他再也看不到任何东西了。</p>    </div>
+    <script>
+        var STORAGE_KEY = 'bio_reader_prefs_' + location.pathname.replace(/[^a-zA-Z0-9]/g, '');
+        var prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { font: 1.0, dictEnabled: true, barHidden: true, highlightEnabled: true, blurEnabled: true };
+        var bar = document.getElementById('top-bar');
+        var content = document.getElementById('content-container');
+        var dictBtn = document.getElementById('dict-btn');
+        var hlBtn = document.getElementById('hl-btn');
+        var blurBtn = document.getElementById('blur-btn');
+        function applyPrefs() {
+            content.style.fontSize = prefs.font + 'em';
+            if (prefs.barHidden) { bar.classList.add('hidden'); document.body.classList.add('bar-hidden'); } else { bar.classList.remove('hidden'); document.body.classList.remove('bar-hidden'); }
+            if (prefs.dictEnabled) { document.body.classList.add('dict-enabled'); dictBtn.innerText = "查词: 开"; dictBtn.style.background = "#34C759"; dictBtn.style.color = "#fff"; } else { document.body.classList.remove('dict-enabled'); dictBtn.innerText = "查词: 关"; dictBtn.style.background = "#E5E5EA"; dictBtn.style.color = "#1C1C1E"; }
+            if (prefs.highlightEnabled) { document.body.classList.add('highlights-enabled'); hlBtn.innerText = "高亮: 开"; hlBtn.style.background = "#FF3B30"; hlBtn.style.color = "#fff"; } else { document.body.classList.remove('highlights-enabled'); hlBtn.innerText = "高亮: 关"; hlBtn.style.background = "#E5E5EA"; hlBtn.style.color = "#1C1C1E"; }
+            if (prefs.blurEnabled) { document.body.classList.add('global-blur-enabled'); blurBtn.innerText = "模糊: 开"; blurBtn.style.background = "#AF52DE"; blurBtn.style.color = "#fff"; document.querySelectorAll('.zh-para').forEach(function(el){el.classList.add('blurred');}); } else { document.body.classList.remove('global-blur-enabled'); blurBtn.innerText = "模糊: 关"; blurBtn.style.background = "#E5E5EA"; blurBtn.style.color = "#1C1C1E"; }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        }
+        document.addEventListener('dblclick', function(e) {
+            if(e.target.closest('#top-bar') || e.target.classList.contains('zh-para')) return;
+            prefs.barHidden = !prefs.barHidden; applyPrefs();
+        });
+        function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); }
+        function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); }
+        function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); }
+        function toggleBlur() { prefs.blurEnabled = !prefs.blurEnabled; applyPrefs(); }
+        window.addEventListener('DOMContentLoaded', function() {
+            applyPrefs(); var savedScroll = localStorage.getItem(STORAGE_KEY + '_scroll');
+            if (savedScroll) { setTimeout(function(){ window.scrollTo(0, parseFloat(savedScroll)); }, 150); }
+        });
+        var scrollTimer;
+        window.addEventListener('scroll', function() {
+            if (scrollTimer) clearTimeout(scrollTimer); scrollTimer = setTimeout(function(){ localStorage.setItem(STORAGE_KEY + '_scroll', window.scrollY); }, 300);
+        });
+        var highlightWords = new Set();
+        async function initCloudHighlights() {
+            var cacheKey = 'bio_remote_hl_words_v2'; var cached = localStorage.getItem(cacheKey); var now = Date.now();
+            if (cached) { try { var parsed = JSON.parse(cached); if (now - parsed.time < 24 * 60 * 60 * 1000 && Array.isArray(parsed.data)) { highlightWords = new Set(parsed.data); applyHighlightsToDOM(); return; } } catch(e){} }
+            try {
+                var urls = ['https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://ghproxy.net/https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://fastly.jsdelivr.net/gh/moodHappy/HelloWorld@master/Notes/one.txt'];
+                var text = ''; for (var i=0; i<urls.length; i++) { try { var res = await fetch(urls[i]); if (res.ok) { text = await res.text(); if (text && !text.includes('<html') && !text.includes('Cloudflare')) break; } } catch(err){} }
+                if (!text) throw new Error(); var arr = text.split('\n').map(function(w){return w.trim().toLowerCase();}).filter(function(w){return w;});
+                if (arr.length > 0) { highlightWords = new Set(arr); localStorage.setItem(cacheKey, JSON.stringify({data: arr, time: now})); applyHighlightsToDOM(); }
+            } catch(e){}
+        }
+        function applyHighlightsToDOM() {
+            if(highlightWords.size === 0) return;
+            document.querySelectorAll('.tm-word').forEach(function(span){ if(highlightWords.has(span.textContent.trim().toLowerCase())) span.classList.add('is-highlight'); });
+        }
+        var GM_getValue = function(key, def) { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; };
+        var GM_setValue = function(key, val) { localStorage.setItem(key, JSON.stringify(val)); };
+        var GM_xmlhttpRequest = function(opt) {
+            var url = opt.url; if(url.includes('dict.youdao.com') || url.includes('cambridge.org')) {
+                var isYoudao = url.includes('dict.youdao.com');
+                var proxies = [url, 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), 'https://corsproxy.io/?' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)];
+                var currentProxyIdx = 0;
+                var tryNext = function() {
+                    if (currentProxyIdx >= proxies.length) { if(opt.onerror) opt.onerror(new Error()); return; }
+                    fetch(proxies[currentProxyIdx++], { headers: opt.headers || {} })
+                    .then(async function(r) { var t = ''; try{t = await r.text();}catch(e){} if(!r.ok || t.includes('Cloudflare')) throw new Error(); if(isYoudao && !t.trim().startsWith('{')) throw new Error(); if(opt.onload) opt.onload({status:200, responseText:t}); })
+                    .catch(function(){ tryNext(); });
+                };
+                tryNext(); return;
+            }
+            fetch(url, { headers: opt.headers || {} }).then(async function(r){ var t = ''; try{t = await r.text();}catch(e){} if(opt.onload) opt.onload({status:r.status, responseText:t}); }).catch(opt.onerror);
+        };
+        (function() {
+            var ttsConfig = { voices: ["en-US-AdamNeural", "en-US-AriaNeural", "en-US-AnaNeural", "en-US-JennyNeural", "en-US-GuyNeural"], apis: [ { url: "https://read-aloud-bay.vercel.app/api/synthesis", type: "read-aloud" }, { url: "https://libre-tts-nu.vercel.app/api/tts", type: "libre" } ] };
+            var globalResultCache = GM_getValue('tm_dict_cache', {}); var saveTimeout = null;
+            function saveToGlobalCache(wordKey, resultData) { globalResultCache[wordKey] = resultData; var keys = Object.keys(globalResultCache); if (keys.length > 2000) delete globalResultCache[keys[0]]; clearTimeout(saveTimeout); saveTimeout = setTimeout(function(){ GM_setValue('tm_dict_cache', globalResultCache); }, 1500); }
+            var cefrStaticCache = {};
+            function initCEFRStaticDict() {
+                var staticUrls = ["https://fastly.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json","https://cdn.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json"];
+                var idx = 0; var tryFetch = function() { if (idx >= staticUrls.length) return; fetch(staticUrls[idx++]).then(function(r){return r.json();}).then(function(data){ if (Array.isArray(data)) data.forEach(function(item){ if (item.word && item.cefr) cefrStaticCache[item.word.toLowerCase()] = item.cefr.toUpperCase(); }); }).catch(tryFetch); };
+                tryFetch();
+            }
+            function fetchCEFR(word) {
+                return new Promise(function(resolve) {
+                    var w = word.toLowerCase(); if (cefrStaticCache[w]) { resolve(cefrStaticCache[w]); return; }
+                    GM_xmlhttpRequest({ method: "GET", url: 'https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(w), onload: function(res) { if (res.status === 200) { var match = res.responseText.match(/(?:epp-xref|dxref)[^>]*>\s*([A-C][1-2])\s*<\/span>/i) || res.responseText.match(/title="CEFR[^>]*>\s*([A-C][1-2])\s*<\/span>/i); if (match && match[1]) { cefrStaticCache[w] = match[1].toUpperCase(); resolve(cefrStaticCache[w]); return; } } resolve(null); }, onerror: function(){resolve(null);} });
+                });
+            }
+            function fetchTranslation(text) { return new Promise(function(resolve, reject) { GM_xmlhttpRequest({ method: "GET", url: 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&q=' + encodeURIComponent(text), onload: function(res) { if (res.status === 200) resolve(JSON.parse(res.responseText)); else reject(new Error()); }, onerror: reject }); }); }
+            function fetchPhonetics(text) { return new Promise(function(resolve) { GM_xmlhttpRequest({ method: "GET", url: 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(text), onload: function(res) { if (res.status === 200) { var data = JSON.parse(res.responseText); if (data && data.length > 0) { var pObj = data[0].phonetics.find(function(p){return p.text;}) || data[0]; resolve(pObj.text || null); return; } } resolve(null); }, onerror: function(){resolve(null);} }); }); }
+            function fetchWordLevel(text) { return new Promise(function(resolve) { GM_xmlhttpRequest({ method: "GET", url: 'https://dict.youdao.com/jsonapi?q=' + encodeURIComponent(text), onload: function(res) { var result = { stars: 0, tags: [] }; try { var data = JSON.parse(res.responseText); if (data.ec && data.ec.exam_type) result.tags = data.ec.exam_type; if (data.collins && data.collins.collins_entries && data.collins.collins_entries.length > 0) { var starStr = data.collins.collins_entries[0].star; if (starStr) { var parsedNum = parseInt(String(starStr).replace(/[^0-9]/g, ''), 10); result.stars = isNaN(parsedNum) ? 0 : parsedNum; } } } catch (e) {} resolve(result); }, onerror: function(){resolve({ stars: 0, tags: [] });} }); }); }
+            var globalAudioPlayer = null; var currentPlayingBtn = null;
+            function initAudioPlayer() { if (!globalAudioPlayer) { globalAudioPlayer = document.createElement('audio'); globalAudioPlayer.style.display = 'none'; document.body.appendChild(globalAudioPlayer); } }
+            function playTTS(apiIndex, text, voice, btn) {
+                if (apiIndex >= ttsConfig.apis.length) { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); return; }
+                if (currentPlayingBtn && currentPlayingBtn !== btn) currentPlayingBtn.classList.remove('playing');
+                currentPlayingBtn = btn; btn.classList.add('playing'); var api = ttsConfig.apis[apiIndex]; var params = new URLSearchParams();
+                if (api.type === "read-aloud") { params.append("text", text); params.append("voiceName", voice); } else { params.append("t", text); params.append("v", voice); params.append("r", "0"); params.append("p", "0"); }
+                globalAudioPlayer.src = api.url + '?' + params.toString(); globalAudioPlayer.onended = function() { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); };
+                globalAudioPlayer.onerror = function() { playTTS(apiIndex + 1, text, voice, btn); }; var p = globalAudioPlayer.play(); if (p !== undefined) p.catch(function(){ playTTS(apiIndex + 1, text, voice, btn); });
+                }
+            function wrapTextNodesToWord(rootNode) {
+                var ignoreTags = new Set(['SCRIPT', 'STYLE', 'BUTTON', 'A']);
+                var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, { acceptNode: function(currentNode) { var parent = currentNode.parentNode; if (!parent || ignoreTags.has(parent.nodeName.toUpperCase()) || parent.closest('.tm-word') || parent.closest('.zh-para')) return NodeFilter.FILTER_REJECT; if (!currentNode.nodeValue.trim() || !/\b[a-zA-Z'-]+\b/.test(currentNode.nodeValue)) return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; } });
+                var nodesToWrap = []; let currNode; while ((currNode = walker.nextNode())) { nodesToWrap.push(currNode); }
+                nodesToWrap.forEach(function(textNode) {
+                    var text = textNode.nodeValue; var fragment = document.createDocumentFragment(); var lastIndex = 0;
+                    text.replace(/\b([a-zA-Z'-]+)\b/g, function(match, p1, offset) { if (offset > lastIndex) fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset))); var span = document.createElement('span'); span.className = 'tm-word'; span.textContent = match; fragment.appendChild(span); lastIndex = offset + match.length; return match; });
+                    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.substring(lastIndex))); if (fragment.childNodes.length > 0) textNode.parentNode.replaceChild(fragment, textNode);
+                });
+            }
+            function formatDictData(originalWord, data) {
+                var transData = data.transData; var ipaText = data.ipaText; var levelData = data.levelData; var cefrLevel = data.cefrLevel; var tagsHtml = '';
+                if (cefrLevel || (levelData && (levelData.stars > 0 || (levelData.tags && levelData.tags.length > 0)))) {
+                    tagsHtml += '<div class="dict-tags-row">'; if (levelData && levelData.stars > 0) tagsHtml += '<span class="dict-tag star-tag">' + '★'.repeat(levelData.stars) + '☆'.repeat(5 - levelData.stars) + '</span>'; if (cefrLevel) tagsHtml += '<span class="dict-tag cefr-' + cefrLevel + '">CEFR ' + cefrLevel + '</span>'; if (levelData && levelData.tags) levelData.tags.forEach(function(tag){ tagsHtml += '<span class="dict-tag">' + tag + '</span>'; }); tagsHtml += '</div>';
+                }
+                var basicTrans = (transData && transData[0] && transData[0][0]) ? transData[0][0][0] : '';
+                var html = '<div class="dict-header-row"><div class="dict-word-line"><span class="dict-head-word Casting">' + originalWord + '</span>' + (ipaText ? '<span class="dict-ipa">' + ipaText + '</span>' : '') + '<span class="dict-speaker-btn" data-word="' + originalWord.replace(/"/g, '&quot;') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span></div>' + tagsHtml + '<div class="dict-basic-trans">' + basicTrans + '</div></div>';
+                var dictEntries = transData ? transData[1] : null;
+                if (dictEntries && dictEntries.length > 0) {
+                    html += '<div class="dict-details">'; dictEntries.forEach(function(entry){ var pos = entry[0]; var displayDefs = entry[1].slice(0, 3); html += '<div class="dict-pos-block"><span class="dict-pos-tag">' + pos + '.</span><ul class="dict-def-list">'; displayDefs.forEach(function(def){ html += '<li class="dict-def-item">' + def + '</li>'; }); html += '</ul></div>'; }); html += '</div>';
+                } else if (!basicTrans) { html += '<div style="padding:5px; color:#666; font-size:13px;">无释义结果...</div>'; }
+                return html;
+            }
+            function setupTippyDelegate() {
+                tippy.delegate(document.body, { 
+                    target: '.tm-word', trigger: 'click', interactive: true, theme: 'light-border', placement: 'bottom', appendTo: function(){return document.body;}, maxWidth: 320,
+                    onShow: function(instance) {
+                        if (!document.body.classList.contains('dict-enabled')) return false;
+                        var word = instance.reference.innerText.trim(); var wordKey = word.toLowerCase();
+                        var renderContent = function(data) { if (instance.reference.innerText.trim() !== word) return; var contentDiv = document.createElement('div'); contentDiv.className = 'dict-popup'; contentDiv.innerHTML = formatDictData(word, data); ['mousedown', 'touchstart', 'click'].forEach(function(evt){ contentDiv.addEventListener(evt, function(e){e.stopPropagation();}, { capture: true }); }); var btn = contentDiv.querySelector('.dict-speaker-btn'); if (btn) { btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var text = btn.getAttribute('data-word'); if (!text || btn.classList.contains('playing')) return; playTTS(0, text.trim(), ttsConfig.voices[Math.floor(Math.random() * ttsConfig.voices.length)], btn); }); } instance.setContent(contentDiv); };
+                        if (globalResultCache[wordKey]) { renderContent(globalResultCache[wordKey]); } else {
+                            var loadingDiv = document.createElement('div'); loadingDiv.className = 'dict-popup'; loadingDiv.innerHTML = '<div class="dict-loading">极速查询中...</div>'; instance.setContent(loadingDiv);
+                            var pTrans = fetchTranslation(word).catch(function(){return [[['API Error']]];}); var pPhon = fetchPhonetics(word).catch(function(){return null;}); var pLevel = fetchWordLevel(word).catch(function(){return {stars:0, tags:[]};}); var pCefr = Promise.race([fetchCEFR(word), new Promise(function(r){setTimeout(function(){r(null);},1500);})]).catch(function(){return null;});
+                            Promise.all([pTrans, pPhon, pLevel, pCefr]).then(function(arr){ var resultData = { transData: arr[0], ipaText: arr[1], levelData: arr[2], cefrLevel: arr[3] }; saveToGlobalCache(wordKey, resultData); if (instance.state.isVisible) renderContent(resultData); });
+                        }
+                    }
+                });
+            }
+            setTimeout(function() { initAudioPlayer(); initCEFRStaticDict(); var container = document.getElementById('content-container'); if(container) wrapTextNodesToWord(container); setupTippyDelegate(); initCloudHighlights(); }, 500);
+        })();
+    </script>
+
+<script id="matrix-static-script">
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (document.documentElement.getAttribute('data-matrix-active') === 'true' || window.__MATRIX_ENGINE_ACTIVE__) return;
+
+                const isNewTpl = !!document.getElementById('en-container');
+                document.querySelectorAll('.para-wrap').forEach(wrap => {
+                    const toggle = wrap.querySelector('.anno-toggle');
+                    const box = wrap.querySelector('.anno-box');
+                    const view = wrap.querySelector('.anno-view');
+                    if (!toggle || !box || !view) return;
+
+                    toggle.onclick = (e) => {
+                        e.stopPropagation();
+                        if (box.style.display === 'block') {
+                            box.style.display = 'none';
+                            wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        } else {
+                            box.style.display = 'block';
+                            view.style.display = 'block';
+                        }
+                    };
+
+                    let touchStartX = 0; let touchStartY = 0; let activeFingers = 0;
+                    view.addEventListener('touchstart', e => {
+                        activeFingers = e.touches.length;
+                        if ((!isNewTpl && activeFingers === 2) || (isNewTpl && (activeFingers === 1 || activeFingers === 3))) {
+                            touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+                        } else { activeFingers = 0; }
+                    }, {passive: true});
+
+                    view.addEventListener('touchmove', e => {
+                        if (!activeFingers) return;
+                        const diffX = touchStartX - e.touches[0].clientX;
+                        const diffY = Math.abs(touchStartY - e.touches[0].clientY);
+                        if (diffY > 40) { activeFingers = 0; return; }
+                        const isSwipeCloseGesture = isNewTpl ? (activeFingers === 1) : (activeFingers === 2);
+                        if (isSwipeCloseGesture && diffX > 60) {
+                            box.style.display = 'none';
+                            wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            activeFingers = 0;
+                        }
+                    }, {passive: true});
+
+                    view.addEventListener('touchend', e => {
+                        if (e.touches.length === 0) activeFingers = 0;
+                    }, {passive: true});
+                });
+            }, 500);
+        });
+    </script></body></html>
