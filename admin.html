@@ -111,6 +111,10 @@
         .selection-mode .select-checkbox { display: block; }
         .arrow-icon { color: #d0d7de; font-size: 18px; font-weight: bold; }
         .selection-mode .arrow-icon { display: none; }
+        
+        .folder-action { font-size: 16px; margin-right: 15px; padding: 5px; cursor: pointer; transition: transform 0.2s; }
+        .folder-action:active { transform: scale(0.9); }
+        .selection-mode .folder-action { display: none; }
 
         /* ================= Action Bar (PC 端样式) ================= */
         .action-bar {
@@ -127,7 +131,7 @@
         }
         .action-bar.visible { transform: translate(-50%, 0); }
         .action-count { font-weight: bold; white-space: nowrap; }
-        
+
         .action-btn { 
             border: none; color: white; padding: 8px 16px; border-radius: 20px; 
             font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
@@ -173,7 +177,7 @@
                 padding: 10px; 
                 padding-bottom: 200px; /* 底部面板变大，留出充足的滑动空间防止遮挡文件列表 */
             } 
-            
+
             /* 顶部拦优化：控件平铺填充，不挤压 */
             header {
                 flex-direction: column;
@@ -329,6 +333,20 @@
     </div>
 </div>
 
+<div id="folder-rename-modal" class="modal-overlay">
+    <div class="modal">
+        <h3>📂 文件夹重命名</h3>
+        <div class="form-group">
+            <label>新文件夹名称</label>
+            <input type="text" id="folder-rename-input">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="closeModal('folder-rename-modal')">取消</button>
+            <button id="btn-save-folder-rename" class="btn btn-primary" onclick="execFolderRename()">确认修改</button>
+        </div>
+    </div>
+</div>
+
 <div id="move-modal" class="modal-overlay">
     <div class="modal">
         <h3>📂 批量移动</h3>
@@ -360,6 +378,10 @@
     let sortableInstance = null;
     let currentSortSha = null;
     let sortOrder = [];
+    
+    // 文件夹重命名状态
+    let currentRenameFolderPath = '';
+    let currentRenameFolderName = '';
 
     // ================= 初始化与 API =================
     function getConfig() {
@@ -529,6 +551,7 @@
                             <span class="item-icon">📁</span>
                             <div class="item-info"><span class="item-name">${item.name}</span></div>
                         </div>
+                        <span class="folder-action" onclick="event.stopPropagation(); openFolderRenameModal('${item.name}', '${item.path}')" title="重命名文件夹">✏️</span>
                         <span class="arrow-icon">›</span>
                     </div>`;
             } else {
@@ -671,7 +694,7 @@
         }
     }
 
-    // ================= 功能：重命名 =================
+    // ================= 功能：文件重命名 =================
     function openRenameModal() {
         const file = selectedFilesMap.values().next().value;
         document.getElementById('rename-input').value = file.name;
@@ -700,6 +723,62 @@
             closeModal('rename-modal'); toggleBatchMode(); loadPath(currentPath);
         } catch (e) { alert("重命名失败: " + e.message); } 
         finally { btn.disabled = false; btn.innerText = "确认修改"; }
+    }
+
+    // ================= 功能：文件夹重命名 =================
+    function openFolderRenameModal(name, path) {
+        currentRenameFolderName = name;
+        currentRenameFolderPath = path;
+        document.getElementById('folder-rename-input').value = name;
+        document.getElementById('folder-rename-modal').style.display = 'flex';
+    }
+
+    async function renameDirectoryRecursively(oldDir, newDir) {
+        // GitHub Api 规定只有重命名文件(新创再删)，没有直接重命名文件夹接口，只能递归实现
+        const data = await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${oldDir}`);
+        for (const item of data) {
+            if (item.type === 'file') {
+                const fileData = await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${item.path}`);
+                const newFilePath = newDir + '/' + item.name;
+                // 在新路径创建
+                await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${newFilePath}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ message: `Rename folder: move ${item.name}`, content: fileData.content })
+                });
+                // 删除旧路径
+                await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${item.path}`, {
+                    method: 'DELETE',
+                    body: JSON.stringify({ message: `Rename folder: delete old ${item.name}`, sha: item.sha })
+                });
+            } else if (item.type === 'dir') {
+                await renameDirectoryRecursively(item.path, newDir + '/' + item.name);
+            }
+        }
+    }
+
+    async function execFolderRename() {
+        const newName = document.getElementById('folder-rename-input').value.trim();
+        if(!newName || newName === currentRenameFolderName) return;
+        if(newName.includes('/')) return alert("文件夹名称不能包含斜杠 '/'");
+
+        const btn = document.getElementById('btn-save-folder-rename');
+        btn.disabled = true; btn.innerText = "深度搬运中...";
+
+        const parts = currentRenameFolderPath.split('/');
+        parts.pop();
+        parts.push(newName);
+        const newPath = parts.join('/');
+
+        try {
+            await renameDirectoryRecursively(currentRenameFolderPath, newPath);
+            showToast("✅ 文件夹重命名成功", "success");
+            closeModal('folder-rename-modal');
+            loadPath(currentPath);
+        } catch (e) {
+            alert("文件夹重命名受阻: " + e.message);
+        } finally {
+            btn.disabled = false; btn.innerText = "确认修改";
+        }
     }
 
     // ================= 功能：移动与删除 =================
