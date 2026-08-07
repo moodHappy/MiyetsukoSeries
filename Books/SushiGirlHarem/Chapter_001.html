@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Notice: Thoughts on Completion</title>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <style>
+        body { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; max-width: 800px; margin: 0 auto; padding: 50px 24px; font-size: 20px; line-height: 1.8; letter-spacing: 0.05em; background-color: #FFF7F8; color: #4A3B42; } h1 { text-align: left !important; font-size: 28px; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #F0D8DE; padding-bottom: 20px; color: #6E4A55; } p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
+        body { padding-top: 70px !important; transition: padding-top 0.3s cubic-bezier(0.4,0,0.2,1); }
+        body.bar-hidden { padding-top: 20px !important; }
+        .reader-bar { position: fixed; top: 0; left: 0; right: 0; min-height: 50px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 1px 8px rgba(0,0,0,0.08); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 5px; }
+        .reader-bar.hidden { transform: translateY(-100%); }
+        .reader-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .reader-btn { background: #E5E5EA; color: #1C1C1E; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+        .reader-btn:active { transform: scale(0.95); }
+        #content-container { transition: font-size 0.2s; }
+        .zh-para { transition: filter 0.3s ease, opacity 0.3s ease; }
+        .global-blur-enabled .zh-para { cursor: pointer; }
+        .global-blur-enabled .zh-para.blurred { filter: blur(0.35em); opacity: 0.5; user-select: none; }
+        .global-blur-enabled .zh-para.blurred:hover { filter: blur(0.2em); opacity: 0.7; }
+        body.highlights-enabled .tm-word.is-highlight { color: #FF3B30 !important; font-weight: 700; background-color: rgba(255, 59, 48, 0.05); border-radius: 3px; padding: 0 2px; }
+        .dict-enabled .tm-word { cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 3px; }
+        .dict-enabled .tm-word:hover, .dict-enabled .tm-word[aria-expanded="true"] { background-color: #E3F2FD; color: #1565C0 !important; }
+        .tippy-box[data-theme~='light-border'] { background-color: #fff; color: #333; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+        .tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before { border-top-color: #ccc; }
+        .tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: #ccc; }
+        .tippy-content { padding: 8px; }
+        .dict-popup { text-align: left; font-size: 14px; line-height: 1.4; max-width: 280px; min-width: 200px; color: #333; font-family: -apple-system, sans-serif; }
+        .dict-header-row { border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
+        .dict-word-line { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .dict-head-word { font-weight: bold; color: #D32F2F; font-size: 18px; }
+        .dict-ipa { font-family: sans-serif; color: #666; font-size: 13px; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
+        .dict-speaker-btn { display: inline-flex; cursor: pointer; color: #1976D2; padding: 2px; border-radius: 50%; transition: background 0.2s; }
+        .dict-speaker-btn:hover { background-color: rgba(25, 118, 210, 0.1); }
+        .dict-speaker-btn svg { width: 18px; height: 18px; pointer-events: none; }
+        .dict-speaker-btn.playing { color: #E91E63; animation: tm-pulse 1s infinite; }
+        .dict-tags-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;}
+        .dict-tag { background: #F0F4F8; color: #476582; font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #D9E2EC; font-weight: 500; }
+        .dict-tag.star-tag { color: #F59E0B; background: #FEF3C7; border-color: #FDE68A; letter-spacing: 1px; padding: 2px 4px; }
+        .dict-tag.cefr-A1 { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+        .dict-tag.cefr-A2 { background: #E0F2F1; color: #00695C; border-color: #B2DFDB; }
+        .dict-tag.cefr-B1 { background: #FFF8E1; color: #F57F17; border-color: #FFECB3; }
+        .dict-tag.cefr-B2 { background: #FFF3E0; color: #E65100; border-color: #FFE0B2; }
+        .dict-tag.cefr-C1 { background: #FCE4EC; color: #C2185B; border-color: #F8BBD0; }
+        .dict-tag.cefr-C2 { background: #F3E5F5; color: #7B1FA2; border-color: #E1BEE7; }
+        .dict-basic-trans { font-size: 14px; color: #444; margin-top: 4px; }
+        .dict-pos-block { margin-bottom: 4px; }
+        .dict-pos-tag { font-style: italic; color: #1976D2; font-weight: bold; font-size: 12px; margin-right: 4px; }
+        .dict-def-list { margin: 0; padding: 0; list-style: none; display: inline; }
+        .dict-def-item { display: inline; }
+        .dict-def-item::after { content: "; "; color: #999; }
+        .dict-def-item:last-child::after { content: ""; }
+        .dict-loading { color: #666; font-style: italic; font-size: 13px; padding: 5px; text-align: center; }
+        @keyframes tm-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    </style>
+<style id="matrix-core-styles">
+        .para-wrap { position: relative; margin-bottom: 1.5em; }
+        .para-wrap > p { margin-bottom: 0 !important; }
+        .anno-toggle, .ai-toggle {
+            display: inline-flex;
+            margin-left: 6px;
+            cursor: pointer;
+            opacity: 0.2;
+            font-size: 0.8rem;
+            vertical-align: middle;
+            transition: all 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .anno-toggle:hover, .ai-toggle:hover { opacity: 0.8; transform: scale(1.1); }
+        .anno-toggle.has-anno { opacity: 1; }
+        .anno-toggle::after { content: "🔴"; }
+        .ai-toggle { margin-left: 4px; opacity: 0.5; }
+        .ai-toggle::after { content: "🤖"; }
+        .ai-toggle.loading::after {
+            content: "⏳";
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .anno-box {
+            display: none;
+            margin-top: 10px;
+            background: #f8f6ff;
+            border-left: 4px solid #8e7cc3;
+            padding: 12px 16px;
+            border-radius: 0 6px 6px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .anno-view {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #4a4a4a;
+            min-height: 24px;
+            font-family: -apple-system, sans-serif;
+            text-align: left;
+            text-indent: 0;
+        }
+        .anno-edit {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 1rem;
+            border: 1px dashed #8e7cc3;
+            border-radius: 6px;
+            box-sizing: border-box;
+            resize: vertical;
+            display: none;
+            background: #fff;
+            color: #333;
+            outline: none;
+            text-align: left;
+            -webkit-appearance: none;
+        }
+        .anno-edit:focus {
+            border: 1px solid #8e7cc3;
+            box-shadow: 0 0 0 3px rgba(142,124,195,0.1);
+        }
+        .markdown-body p { margin-top: 0; margin-bottom: 8px; text-indent: 0; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            color: #8e7cc3;
+            font-size: 1.15rem;
+            margin: 10px 0 8px 0;
+            border-bottom: 1px dashed #e0d8f0;
+            padding-bottom: 4px;
+        }
+        .markdown-body blockquote {
+            margin: 0 0 10px 0;
+            padding: 10px 15px;
+            background: rgba(142,124,195,0.1);
+            border-left: 4px solid #8e7cc3;
+            color: #555;
+        }
+        #matrix-sync-status {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            display: none;
+            z-index: 2147483647;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+    </style></head>
+<body class="bar-hidden global-blur-enabled dict-enabled highlights-enabled">
+    <div class="reader-bar hidden" id="top-bar">
+        <div class="reader-controls">
+            <button class="reader-btn" onclick="adjustFont(-0.1)">A-</button>
+            <button class="reader-btn" onclick="adjustFont(0.1)">A+</button>
+            <button id="blur-btn" class="reader-btn" style="background:#AF52DE; color:white;" onclick="toggleBlur()">模糊: 开</button>
+            <button id="hl-btn" class="reader-btn" style="background:#FF3B30; color:white;" onclick="toggleHighlight()">高亮: 开</button>
+            <button id="dict-btn" class="reader-btn" style="background:#34C759; color:white;" onclick="toggleDict()">查词: 开</button>
+        </div>
+    </div>
+    <div id="content-container">
+    <h1 style="text-align: left !important;">Notice: Thoughts on Completion</h1>
+    <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">发布时间：2026/8/7 23:55:20</div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">公告：完结感言</p>
+    <p>Hello! This is Too Big.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">大家好！我是 Too Big。</p>
+    <p>I've tried writing novels in various genres, but no one seemed to read them...ㅠ.ㅠ</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我尝试过写各种类型的小说，但似乎都没什么人看……ㅠ.ㅠ</p>
+    <div class="para-wrap"><p>So I thought, 'Should I try writing an erotic novel?' and started writing, and it got the most views.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>所以我想：“我是不是应该试着写一本情色小说？”然后我开始写了，结果它获得了最多的浏览量。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>So I thought...</strong>
+= 所以我想……</p>
+</li>
+<li><p><strong>Should I try doing sth?</strong>
+= 我是不是应该试试看做某事？</p>
+<p>这里的 <strong>should I</strong> 是自问、自我考虑：</p>
+<blockquote>
+<p>我是否应该……</p>
+</blockquote>
+</li>
+<li><p><strong>try writing</strong>
+= 尝试写作</p>
+<p>注意：</p>
+<ul>
+<li>try doing sth
+= 尝试做某事（看看效果）</li>
+<li>try to do sth
+= 努力去做某事</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li>I tried writing a story.
+= 我试着写了一篇故事。</li>
+<li>I tried to write a story.
+= 我努力写一篇故事。</li>
+</ul>
+</li>
+<li><p><strong>an erotic novel</strong>
+= 情色小说；色情文学小说</p>
+</li>
+<li><p><strong>erotic</strong>
+= 情色的；性爱描写相关的</p>
+<p>比 <strong>pornographic</strong>（色情的）更偏向文学、艺术表达。</p>
+</li>
+<li><p><strong>started writing</strong>
+= 开始写</p>
+</li>
+<li><p><strong>it got the most views</strong>
+= 它获得了最多浏览量</p>
+</li>
+<li><p><strong>get views</strong>
+= 获得浏览量</p>
+<p>常用于：</p>
+<ul>
+<li>videos</li>
+<li>posts</li>
+<li>articles</li>
+<li>stories</li>
+</ul>
+</li>
+<li><p><strong>the most views</strong>
+= 最多浏览量</p>
+</li>
+</ul>
+<h3>📌 Language Note</h3>
+<p>这句话是很口语化的叙述。</p>
+<p>结构：</p>
+<blockquote>
+<p><strong>I thought, "Should I...?" and started..., and it got...</strong></p>
+</blockquote>
+<p>三个动作连续：</p>
+<ol>
+<li><p>产生想法：</p>
+<blockquote>
+<p>Should I try writing an erotic novel?</p>
+</blockquote>
+</li>
+<li><p>实际行动：</p>
+<blockquote>
+<p>started writing</p>
+</blockquote>
+</li>
+<li><p>结果：</p>
+<blockquote>
+<p>it got the most views</p>
+</blockquote>
+</li>
+</ol>
+<p>这里的 <strong>got</strong> 是非常口语的用法：</p>
+<blockquote>
+<p>get + 名词</p>
+</blockquote>
+<p>表示“获得”。</p>
+<p>例如：</p>
+<ul>
+<li><p>The video got 1 million views.
+= 这个视频获得了100万次观看。</p>
+</li>
+<li><p>The post got a lot of attention.
+= 这篇帖子获得了很多关注。</p>
+</li>
+</ul>
+<h3>📌 句子语气</h3>
+<p>说话者带有一点意外、调侃的感觉：</p>
+<blockquote>
+<p>“我想，要不要试试写情色小说？结果一写，反而它浏览量最高。”</p>
+</blockquote>
+<p>重点不在“情色”，而是在表达网络内容创作中的一个现象：</p>
+<p>有时候作者认为普通作品可能受欢迎，但真正吸引流量的却是意料之外的题材。</p>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+所以我想：“我是不是应该试着写一本情色小说？”然后我开始写了，结果它获得了最多的浏览量。
+
+
+### 📌 Key Expressions
+
+- **So I thought...**
+  = 所以我想……
+
+- **Should I try doing sth?**
+  = 我是不是应该试试看做某事？
+
+  这里的 **should I** 是自问、自我考虑：
+  &gt; 我是否应该……
+
+- **try writing**
+  = 尝试写作
+
+  注意：
+  - try doing sth
+    = 尝试做某事（看看效果）
+  - try to do sth
+    = 努力去做某事
+
+  例如：
+  - I tried writing a story.
+    = 我试着写了一篇故事。
+  - I tried to write a story.
+    = 我努力写一篇故事。
+
+- **an erotic novel**
+  = 情色小说；色情文学小说
+
+- **erotic**
+  = 情色的；性爱描写相关的
+
+  比 **pornographic**（色情的）更偏向文学、艺术表达。
+
+- **started writing**
+  = 开始写
+
+- **it got the most views**
+  = 它获得了最多浏览量
+
+- **get views**
+  = 获得浏览量
+
+  常用于：
+  - videos
+  - posts
+  - articles
+  - stories
+
+- **the most views**
+  = 最多浏览量
+
+
+### 📌 Language Note
+
+这句话是很口语化的叙述。
+
+结构：
+
+&gt; **I thought, "Should I...?" and started..., and it got...**
+
+三个动作连续：
+
+1. 产生想法：
+   &gt; Should I try writing an erotic novel?
+
+2. 实际行动：
+   &gt; started writing
+
+3. 结果：
+   &gt; it got the most views
+
+
+这里的 **got** 是非常口语的用法：
+
+&gt; get + 名词
+
+表示“获得”。
+
+例如：
+
+- The video got 1 million views.
+  = 这个视频获得了100万次观看。
+
+- The post got a lot of attention.
+  = 这篇帖子获得了很多关注。
+
+
+### 📌 句子语气
+
+说话者带有一点意外、调侃的感觉：
+
+&gt; “我想，要不要试试写情色小说？结果一写，反而它浏览量最高。”
+
+重点不在“情色”，而是在表达网络内容创作中的一个现象：
+
+有时候作者认为普通作品可能受欢迎，但真正吸引流量的却是意料之外的题材。</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">所以我就想，“要不要试试写情色小说呢？”于是我开始动笔，结果它的阅读量是最高的。</p>
+    <p>I'm definitely going to keep writing novels, I have plenty of material.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我肯定还会继续写小说，毕竟我手头还有很多素材。</p>
+    <div class="para-wrap"><p>However, I just can't do mindless sex novels... I feel like I'd get erectile dysfunction.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>然而，我就是无法忍受那种毫无脑子的色情小说……我觉得我会得阳痿。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>I just can't do...</strong>
+= 我无法忍受 / 我做不到
+（常用于表达对某种情况、工作或任务的强烈排斥或无法参与）</p>
+</li>
+<li><p><strong>mindless</strong>
+= 无脑的 / 毫无思想的
+（形容小说情节空洞，缺乏逻辑、深度或思考价值）</p>
+</li>
+<li><p><strong>erectile dysfunction</strong>
+= 阳痿 / 勃起功能障碍
+（医学名词，此处指身体机能失效，带有幽默或夸张的语气）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+然而，我就是无法忍受那种毫无脑子的色情小说……我觉得我会得阳痿。
+
+### 📌 Key Expressions
+
+- **I just can't do...**
+  = 我无法忍受 / 我做不到
+  （常用于表达对某种情况、工作或任务的强烈排斥或无法参与）
+
+- **mindless**
+  = 无脑的 / 毫无思想的
+  （形容小说情节空洞，缺乏逻辑、深度或思考价值）
+
+- **erectile dysfunction**
+  = 阳痿 / 勃起功能障碍
+  （医学名词，此处指身体机能失效，带有幽默或夸张的语气）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">但是，我实在写不来那种无脑的纯肉文……我感觉写那种东西会让我阳痿。</p>
+    <p>I aim for erotic novels with a story.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我的目标是写有剧情的情色小说。</p>
+    <div class="para-wrap"><p>Thank you for reading my lacking writing until now.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>感谢你一直读到现在我这不够好的作品。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Thank you for doing sth</strong>
+= 感谢你做某事</p>
+<p>例如：</p>
+<ul>
+<li>Thank you for coming.
+= 谢谢你来。</li>
+</ul>
+</li>
+<li><p><strong>reading</strong>
+= 阅读</p>
+</li>
+<li><p><strong>my lacking writing</strong>
+= 我不足的作品；我写得不够好的文章</p>
+</li>
+<li><p><strong>until now</strong>
+= 到现在为止；一直到现在</p>
+</li>
+</ul>
+<h3>📌 Language Note</h3>
+<p>这句话有一点<strong>非母语英语表达的感觉</strong>。</p>
+<p>关键是：</p>
+<blockquote>
+<p><strong>lacking writing</strong></p>
+</blockquote>
+<p>虽然能理解，但英语里不太自然。</p>
+<p><strong>lacking</strong> 通常表示：</p>
+<blockquote>
+<p>缺少某种东西的；不足的</p>
+</blockquote>
+<p>例如：</p>
+<ul>
+<li><p>The plan is lacking in detail.
+= 这个计划缺少细节。</p>
+</li>
+<li><p>He is lacking confidence.
+= 他缺乏自信。</p>
+</li>
+</ul>
+<p>如果作者想表达“我写得不好”，更自然的说法：</p>
+<blockquote>
+<p><strong>Thank you for reading my poor writing until now.</strong></p>
+</blockquote>
+<p>= 感谢你一直读我的拙作。</p>
+<p>或者更谦虚、更像作者致谢：</p>
+<blockquote>
+<p><strong>Thank you for sticking with my writing until now.</strong></p>
+</blockquote>
+<p>= 感谢你一直支持我的作品。</p>
+<blockquote>
+<p><strong>Thank you for reading my humble work.</strong></p>
+</blockquote>
+<p>= 感谢你阅读我的拙作。</p>
+<p>这里的 <strong>until now</strong> 有“一路读到这里”的感觉，常见于作者在章节末尾向读者致谢。</p>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+感谢你一直读到现在我这不够好的作品。
+
+
+### 📌 Key Expressions
+
+- **Thank you for doing sth**
+  = 感谢你做某事
+
+  例如：
+  - Thank you for coming.
+  = 谢谢你来。
+
+- **reading**
+  = 阅读
+
+- **my lacking writing**
+  = 我不足的作品；我写得不够好的文章
+
+- **until now**
+  = 到现在为止；一直到现在
+
+
+### 📌 Language Note
+
+这句话有一点**非母语英语表达的感觉**。
+
+关键是：
+
+&gt; **lacking writing**
+
+虽然能理解，但英语里不太自然。
+
+**lacking** 通常表示：
+
+&gt; 缺少某种东西的；不足的
+
+例如：
+
+- The plan is lacking in detail.
+  = 这个计划缺少细节。
+
+- He is lacking confidence.
+  = 他缺乏自信。
+
+
+如果作者想表达“我写得不好”，更自然的说法：
+
+&gt; **Thank you for reading my poor writing until now.**
+
+= 感谢你一直读我的拙作。
+
+或者更谦虚、更像作者致谢：
+
+&gt; **Thank you for sticking with my writing until now.**
+
+= 感谢你一直支持我的作品。
+
+&gt; **Thank you for reading my humble work.**
+
+= 感谢你阅读我的拙作。
+
+
+这里的 **until now** 有“一路读到这里”的感觉，常见于作者在章节末尾向读者致谢。</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">感谢大家一直以来阅读我这并不成熟的文字（拙作）。</p>
+    <div class="para-wrap"><p>If you have time, I would appreciate it if you could check out my other novels as well.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>如果您有时间，我会很感激您也能看看我的其他小说。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>If you have time</strong>
+= 如果您有时间
+（条件句，引导让步或请求的情境）</p>
+</li>
+<li><p><strong>I would appreciate it if...</strong>
+= 我会很感激如果…
+（礼貌表达，常用于提出请求或建议）</p>
+</li>
+<li><p><strong>could check out</strong>
+= 能够查看/浏览
+（“check out”在此指“阅读、了解”，常用于非正式口语）</p>
+</li>
+<li><p><strong>as well</strong>
+= 也，同样
+（用于在已有请求基础上添加额外的请求）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+如果您有时间，我会很感激您也能看看我的其他小说。
+
+### 📌 Key Expressions
+- **If you have time**
+  = 如果您有时间
+  （条件句，引导让步或请求的情境）
+
+- **I would appreciate it if...**
+  = 我会很感激如果…
+  （礼貌表达，常用于提出请求或建议）
+
+- **could check out**
+  = 能够查看/浏览
+  （“check out”在此指“阅读、了解”，常用于非正式口语）
+
+- **as well**
+  = 也，同样
+  （用于在已有请求基础上添加额外的请求）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">如果您有时间，希望也能去看看我的其他小说，感激不尽。</p>
+    <div class="para-wrap"><p>(Thank you to Strongest Doraemon-nim for commenting on every chapter, it was fun reading the comments....)<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>（感谢最强的哆啦A梦大人对每一章都发表评论，阅读这些评论很有趣……）</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Thank you</strong>
+= 谢谢
+（表达感谢）</p>
+</li>
+<li><p><strong>Strongest Doraemon-nim</strong>
+= 最强的哆啦A梦大人
+（“-nim”是日语敬称，表示尊敬）</p>
+</li>
+<li><p><strong>commenting on every chapter</strong>
+= 对每一章都发表评论
+（动词短语）</p>
+</li>
+<li><p><strong>it was fun reading the comments</strong>
+= 阅读评论很有趣
+（句子结构）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+（感谢最强的哆啦A梦大人对每一章都发表评论，阅读这些评论很有趣……）
+
+### 📌 Key Expressions
+- **Thank you**
+  = 谢谢
+  （表达感谢）
+
+- **Strongest Doraemon-nim**
+  = 最强的哆啦A梦大人
+  （“-nim”是日语敬称，表示尊敬）
+
+- **commenting on every chapter**
+  = 对每一章都发表评论
+  （动词短语）
+
+- **it was fun reading the comments**
+  = 阅读评论很有趣
+  （句子结构）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（还要感谢“最强哆啦A梦”大大在每一章的留言，看您的评论真的很有意思……）</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">🔍 核心词汇与句型拆解</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">为了更好地对照和解析原文的行文逻辑，以下是关键文本的拆解：</p>
+    <p>in various genres</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：各种类型</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：Genre 常专门用于指代文学、电影或音乐的“体裁/流派”。</p>
+    <p>got the most views</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：获得了最高的阅读量</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：网络小说语境下的标准表达，views 直接对应“点击量/浏览量”。</p>
+    <p>have plenty of material</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：有充足的素材</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：Material 在这里指写作素材、灵感储备。</p>
+    <p>mindless sex novels</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：无脑的纯肉文</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：Mindless（不用脑子的、盲目的）精准传达了作者对缺乏剧情铺垫、仅凭本能驱动的内容的排斥。</p>
+    <p>I aim for...</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：我的目标是 / 我致力于……</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：表达创作方向和追求的实用句型。</p>
+    <p>my lacking writing</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：我不成熟的文字 / 拙作</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：Lacking 作为形容词表示“欠缺的、不足的”，这是一种非常地道且谦虚的自谦表达，等同于中文创作者常说的“笔力不足”。</p>
+    <p>Strongest Doraemon-nim</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：“最强哆啦A梦”大大</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：-nim 是韩语敬语（님）的音译拼写，在英语网文圈（尤其是翻译自韩网的小说）中，直接保留后缀是对读者或作者的一种尊称，翻译为中文语境的“大大”最为贴切。</p>    </div>
+    <script>
+        var STORAGE_KEY = 'bio_reader_prefs_' + location.pathname.replace(/[^a-zA-Z0-9]/g, '');
+        var prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { font: 1.0, dictEnabled: true, barHidden: true, highlightEnabled: true, blurEnabled: true };
+        var bar = document.getElementById('top-bar');
+        var content = document.getElementById('content-container');
+        var dictBtn = document.getElementById('dict-btn');
+        var hlBtn = document.getElementById('hl-btn');
+        var blurBtn = document.getElementById('blur-btn');
+        function applyPrefs() {
+            content.style.fontSize = prefs.font + 'em';
+            if (prefs.barHidden) { bar.classList.add('hidden'); document.body.classList.add('bar-hidden'); } else { bar.classList.remove('hidden'); document.body.classList.remove('bar-hidden'); }
+            if (prefs.dictEnabled) { document.body.classList.add('dict-enabled'); dictBtn.innerText = "查词: 开"; dictBtn.style.background = "#34C759"; dictBtn.style.color = "#fff"; } else { document.body.classList.remove('dict-enabled'); dictBtn.innerText = "查词: 关"; dictBtn.style.background = "#E5E5EA"; dictBtn.style.color = "#1C1C1E"; }
+            if (prefs.highlightEnabled) { document.body.classList.add('highlights-enabled'); hlBtn.innerText = "高亮: 开"; hlBtn.style.background = "#FF3B30"; hlBtn.style.color = "#fff"; } else { document.body.classList.remove('highlights-enabled'); hlBtn.innerText = "高亮: 关"; hlBtn.style.background = "#E5E5EA"; hlBtn.style.color = "#1C1C1E"; }
+            if (prefs.blurEnabled) { document.body.classList.add('global-blur-enabled'); blurBtn.innerText = "模糊: 开"; blurBtn.style.background = "#AF52DE"; blurBtn.style.color = "#fff"; document.querySelectorAll('.zh-para').forEach(function(el){el.classList.add('blurred');}); } else { document.body.classList.remove('global-blur-enabled'); blurBtn.innerText = "模糊: 关"; blurBtn.style.background = "#E5E5EA"; blurBtn.style.color = "#1C1C1E"; }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        }
+        document.addEventListener('dblclick', function(e) {
+            if(e.target.closest('#top-bar') || e.target.classList.contains('zh-para')) return;
+            prefs.barHidden = !prefs.barHidden; applyPrefs();
+        });
+        function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); }
+        function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); }
+        function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); }
+        function toggleBlur() { prefs.blurEnabled = !prefs.blurEnabled; applyPrefs(); }
+        window.addEventListener('DOMContentLoaded', function() {
+            applyPrefs(); var savedScroll = localStorage.getItem(STORAGE_KEY + '_scroll');
+            if (savedScroll) { setTimeout(function(){ window.scrollTo(0, parseFloat(savedScroll)); }, 150); }
+        });
+        var scrollTimer;
+        window.addEventListener('scroll', function() {
+            if (scrollTimer) clearTimeout(scrollTimer); scrollTimer = setTimeout(function(){ localStorage.setItem(STORAGE_KEY + '_scroll', window.scrollY); }, 300);
+        });
+        var highlightWords = new Set();
+        async function initCloudHighlights() {
+            var cacheKey = 'bio_remote_hl_words_v2'; var cached = localStorage.getItem(cacheKey); var now = Date.now();
+            if (cached) { try { var parsed = JSON.parse(cached); if (now - parsed.time < 24 * 60 * 60 * 1000 && Array.isArray(parsed.data)) { highlightWords = new Set(parsed.data); applyHighlightsToDOM(); return; } } catch(e){} }
+            try {
+                var urls = ['https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://ghproxy.net/https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://fastly.jsdelivr.net/gh/moodHappy/HelloWorld@master/Notes/one.txt'];
+                var text = ''; for (var i=0; i<urls.length; i++) { try { var res = await fetch(urls[i]); if (res.ok) { text = await res.text(); if (text && !text.includes('<html') && !text.includes('Cloudflare')) break; } } catch(err){} }
+                if (!text) throw new Error(); var arr = text.split('\n').map(function(w){return w.trim().toLowerCase();}).filter(function(w){return w;});
+                if (arr.length > 0) { highlightWords = new Set(arr); localStorage.setItem(cacheKey, JSON.stringify({data: arr, time: now})); applyHighlightsToDOM(); }
+            } catch(e){}
+        }
+        function applyHighlightsToDOM() {
+            if(highlightWords.size === 0) return;
+            document.querySelectorAll('.tm-word').forEach(function(span){ if(highlightWords.has(span.textContent.trim().toLowerCase())) span.classList.add('is-highlight'); });
+        }
+        var GM_getValue = function(key, def) { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; };
+        var GM_setValue = function(key, val) { localStorage.setItem(key, JSON.stringify(val)); };
+        var GM_xmlhttpRequest = function(opt) {
+            var url = opt.url; if(url.includes('dict.youdao.com') || url.includes('cambridge.org')) {
+                var isYoudao = url.includes('dict.youdao.com');
+                var proxies = [url, 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), 'https://corsproxy.io/?' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)];
+                var currentProxyIdx = 0;
+                var tryNext = function() {
+                    if (currentProxyIdx >= proxies.length) { if(opt.onerror) opt.onerror(new Error()); return; }
+                    fetch(proxies[currentProxyIdx++], { headers: opt.headers || {} })
+                    .then(async function(r) { var t = ''; try{t = await r.text();}catch(e){} if(!r.ok || t.includes('Cloudflare')) throw new Error(); if(isYoudao && !t.trim().startsWith('{')) throw new Error(); if(opt.onload) opt.onload({status:200, responseText:t}); })
+                    .catch(function(){ tryNext(); });
+                };
+                tryNext(); return;
+            }
+            fetch(url, { headers: opt.headers || {} }).then(async function(r){ var t = ''; try{t = await r.text();}catch(e){} if(opt.onload) opt.onload({status:r.status, responseText:t}); }).catch(opt.onerror);
+        };
+        (function() {
+            var ttsConfig = { voices: ["en-US-AdamNeural", "en-US-AriaNeural", "en-US-AnaNeural", "en-US-JennyNeural", "en-US-GuyNeural"], apis: [ { url: "https://read-aloud-bay.vercel.app/api/synthesis", type: "read-aloud" }, { url: "https://libre-tts-nu.vercel.app/api/tts", type: "libre" } ] };
+            var globalResultCache = GM_getValue('tm_dict_cache', {}); var saveTimeout = null;
+            function saveToGlobalCache(wordKey, resultData) { globalResultCache[wordKey] = resultData; var keys = Object.keys(globalResultCache); if (keys.length > 2000) delete globalResultCache[keys[0]]; clearTimeout(saveTimeout); saveTimeout = setTimeout(function(){ GM_setValue('tm_dict_cache', globalResultCache); }, 1500); }
+            var cefrStaticCache = {};
+            function initCEFRStaticDict() {
+                var staticUrls = ["https://fastly.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json","https://cdn.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json"];
+                var idx = 0; var tryFetch = function() { if (idx >= staticUrls.length) return; fetch(staticUrls[idx++]).then(function(r){return r.json();}).then(function(data){ if (Array.isArray(data)) data.forEach(function(item){ if (item.word && item.cefr) cefrStaticCache[item.word.toLowerCase()] = item.cefr.toUpperCase(); }); }).catch(tryFetch); };
+                tryFetch();
+            }
+            function fetchCEFR(word) {
+                return new Promise(function(resolve) {
+                    var w = word.toLowerCase(); if (cefrStaticCache[w]) { resolve(cefrStaticCache[w]); return; }
+                    GM_xmlhttpRequest({ method: "GET", url: 'https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(w), onload: function(res) { if (res.status === 200) { var match = res.responseText.match(/(?:epp-xref|dxref)[^>]*>\s*([A-C][1-2])\s*<\/span>/i) || res.responseText.match(/title="CEFR[^>]*>\s*([A-C][1-2])\s*<\/span>/i); if (match && match[1]) { cefrStaticCache[w] = match[1].toUpperCase(); resolve(cefrStaticCache[w]); return; } } resolve(null); }, onerror: function(){resolve(null);} });
+                });
+            }
+            function fetchTranslation(text) { return new Promise(function(resolve, reject) { GM_xmlhttpRequest({ method: "GET", url: 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&q=' + encodeURIComponent(text), onload: function(res) { if (res.status === 200) resolve(JSON.parse(res.responseText)); else reject(new Error()); }, onerror: reject }); }); }
+            function fetchPhonetics(text) { return new Promise(function(resolve) { GM_xmlhttpRequest({ method: "GET", url: 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(text), onload: function(res) { if (res.status === 200) { var data = JSON.parse(res.responseText); if (data && data.length > 0) { var pObj = data[0].phonetics.find(function(p){return p.text;}) || data[0]; resolve(pObj.text || null); return; } } resolve(null); }, onerror: function(){resolve(null);} }); }); }
+            function fetchWordLevel(text) { return new Promise(function(resolve) { GM_xmlhttpRequest({ method: "GET", url: 'https://dict.youdao.com/jsonapi?q=' + encodeURIComponent(text), onload: function(res) { var result = { stars: 0, tags: [] }; try { var data = JSON.parse(res.responseText); if (data.ec && data.ec.exam_type) result.tags = data.ec.exam_type; if (data.collins && data.collins.collins_entries && data.collins.collins_entries.length > 0) { var starStr = data.collins.collins_entries[0].star; if (starStr) { var parsedNum = parseInt(String(starStr).replace(/[^0-9]/g, ''), 10); result.stars = isNaN(parsedNum) ? 0 : parsedNum; } } } catch (e) {} resolve(result); }, onerror: function(){resolve({ stars: 0, tags: [] });} }); }); }
+            var globalAudioPlayer = null; var currentPlayingBtn = null;
+            function initAudioPlayer() { if (!globalAudioPlayer) { globalAudioPlayer = document.createElement('audio'); globalAudioPlayer.style.display = 'none'; document.body.appendChild(globalAudioPlayer); } }
+            function playTTS(apiIndex, text, voice, btn) {
+                if (apiIndex >= ttsConfig.apis.length) { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); return; }
+                if (currentPlayingBtn && currentPlayingBtn !== btn) currentPlayingBtn.classList.remove('playing');
+                currentPlayingBtn = btn; btn.classList.add('playing'); var api = ttsConfig.apis[apiIndex]; var params = new URLSearchParams();
+                if (api.type === "read-aloud") { params.append("text", text); params.append("voiceName", voice); } else { params.append("t", text); params.append("v", voice); params.append("r", "0"); params.append("p", "0"); }
+                globalAudioPlayer.src = api.url + '?' + params.toString(); globalAudioPlayer.onended = function() { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); };
+                globalAudioPlayer.onerror = function() { playTTS(apiIndex + 1, text, voice, btn); }; var p = globalAudioPlayer.play(); if (p !== undefined) p.catch(function(){ playTTS(apiIndex + 1, text, voice, btn); });
+                }
+            function wrapTextNodesToWord(rootNode) {
+                var ignoreTags = new Set(['SCRIPT', 'STYLE', 'BUTTON', 'A']);
+                var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, { acceptNode: function(currentNode) { var parent = currentNode.parentNode; if (!parent || ignoreTags.has(parent.nodeName.toUpperCase()) || parent.closest('.tm-word') || parent.closest('.zh-para')) return NodeFilter.FILTER_REJECT; if (!currentNode.nodeValue.trim() || !/\b[a-zA-Z'-]+\b/.test(currentNode.nodeValue)) return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; } });
+                var nodesToWrap = []; let currNode; while ((currNode = walker.nextNode())) { nodesToWrap.push(currNode); }
+                nodesToWrap.forEach(function(textNode) {
+                    var text = textNode.nodeValue; var fragment = document.createDocumentFragment(); var lastIndex = 0;
+                    text.replace(/\b([a-zA-Z'-]+)\b/g, function(match, p1, offset) { if (offset > lastIndex) fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset))); var span = document.createElement('span'); span.className = 'tm-word'; span.textContent = match; fragment.appendChild(span); lastIndex = offset + match.length; return match; });
+                    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.substring(lastIndex))); if (fragment.childNodes.length > 0) textNode.parentNode.replaceChild(fragment, textNode);
+                });
+            }
+            function formatDictData(originalWord, data) {
+                var transData = data.transData; var ipaText = data.ipaText; var levelData = data.levelData; var cefrLevel = data.cefrLevel; var tagsHtml = '';
+                if (cefrLevel || (levelData && (levelData.stars > 0 || (levelData.tags && levelData.tags.length > 0)))) {
+                    tagsHtml += '<div class="dict-tags-row">'; if (levelData && levelData.stars > 0) tagsHtml += '<span class="dict-tag star-tag">' + '★'.repeat(levelData.stars) + '☆'.repeat(5 - levelData.stars) + '</span>'; if (cefrLevel) tagsHtml += '<span class="dict-tag cefr-' + cefrLevel + '">CEFR ' + cefrLevel + '</span>'; if (levelData && levelData.tags) levelData.tags.forEach(function(tag){ tagsHtml += '<span class="dict-tag">' + tag + '</span>'; }); tagsHtml += '</div>';
+                }
+                var basicTrans = (transData && transData[0] && transData[0][0]) ? transData[0][0][0] : '';
+                var html = '<div class="dict-header-row"><div class="dict-word-line"><span class="dict-head-word Casting">' + originalWord + '</span>' + (ipaText ? '<span class="dict-ipa">' + ipaText + '</span>' : '') + '<span class="dict-speaker-btn" data-word="' + originalWord.replace(/"/g, '&quot;') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span></div>' + tagsHtml + '<div class="dict-basic-trans">' + basicTrans + '</div></div>';
+                var dictEntries = transData ? transData[1] : null;
+                if (dictEntries && dictEntries.length > 0) {
+                    html += '<div class="dict-details">'; dictEntries.forEach(function(entry){ var pos = entry[0]; var displayDefs = entry[1].slice(0, 3); html += '<div class="dict-pos-block"><span class="dict-pos-tag">' + pos + '.</span><ul class="dict-def-list">'; displayDefs.forEach(function(def){ html += '<li class="dict-def-item">' + def + '</li>'; }); html += '</ul></div>'; }); html += '</div>';
+                } else if (!basicTrans) { html += '<div style="padding:5px; color:#666; font-size:13px;">无释义结果...</div>'; }
+                return html;
+            }
+            function setupTippyDelegate() {
+                tippy.delegate(document.body, { 
+                    target: '.tm-word', trigger: 'click', interactive: true, theme: 'light-border', placement: 'bottom', appendTo: function(){return document.body;}, maxWidth: 320,
+                    onShow: function(instance) {
+                        if (!document.body.classList.contains('dict-enabled')) return false;
+                        var word = instance.reference.innerText.trim(); var wordKey = word.toLowerCase();
+                        var renderContent = function(data) { if (instance.reference.innerText.trim() !== word) return; var contentDiv = document.createElement('div'); contentDiv.className = 'dict-popup'; contentDiv.innerHTML = formatDictData(word, data); ['mousedown', 'touchstart', 'click'].forEach(function(evt){ contentDiv.addEventListener(evt, function(e){e.stopPropagation();}, { capture: true }); }); var btn = contentDiv.querySelector('.dict-speaker-btn'); if (btn) { btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var text = btn.getAttribute('data-word'); if (!text || btn.classList.contains('playing')) return; playTTS(0, text.trim(), ttsConfig.voices[Math.floor(Math.random() * ttsConfig.voices.length)], btn); }); } instance.setContent(contentDiv); };
+                        if (globalResultCache[wordKey]) { renderContent(globalResultCache[wordKey]); } else {
+                            var loadingDiv = document.createElement('div'); loadingDiv.className = 'dict-popup'; loadingDiv.innerHTML = '<div class="dict-loading">极速查询中...</div>'; instance.setContent(loadingDiv);
+                            var pTrans = fetchTranslation(word).catch(function(){return [[['API Error']]];}); var pPhon = fetchPhonetics(word).catch(function(){return null;}); var pLevel = fetchWordLevel(word).catch(function(){return {stars:0, tags:[]};}); var pCefr = Promise.race([fetchCEFR(word), new Promise(function(r){setTimeout(function(){r(null);},1500);})]).catch(function(){return null;});
+                            Promise.all([pTrans, pPhon, pLevel, pCefr]).then(function(arr){ var resultData = { transData: arr[0], ipaText: arr[1], levelData: arr[2], cefrLevel: arr[3] }; saveToGlobalCache(wordKey, resultData); if (instance.state.isVisible) renderContent(resultData); });
+                        }
+                    }
+                });
+            }
+            setTimeout(function() { initAudioPlayer(); initCEFRStaticDict(); var container = document.getElementById('content-container'); if(container) wrapTextNodesToWord(container); setupTippyDelegate(); initCloudHighlights(); }, 500);
+        })();
+    </script>
+
+<script id="matrix-static-script">
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (document.documentElement.getAttribute('data-matrix-active') === 'true' || window.__MATRIX_ENGINE_ACTIVE__) return;
+
+                const isNewTpl = !!document.getElementById('en-container');
+                document.querySelectorAll('.para-wrap').forEach(wrap => {
+                    const toggle = wrap.querySelector('.anno-toggle');
+                    const box = wrap.querySelector('.anno-box');
+                    const view = wrap.querySelector('.anno-view');
+                    if (!toggle || !box || !view) return;
+
+                    toggle.onclick = (e) => {
+                        e.stopPropagation();
+                        if (box.style.display === 'block') {
+                            box.style.display = 'none';
+                            wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        } else {
+                            box.style.display = 'block';
+                            view.style.display = 'block';
+                        }
+                    };
+
+                    let touchStartX = 0; let touchStartY = 0; let activeFingers = 0;
+                    view.addEventListener('touchstart', e => {
+                        activeFingers = e.touches.length;
+                        if ((!isNewTpl && activeFingers === 2) || (isNewTpl && (activeFingers === 1 || activeFingers === 3))) {
+                            touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+                        } else { activeFingers = 0; }
+                    }, {passive: true});
+
+                    view.addEventListener('touchmove', e => {
+                        if (!activeFingers) return;
+                        const diffX = touchStartX - e.touches[0].clientX;
+                        const diffY = Math.abs(touchStartY - e.touches[0].clientY);
+                        if (diffY > 40) { activeFingers = 0; return; }
+                        const isSwipeCloseGesture = isNewTpl ? (activeFingers === 1) : (activeFingers === 2);
+                        if (isSwipeCloseGesture && diffX > 60) {
+                            box.style.display = 'none';
+                            wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            activeFingers = 0;
+                        }
+                    }, {passive: true});
+
+                    view.addEventListener('touchend', e => {
+                        if (e.touches.length === 0) activeFingers = 0;
+                    }, {passive: true});
+                });
+            }, 500);
+        });
+    </script></body></html>
