@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Beginning</title>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <style>
+        body { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; max-width: 800px; margin: 0 auto; padding: 50px 24px; font-size: 20px; line-height: 1.8; letter-spacing: 0.05em; background-color: #F8F4E6; color: #4A3F35; } h1 { text-align: left !important; font-size: 28px; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #D5CBBB; padding-bottom: 20px; color: #2C241B; } p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
+        body { padding-top: 70px !important; transition: padding-top 0.3s cubic-bezier(0.4,0,0.2,1); }
+        body.bar-hidden { padding-top: 20px !important; }
+        .reader-bar { position: fixed; top: 0; left: 0; right: 0; min-height: 50px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 1px 8px rgba(0,0,0,0.08); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 5px; }
+        .reader-bar.hidden { transform: translateY(-100%); }
+        .reader-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .reader-btn { background: #E5E5EA; color: #1C1C1E; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+        .reader-btn:active { transform: scale(0.95); }
+        #content-container { transition: font-size 0.2s; }
+        .zh-para { transition: filter 0.3s ease, opacity 0.3s ease; }
+        .global-blur-enabled .zh-para { cursor: pointer; }
+        .global-blur-enabled .zh-para.blurred { filter: blur(0.35em); opacity: 0.5; user-select: none; }
+        .global-blur-enabled .zh-para.blurred:hover { filter: blur(0.2em); opacity: 0.7; }
+        body.highlights-enabled .tm-word.is-highlight { color: #FF3B30 !important; font-weight: 700; background-color: rgba(255, 59, 48, 0.05); border-radius: 3px; padding: 0 2px; }
+        .dict-enabled .tm-word { cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 3px; }
+        .dict-enabled .tm-word:hover, .dict-enabled .tm-word[aria-expanded="true"] { background-color: #E3F2FD; color: #1565C0 !important; }
+        .tippy-box[data-theme~='light-border'] { background-color: #fff; color: #333; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+        .tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before { border-top-color: #ccc; }
+        .tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: #ccc; }
+        .tippy-content { padding: 8px; }
+        .dict-popup { text-align: left; font-size: 14px; line-height: 1.4; max-width: 280px; min-width: 200px; color: #333; font-family: -apple-system, sans-serif; }
+        .dict-header-row { border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
+        .dict-word-line { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .dict-head-word { font-weight: bold; color: #D32F2F; font-size: 18px; }
+        .dict-ipa { font-family: sans-serif; color: #666; font-size: 13px; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
+        .dict-speaker-btn { display: inline-flex; cursor: pointer; color: #1976D2; padding: 2px; border-radius: 50%; transition: background 0.2s; }
+        .dict-speaker-btn:hover { background-color: rgba(25, 118, 210, 0.1); }
+        .dict-speaker-btn svg { width: 18px; height: 18px; pointer-events: none; }
+        .dict-speaker-btn.playing { color: #E91E63; animation: tm-pulse 1s infinite; }
+        .dict-tags-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;}
+        .dict-tag { background: #F0F4F8; color: #476582; font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #D9E2EC; font-weight: 500; }
+        .dict-tag.star-tag { color: #F59E0B; background: #FEF3C7; border-color: #FDE68A; letter-spacing: 1px; padding: 2px 4px; }
+        .dict-tag.cefr-A1 { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+        .dict-tag.cefr-A2 { background: #E0F2F1; color: #00695C; border-color: #B2DFDB; }
+        .dict-tag.cefr-B1 { background: #FFF8E1; color: #F57F17; border-color: #FFECB3; }
+        .dict-tag.cefr-B2 { background: #FFF3E0; color: #E65100; border-color: #FFE0B2; }
+        .dict-tag.cefr-C1 { background: #FCE4EC; color: #C2185B; border-color: #F8BBD0; }
+        .dict-tag.cefr-C2 { background: #F3E5F5; color: #7B1FA2; border-color: #E1BEE7; }
+        .dict-basic-trans { font-size: 14px; color: #444; margin-top: 4px; }
+        .dict-pos-block { margin-bottom: 4px; }
+        .dict-pos-tag { font-style: italic; color: #1976D2; font-weight: bold; font-size: 12px; margin-right: 4px; }
+        .dict-def-list { margin: 0; padding: 0; list-style: none; display: inline; }
+        .dict-def-item { display: inline; }
+        .dict-def-item::after { content: "; "; color: #999; }
+        .dict-def-item:last-child::after { content: ""; }
+        .dict-loading { color: #666; font-style: italic; font-size: 13px; padding: 5px; text-align: center; }
+        @keyframes tm-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    </style>
+<style id="matrix-core-styles">
+        .para-wrap { position: relative; margin-bottom: 1.5em; }
+        .para-wrap > p { margin-bottom: 0 !important; }
+        .anno-toggle, .ai-toggle {
+            display: inline-flex;
+            margin-left: 6px;
+            cursor: pointer;
+            opacity: 0.2;
+            font-size: 0.8rem;
+            vertical-align: middle;
+            transition: all 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .anno-toggle:hover, .ai-toggle:hover { opacity: 0.8; transform: scale(1.1); }
+        .anno-toggle.has-anno { opacity: 1; }
+        .anno-toggle::after { content: "🔴"; }
+        .ai-toggle { margin-left: 4px; opacity: 0.5; }
+        .ai-toggle::after { content: "🤖"; }
+        .ai-toggle.loading::after {
+            content: "⏳";
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .anno-box {
+            display: none;
+            margin-top: 10px;
+            background: #f8f6ff;
+            border-left: 4px solid #8e7cc3;
+            padding: 12px 16px;
+            border-radius: 0 6px 6px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .anno-view {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #4a4a4a;
+            min-height: 24px;
+            font-family: -apple-system, sans-serif;
+            text-align: left;
+            text-indent: 0;
+        }
+        .anno-edit {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 1rem;
+            border: 1px dashed #8e7cc3;
+            border-radius: 6px;
+            box-sizing: border-box;
+            resize: vertical;
+            display: none;
+            background: #fff;
+            color: #333;
+            outline: none;
+            text-align: left;
+            -webkit-appearance: none;
+        }
+        .anno-edit:focus {
+            border: 1px solid #8e7cc3;
+            box-shadow: 0 0 0 3px rgba(142,124,195,0.1);
+        }
+        .markdown-body p { margin-top: 0; margin-bottom: 8px; text-indent: 0; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            color: #8e7cc3;
+            font-size: 1.15rem;
+            margin: 10px 0 8px 0;
+            border-bottom: 1px dashed #e0d8f0;
+            padding-bottom: 4px;
+        }
+        .markdown-body blockquote {
+            margin: 0 0 10px 0;
+            padding: 10px 15px;
+            background: rgba(142,124,195,0.1);
+            border-left: 4px solid #8e7cc3;
+            color: #555;
+        }
+        #matrix-sync-status {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            display: none;
+            z-index: 2147483647;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+    </style></head>
+<body class="bar-hidden global-blur-enabled dict-enabled highlights-enabled">
+    <div class="reader-bar hidden" id="top-bar">
+        <div class="reader-controls">
+            <button class="reader-btn" onclick="adjustFont(-0.1)">A-</button>
+            <button class="reader-btn" onclick="adjustFont(0.1)">A+</button>
+            <button id="blur-btn" class="reader-btn" style="background:#AF52DE; color:white;" onclick="toggleBlur()">模糊: 开</button>
+            <button id="hl-btn" class="reader-btn" style="background:#FF3B30; color:white;" onclick="toggleHighlight()">高亮: 开</button>
+            <button id="dict-btn" class="reader-btn" style="background:#34C759; color:white;" onclick="toggleDict()">查词: 开</button>
+        </div>
+    </div>
+    <div id="content-container">
+    <h1 style="text-align: left !important;">Beginning</h1>
+    <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">发布时间：2026/8/8 00:44:16</div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">开端</p>
+    <div class="para-wrap"><p>Was it when I was in middle school? My father, who often went on business trips to Japan, abandoned my mom and me one day and never returned. About two years passed, and my already sickly mother passed away after suffering, leaving me alone.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>那是我上初中的时候吗？我的父亲经常出差去日本，有一天抛弃了我和妈妈，之后再也没有回来。大约两年过去了，我本就体弱多病的母亲在忍受痛苦后去世，留下我一个人。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>middle school</strong><br>= 初中<br>（指学生阶段的中学阶段）</p>
+</li>
+<li><p><strong>abandoned</strong><br>= 抛弃，遗弃<br>（常用于描述对亲人或责任的离开）</p>
+</li>
+<li><p><strong>business trips</strong><br>= 出差<br>（因工作需要而到外地或国外的短期旅行）</p>
+</li>
+<li><p><strong>passed away</strong><br>= 去世，逝世<br>（较为委婉的表达死亡）</p>
+</li>
+<li><p><strong>sickly</strong><br>= 体弱多病的<br>（形容身体状况不佳，容易生病）</p>
+</li>
+<li><p><strong>after suffering</strong><br>= 在忍受痛苦后<br>（表示经历了痛苦或折磨之后）</p>
+</li>
+<li><p><strong>leaving me alone</strong><br>= 把我留下一个人<br>（表示被单独留下，孤独的状态）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+那是我上初中的时候吗？我的父亲经常出差去日本，有一天抛弃了我和妈妈，之后再也没有回来。大约两年过去了，我本就体弱多病的母亲在忍受痛苦后去世，留下我一个人。
+
+### 📌 Key Expressions
+- **middle school**  
+  = 初中  
+  （指学生阶段的中学阶段）
+
+- **abandoned**  
+  = 抛弃，遗弃  
+  （常用于描述对亲人或责任的离开）
+
+- **business trips**  
+  = 出差  
+  （因工作需要而到外地或国外的短期旅行）
+
+- **passed away**  
+  = 去世，逝世  
+  （较为委婉的表达死亡）
+
+- **sickly**  
+  = 体弱多病的  
+  （形容身体状况不佳，容易生病）
+
+- **after suffering**  
+  = 在忍受痛苦后  
+  （表示经历了痛苦或折磨之后）
+
+- **leaving me alone**  
+  = 把我留下一个人  
+  （表示被单独留下，孤独的状态）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">是在我上初中的时候吗？经常去日本出差的父亲，有一天抛弃了我和妈妈，再也没有回来。大约过了两年，本就体弱多病的母亲在饱受病痛折磨后去世了，留下我孤身一人。</p>
+    <div class="para-wrap"><p>About fifteen days after my mother's funeral, someone came to my house. A woman in a suit, like a secretary from a drama, spoke awkward Korean and seemed to be Japanese.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>母亲葬礼后大约十五天，有人来到我家。一个穿西装的女人，像电视剧里的秘书，说着蹩脚的韩语，看起来像是日本人。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>About fifteen days after...</strong>
+= 大约……之后
+（时间状语结构）</p>
+</li>
+<li><p><strong>my mother's funeral</strong>
+= 母亲的葬礼</p>
+</li>
+<li><p><strong>A woman in a suit</strong>
+= 一个穿西装的女人
+（介词短语作后置定语修饰名词）</p>
+</li>
+<li><p><strong>like a secretary from a drama</strong>
+= 像电视剧里的秘书
+（明喻结构，用于形象描述）</p>
+</li>
+<li><p><strong>spoke awkward Korean</strong>
+= 说着蹩脚的韩语</p>
+</li>
+<li><p><strong>seemed to be Japanese</strong>
+= 看起来像是日本人
+（系动词结构，用于推测身份）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+母亲葬礼后大约十五天，有人来到我家。一个穿西装的女人，像电视剧里的秘书，说着蹩脚的韩语，看起来像是日本人。
+
+### 📌 Key Expressions
+- **About fifteen days after...**
+  = 大约……之后
+  （时间状语结构）
+
+- **my mother's funeral**
+  = 母亲的葬礼
+
+- **A woman in a suit**
+  = 一个穿西装的女人
+  （介词短语作后置定语修饰名词）
+
+- **like a secretary from a drama**
+  = 像电视剧里的秘书
+  （明喻结构，用于形象描述）
+
+- **spoke awkward Korean**
+  = 说着蹩脚的韩语
+
+- **seemed to be Japanese**
+  = 看起来像是日本人
+  （系动词结构，用于推测身份）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">在我母亲葬礼后的大约十五天，有人来到了我家。一个穿着西装的女人，像电视剧里的秘书一样，操着一口蹩脚的韩语，看起来像是日本人。</p>
+    <p>"Ah, excuse me... Are you Kindae-jun-kun?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“啊，打扰一下……请问你是金大俊（Kindae-jun）君吗？”</p>
+    <p>"It's Daejun, not Dae-jun. Who are you..."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“是大俊（Daejun），不是大-俊（Dae-jun）。你是谁……”</p>
+    <p>"I came because your father sent me."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“是你父亲派我来的。”</p>
+    <p>"Huh?!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“哈？！”</p>
+    <div class="para-wrap"><p>She said my father had remarried in Japan and was doing well, and that he always felt sorry for my mom and me, but I was just angry and annoyed. After all, wasn't he a man who abandoned his wife and child?<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>她说我父亲在日本再婚，生活得很好，而且他一直对我妈妈和我感到愧疚，但我只是又气又烦。毕竟，他不就是那个抛弃妻子和孩子的男人吗？</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>had remarried</strong>
+= 再婚了（过去完成时，表示在过去的某个时间点之前已经完成的动作）</p>
+</li>
+<li><p><strong>doing well</strong>
+= 生活得很好、过得不错</p>
+</li>
+<li><p><strong>felt sorry for</strong>
+= 为…感到愧疚、同情</p>
+</li>
+<li><p><strong>angry and annoyed</strong>
+= 又气又烦（形容情绪同时包含愤怒和恼怒）</p>
+</li>
+<li><p><strong>abandoned his wife and child</strong>
+= 抛弃了他的妻子和孩子（abandon 常用于指遗弃、抛弃）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+她说我父亲在日本再婚，生活得很好，而且他一直对我妈妈和我感到愧疚，但我只是又气又烦。毕竟，他不就是那个抛弃妻子和孩子的男人吗？
+
+### 📌 Key Expressions
+
+- **had remarried**
+  = 再婚了（过去完成时，表示在过去的某个时间点之前已经完成的动作）
+
+- **doing well**
+  = 生活得很好、过得不错
+
+- **felt sorry for**
+  = 为…感到愧疚、同情
+
+- **angry and annoyed**
+  = 又气又烦（形容情绪同时包含愤怒和恼怒）
+
+- **abandoned his wife and child**
+  = 抛弃了他的妻子和孩子（abandon 常用于指遗弃、抛弃）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她说我父亲在日本再婚了，过得很好，还说他一直对我和妈妈感到愧疚，但我只觉得愤怒和烦躁。毕竟，他不就是一个抛妻弃子的男人吗？</p>
+    <div class="para-wrap"><p>The woman gave me a huge amount of money from my father, and anyway, I was able to graduate from high school safely with that money.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>那个女人给了我一大笔来自我父亲的钱，反正，我能够用那笔钱顺利地从高中毕业。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>huge amount of money</strong>
+= 一大笔钱</p>
+</li>
+<li><p><strong>from my father</strong>
+= 来自我父亲（指这笔钱是父亲给的）</p>
+</li>
+<li><p><strong>and anyway</strong>
+= 反正 / 无论如何（表示让步或总结）</p>
+</li>
+<li><p><strong>be able to</strong>
+= 能够 / 成功（表示有能力做某事）</p>
+</li>
+<li><p><strong>graduate from</strong>
+= 从……毕业</p>
+</li>
+<li><p><strong>safely</strong>
+= 顺利地 / 安全地（此处指没有遇到困难）</p>
+</li>
+<li><p><strong>with that money</strong>
+= 用那笔钱</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+那个女人给了我一大笔来自我父亲的钱，反正，我能够用那笔钱顺利地从高中毕业。
+
+### 📌 Key Expressions
+
+- **huge amount of money**
+  = 一大笔钱
+
+- **from my father**
+  = 来自我父亲（指这笔钱是父亲给的）
+
+- **and anyway**
+  = 反正 / 无论如何（表示让步或总结）
+
+- **be able to**
+  = 能够 / 成功（表示有能力做某事）
+
+- **graduate from**
+  = 从……毕业
+
+- **safely**
+  = 顺利地 / 安全地（此处指没有遇到困难）
+
+- **with that money**
+  = 用那笔钱</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">那个女人交给我一笔父亲给的巨款，不管怎样，靠着那笔钱，我顺利地高中毕业了。</p>
+    <div class="para-wrap"><p>Then one day, a Japanese Ryoko Ajumma with big boobs and a trembling body came and asked me to live with her.<span class="anno-toggle has-anno"></span></p><div class="anno-box notranslate" translate="no" style="display: none;"><div class="anno-view markdown-body notranslate" translate="no"><h3>📌 完整翻译</h3>
+<p>然后有一天，一个名叫 Ryoko 的日本“阿珠妈”（中年妇女）带着颤抖的身躯和大胸脯来找我，让我跟她一起住。</p>
+<h3>📌 Key Expressions</h3>
+<ul>
+<li><p><strong>Then one day</strong>
+= 然后有一天 / 突然有一天
+（用于引出故事中的时间点）</p>
+</li>
+<li><p><strong>Ryoko Ajumma</strong>
+= Ryoko 阿珠妈（中年妇女）
+（Ajumma 原为韩语，此处借指中年妇女）</p>
+</li>
+<li><p><strong>with big boobs</strong>
+= 大胸脯 / 大胸
+（描述外貌特征）</p>
+</li>
+<li><p><strong>trembling body</strong>
+= 颤抖的身躯 / 浑身发抖
+（描述身体状态，暗示虚弱或恐惧）</p>
+</li>
+<li><p><strong>came and asked me to...</strong>
+= 来找我…… / 来问我……
+（表示动作的发生和请求）</p>
+</li>
+<li><p><strong>live with her</strong>
+= 跟她一起住
+（核心动词短语）</p>
+</li>
+</ul>
+</div><textarea class="anno-edit notranslate" translate="no" style="display:none;">### 📌 完整翻译
+
+然后有一天，一个名叫 Ryoko 的日本“阿珠妈”（中年妇女）带着颤抖的身躯和大胸脯来找我，让我跟她一起住。
+
+### 📌 Key Expressions
+
+- **Then one day**
+  = 然后有一天 / 突然有一天
+  （用于引出故事中的时间点）
+
+- **Ryoko Ajumma**
+  = Ryoko 阿珠妈（中年妇女）
+  （Ajumma 原为韩语，此处借指中年妇女）
+
+- **with big boobs**
+  = 大胸脯 / 大胸
+  （描述外貌特征）
+
+- **trembling body**
+  = 颤抖的身躯 / 浑身发抖
+  （描述身体状态，暗示虚弱或恐惧）
+
+- **came and asked me to...**
+  = 来找我…… / 来问我……
+  （表示动作的发生和请求）
+
+- **live with her**
+  = 跟她一起住
+  （核心动词短语）</textarea></div></div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">然后有一天，一个胸部丰满、身体微微发颤的日本大妈凉子（Ryoko Ajumma）来找我，让我和她一起生活。</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">🔍 核心词汇与句型拆解</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（以下内容同样为您保持了纯净排版）</p>
+    <p>sickly</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：体弱多病的</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：形容词，指人身体状况不好、经常生病的状态。</p>
+    <p>passed away after suffering</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：饱受折磨后去世</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：passed away 是“去世”的地道委婉说法；after suffering 则强调了生前经历了病痛的折磨。</p>
+    <p>awkward Korean</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：蹩脚的韩语</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：awkward 原意为“尴尬的、笨拙的”，在这里形容外语表达不自然、生硬。</p>
+    <p>remarried</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：再婚</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：marry（结婚）加上前缀 re-（再次），组合而成。</p>
+    <p>felt sorry for</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：对……感到愧疚 / 抱歉</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：非常高频的短语，根据语境可以表示对某人的同情，或者对某人感到内疚。</p>
+    <p>abandoned his wife and child</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：抛妻弃子</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：abandon 意为“抛弃、遗弃”，这里直译为抛弃了妻子和孩子。</p>
+    <p>safely</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：顺利地 / 平安地</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：在这里 graduate safely 不是指免于物理危险，而是指“没有出岔子、安稳顺利地”完成了学业。</p>
+    <p>Ajumma</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">对照：大妈 / 阿姨</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">解析：韩语“아줌마”的罗马音拼写，是对中年妇女的称呼。这里英语原文保留了韩式称呼，凸显了小说的本土语境。</p>    </div>
+    <script>
+        var STORAGE_KEY = 'bio_reader_prefs_' + location.pathname.replace(/[^a-zA-Z0-9]/g, '');
+        var prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { font: 1.0, dictEnabled: true, barHidden: true, highlightEnabled: true, blurEnabled: true };
+        var bar = document.getElementById('top-bar');
+        var content = document.getElementById('content-container');
+        var dictBtn = document.getElementById('dict-btn');
+        var hlBtn = document.getElementById('hl-btn');
+        var blurBtn = document.getElementById('blur-btn');
+        function applyPrefs() {
+            content.style.fontSize = prefs.font + 'em';
+            if (prefs.barHidden) { bar.classList.add('hidden'); document.body.classList.add('bar-hidden'); } else { bar.classList.remove('hidden'); document.body.classList.remove('bar-hidden'); }
+            if (prefs.dictEnabled) { document.body.classList.add('dict-enabled'); dictBtn.innerText = "查词: 开"; dictBtn.style.background = "#34C759"; dictBtn.style.color = "#fff"; } else { document.body.classList.remove('dict-enabled'); dictBtn.innerText = "查词: 关"; dictBtn.style.background = "#E5E5EA"; dictBtn.style.color = "#1C1C1E"; }
+            if (prefs.highlightEnabled) { document.body.classList.add('highlights-enabled'); hlBtn.innerText = "高亮: 开"; hlBtn.style.background = "#FF3B30"; hlBtn.style.color = "#fff"; } else { document.body.classList.remove('highlights-enabled'); hlBtn.innerText = "高亮: 关"; hlBtn.style.background = "#E5E5EA"; hlBtn.style.color = "#1C1C1E"; }
+            if (prefs.blurEnabled) { document.body.classList.add('global-blur-enabled'); blurBtn.innerText = "模糊: 开"; blurBtn.style.background = "#AF52DE"; blurBtn.style.color = "#fff"; document.querySelectorAll('.zh-para').forEach(function(el){el.classList.add('blurred');}); } else { document.body.classList.remove('global-blur-enabled'); blurBtn.innerText = "模糊: 关"; blurBtn.style.background = "#E5E5EA"; blurBtn.style.color = "#1C1C1E"; }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        }
+        document.addEventListener('dblclick', function(e) {
+            if(e.target.closest('#top-bar') || e.target.classList.contains('zh-para')) return;
+            prefs.barHidden = !prefs.barHidden; applyPrefs();
+        });
+        function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); }
+        function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); }
+        function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); }
+        function toggleBlur() { prefs.blurEnabled = !prefs.blurEnabled; applyPrefs(); }
+        window.addEventListener('DOMContentLoaded', function() {
+            applyPrefs(); var savedScroll = localStorage.getItem(STORAGE_KEY + '_scroll');
+            if (savedScroll) { setTimeout(function(){ window.scrollTo(0, parseFloat(savedScroll)); }, 150); }
+        });
+        var scrollTimer;
+        window.addEventListener('scroll', function() {
+            if (scrollTimer) clearTimeout(scrollTimer); scrollTimer = setTimeout(function(){ localStorage.setItem(STORAGE_KEY + '_scroll', window.scrollY); }, 300);
+        });
+        var highlightWords = new Set();
+        async function initCloudHighlights() {
+            var cacheKey = 'bio_remote_hl_words_v2'; var cached = localStorage.getItem(cacheKey); var now = Date.now();
+            if (cached) { try { var parsed = JSON.parse(cached); if (now - parsed.time < 24 * 60 * 60 * 1000 && Array.isArray(parsed.data)) { highlightWords = new Set(parsed.data); applyHighlightsToDOM(); return; } } catch(e){} }
+            try {
+                var urls = ['https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://ghproxy.net/https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://fastly.jsdelivr.net/gh/moodHappy/HelloWorld@master/Notes/one.txt'];
+                var text = ''; for (var i=0; i<urls.length; i++) { try { var res = await fetch(urls[i]); if (res.ok) { text = await res.text(); if (text && !text.includes('<html') && !text.includes('Cloudflare')) break; } } catch(err){} }
+                if (!text) throw new Error(); var arr = text.split('\n').map(function(w){return w.trim().toLowerCase();}).filter(function(w){return w;});
+                if (arr.length > 0) { highlightWords = new Set(arr); localStorage.setItem(cacheKey, JSON.stringify({data: arr, time: now})); applyHighlightsToDOM(); }
+            } catch(e){}
+        }
+        function applyHighlightsToDOM() {
+            if(highlightWords.size === 0) return;
+            document.querySelectorAll('.tm-word').forEach(function(span){ if(highlightWords.has(span.textContent.trim().toLowerCase())) span.classList.add('is-highlight'); });
+        }
+        var GM_getValue = function(key, def) { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; };
+        var GM_setValue = function(key, val) { localStorage.setItem(key, JSON.stringify(val)); };
+        var GM_xmlhttpRequest = function(opt) {
+            var url = opt.url; if(url.includes('dict.youdao.com') || url.includes('cambridge.org')) {
+                var isYoudao = url.includes('dict.youdao.com');
+                var proxies = [url, 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), 'https://corsproxy.io/?' + encodeURIComponent(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)];
+                var currentProxyIdx = 0;
+                var tryNext = function() {
+                    if (currentProxyIdx >= proxies.length) { if(opt.onerror) opt.onerror(new Error()); return; }
+                    fetch(proxies[currentProxyIdx++], { headers: opt.headers || {} })
+                    .then(async function(r) { var t = ''; try{t = await r.text();}catch(e){} if(!r.ok || t.includes('Cloudflare')) throw new Error(); if(isYoudao && !t.trim().startsWith('{')) throw new Error(); if(opt.onload) opt.onload({status:200, responseText:t}); })
+                    .catch(function(){ tryNext(); });
+                };
+                tryNext(); return;
+            }
+            fetch(url, { headers: opt.headers || {} }).then(async function(r){ var t = ''; try{t = await r.text();}catch(e){} if(opt.onload) opt.onload({status:r.status, responseText:t}); }).catch(opt.onerror);
+        };
+        (function() {
+            var ttsConfig = { voices: ["en-US-AdamNeural", "en-US-AriaNeural", "en-US-AnaNeural", "en-US-JennyNeural", "en-US-GuyNeural"], apis: [ { url: "https://read-aloud-bay.vercel.app/api/synthesis", type: "read-aloud" }, { url: "https://libre-tts-nu.vercel.app/api/tts", type: "libre" } ] };
+            var globalResultCache = GM_getValue('tm_dict_cache', {}); var saveTimeout = null;
+            function saveToGlobalCache(wordKey, resultData) { globalResultCache[wordKey] = resultData; var keys = Object.keys(globalResultCache); if (keys.length > 2000) delete globalResultCache[keys[0]]; clearTimeout(saveTimeout); saveTimeout = setTimeout(function(){ GM_setValue('tm_dict_cache', globalResultCache); }, 1500); }
+            var cefrStaticCache = {};
+            function initCEFRStaticDict() {
+                var staticUrls = ["https://fastly.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json","https://cdn.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json"];
+                var idx = 0; var tryFetch = function() { if (idx >= staticUrls.length) return; fetch(staticUrls[idx++]).then(function(r){return r.json();}).then(function(data){ if (Array.isArray(data)) data.forEach(function(item){ if (item.word && item.cefr) cefrStaticCache[item.word.toLowerCase()] = item.cefr.toUpperCase(); }); }).catch(tryFetch); };
+                tryFetch();
+            }
+            function fetchCEFR(word) {
+                return new Promise(function(resolve) {
+                    var w = word.toLowerCase(); if (cefrStaticCache[w]) { resolve(cefrStaticCache[w]); return; }
+                    GM_xmlhttpRequest({ method: "GET", url: 'https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(w), onload: function(res) { if (res.status === 200) { var match = res.responseText.match(/(?:epp-xref|dxref)[^>]*>\s*([A-C][1-2])\s*<\/span>/i) || res.responseText.match(/title="CEFR[^>]*>\s*([A-C][1-2])\s*<\/span>/i); if (match && match[1]) { cefrStaticCache[w] = match[1].toUpperCase(); resolve(cefrStaticCache[w]); return; } } resolve(null); }, onerror: function(){resolve(null);} });
+                });
+            }
+            function fetchTranslation(text) { return new Promise(function(resolve, reject) { GM_xmlhttpRequest({ method: "GET", url: 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&q=' + encodeURIComponent(text), onload: function(res) { if (res.status === 200) resolve(JSON.parse(res.responseText)); else reject(new Error()); }, onerror: reject }); }); }
+            function fetchPhonetics(text) { return new Promise(function(resolve) { GM_xmlhttpRequest({ method: "GET", url: 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(text), onload: function(res) { if (res.status === 200) { var data = JSON.parse(res.responseText); if (data && data.length > 0) { var pObj = data[0].phonetics.find(function(p){return p.text;}) || data[0]; resolve(pObj.text || null); return; } } resolve(null); }, onerror: function(){resolve(null);} }); }); }
+            function fetchWordLevel(text) { return new Promise(function(resolve) { GM_xmlhttpRequest({ method: "GET", url: 'https://dict.youdao.com/jsonapi?q=' + encodeURIComponent(text), onload: function(res) { var result = { stars: 0, tags: [] }; try { var data = JSON.parse(res.responseText); if (data.ec && data.ec.exam_type) result.tags = data.ec.exam_type; if (data.collins && data.collins.collins_entries && data.collins.collins_entries.length > 0) { var starStr = data.collins.collins_entries[0].star; if (starStr) { var parsedNum = parseInt(String(starStr).replace(/[^0-9]/g, ''), 10); result.stars = isNaN(parsedNum) ? 0 : parsedNum; } } } catch (e) {} resolve(result); }, onerror: function(){resolve({ stars: 0, tags: [] });} }); }); }
+            var globalAudioPlayer = null; var currentPlayingBtn = null;
+            function initAudioPlayer() { if (!globalAudioPlayer) { globalAudioPlayer = document.createElement('audio'); globalAudioPlayer.style.display = 'none'; document.body.appendChild(globalAudioPlayer); } }
+            function playTTS(apiIndex, text, voice, btn) {
+                if (apiIndex >= ttsConfig.apis.length) { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); return; }
+                if (currentPlayingBtn && currentPlayingBtn !== btn) currentPlayingBtn.classList.remove('playing');
+                currentPlayingBtn = btn; btn.classList.add('playing'); var api = ttsConfig.apis[apiIndex]; var params = new URLSearchParams();
+                if (api.type === "read-aloud") { params.append("text", text); params.append("voiceName", voice); } else { params.append("t", text); params.append("v", voice); params.append("r", "0"); params.append("p", "0"); }
+                globalAudioPlayer.src = api.url + '?' + params.toString(); globalAudioPlayer.onended = function() { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); };
+                globalAudioPlayer.onerror = function() { playTTS(apiIndex + 1, text, voice, btn); }; var p = globalAudioPlayer.play(); if (p !== undefined) p.catch(function(){ playTTS(apiIndex + 1, text, voice, btn); });
+                }
+            function wrapTextNodesToWord(rootNode) {
+                var ignoreTags = new Set(['SCRIPT', 'STYLE', 'BUTTON', 'A']);
+                var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, { acceptNode: function(currentNode) { var parent = currentNode.parentNode; if (!parent || ignoreTags.has(parent.nodeName.toUpperCase()) || parent.closest('.tm-word') || parent.closest('.zh-para')) return NodeFilter.FILTER_REJECT; if (!currentNode.nodeValue.trim() || !/\b[a-zA-Z'-]+\b/.test(currentNode.nodeValue)) return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; } });
+                var nodesToWrap = []; let currNode; while ((currNode = walker.nextNode())) { nodesToWrap.push(currNode); }
+                nodesToWrap.forEach(function(textNode) {
+                    var text = textNode.nodeValue; var fragment = document.createDocumentFragment(); var lastIndex = 0;
+                    text.replace(/\b([a-zA-Z'-]+)\b/g, function(match, p1, offset) { if (offset > lastIndex) fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset))); var span = document.createElement('span'); span.className = 'tm-word'; span.textContent = match; fragment.appendChild(span); lastIndex = offset + match.length; return match; });
+                    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.substring(lastIndex))); if (fragment.childNodes.length > 0) textNode.parentNode.replaceChild(fragment, textNode);
+                });
+            }
+            function formatDictData(originalWord, data) {
+                var transData = data.transData; var ipaText = data.ipaText; var levelData = data.levelData; var cefrLevel = data.cefrLevel; var tagsHtml = '';
+                if (cefrLevel || (levelData && (levelData.stars > 0 || (levelData.tags && levelData.tags.length > 0)))) {
+                    tagsHtml += '<div class="dict-tags-row">'; if (levelData && levelData.stars > 0) tagsHtml += '<span class="dict-tag star-tag">' + '★'.repeat(levelData.stars) + '☆'.repeat(5 - levelData.stars) + '</span>'; if (cefrLevel) tagsHtml += '<span class="dict-tag cefr-' + cefrLevel + '">CEFR ' + cefrLevel + '</span>'; if (levelData && levelData.tags) levelData.tags.forEach(function(tag){ tagsHtml += '<span class="dict-tag">' + tag + '</span>'; }); tagsHtml += '</div>';
+                }
+                var basicTrans = (transData && transData[0] && transData[0][0]) ? transData[0][0][0] : '';
+                var html = '<div class="dict-header-row"><div class="dict-word-line"><span class="dict-head-word Casting">' + originalWord + '</span>' + (ipaText ? '<span class="dict-ipa">' + ipaText + '</span>' : '') + '<span class="dict-speaker-btn" data-word="' + originalWord.replace(/"/g, '&quot;') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span></div>' + tagsHtml + '<div class="dict-basic-trans">' + basicTrans + '</div></div>';
+                var dictEntries = transData ? transData[1] : null;
+                if (dictEntries && dictEntries.length > 0) {
+                    html += '<div class="dict-details">'; dictEntries.forEach(function(entry){ var pos = entry[0]; var displayDefs = entry[1].slice(0, 3); html += '<div class="dict-pos-block"><span class="dict-pos-tag">' + pos + '.</span><ul class="dict-def-list">'; displayDefs.forEach(function(def){ html += '<li class="dict-def-item">' + def + '</li>'; }); html += '</ul></div>'; }); html += '</div>';
+                } else if (!basicTrans) { html += '<div style="padding:5px; color:#666; font-size:13px;">无释义结果...</div>'; }
+                return html;
+            }
+            function setupTippyDelegate() {
+                tippy.delegate(document.body, { 
+                    target: '.tm-word', trigger: 'click', interactive: true, theme: 'light-border', placement: 'bottom', appendTo: function(){return document.body;}, maxWidth: 320,
+                    onShow: function(instance) {
+                        if (!document.body.classList.contains('dict-enabled')) return false;
+                        var word = instance.reference.innerText.trim(); var wordKey = word.toLowerCase();
+                        var renderContent = function(data) { if (instance.reference.innerText.trim() !== word) return; var contentDiv = document.createElement('div'); contentDiv.className = 'dict-popup'; contentDiv.innerHTML = formatDictData(word, data); ['mousedown', 'touchstart', 'click'].forEach(function(evt){ contentDiv.addEventListener(evt, function(e){e.stopPropagation();}, { capture: true }); }); var btn = contentDiv.querySelector('.dict-speaker-btn'); if (btn) { btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var text = btn.getAttribute('data-word'); if (!text || btn.classList.contains('playing')) return; playTTS(0, text.trim(), ttsConfig.voices[Math.floor(Math.random() * ttsConfig.voices.length)], btn); }); } instance.setContent(contentDiv); };
+                        if (globalResultCache[wordKey]) { renderContent(globalResultCache[wordKey]); } else {
+                            var loadingDiv = document.createElement('div'); loadingDiv.className = 'dict-popup'; loadingDiv.innerHTML = '<div class="dict-loading">极速查询中...</div>'; instance.setContent(loadingDiv);
+                            var pTrans = fetchTranslation(word).catch(function(){return [[['API Error']]];}); var pPhon = fetchPhonetics(word).catch(function(){return null;}); var pLevel = fetchWordLevel(word).catch(function(){return {stars:0, tags:[]};}); var pCefr = Promise.race([fetchCEFR(word), new Promise(function(r){setTimeout(function(){r(null);},1500);})]).catch(function(){return null;});
+                            Promise.all([pTrans, pPhon, pLevel, pCefr]).then(function(arr){ var resultData = { transData: arr[0], ipaText: arr[1], levelData: arr[2], cefrLevel: arr[3] }; saveToGlobalCache(wordKey, resultData); if (instance.state.isVisible) renderContent(resultData); });
+                        }
+                    }
+                });
+            }
+            setTimeout(function() { initAudioPlayer(); initCEFRStaticDict(); var container = document.getElementById('content-container'); if(container) wrapTextNodesToWord(container); setupTippyDelegate(); initCloudHighlights(); }, 500);
+        })();
+    </script>
+
+<script id="matrix-static-script">
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (document.documentElement.getAttribute('data-matrix-active') === 'true' || window.__MATRIX_ENGINE_ACTIVE__) return;
+
+                const isNewTpl = !!document.getElementById('en-container');
+                document.querySelectorAll('.para-wrap').forEach(wrap => {
+                    const toggle = wrap.querySelector('.anno-toggle');
+                    const box = wrap.querySelector('.anno-box');
+                    const view = wrap.querySelector('.anno-view');
+                    if (!toggle || !box || !view) return;
+
+                    toggle.onclick = (e) => {
+                        e.stopPropagation();
+                        if (box.style.display === 'block') {
+                            box.style.display = 'none';
+                            wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        } else {
+                            box.style.display = 'block';
+                            view.style.display = 'block';
+                        }
+                    };
+
+                    let touchStartX = 0; let touchStartY = 0; let activeFingers = 0;
+                    view.addEventListener('touchstart', e => {
+                        activeFingers = e.touches.length;
+                        if ((!isNewTpl && activeFingers === 2) || (isNewTpl && (activeFingers === 1 || activeFingers === 3))) {
+                            touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+                        } else { activeFingers = 0; }
+                    }, {passive: true});
+
+                    view.addEventListener('touchmove', e => {
+                        if (!activeFingers) return;
+                        const diffX = touchStartX - e.touches[0].clientX;
+                        const diffY = Math.abs(touchStartY - e.touches[0].clientY);
+                        if (diffY > 40) { activeFingers = 0; return; }
+                        const isSwipeCloseGesture = isNewTpl ? (activeFingers === 1) : (activeFingers === 2);
+                        if (isSwipeCloseGesture && diffX > 60) {
+                            box.style.display = 'none';
+                            wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            activeFingers = 0;
+                        }
+                    }, {passive: true});
+
+                    view.addEventListener('touchend', e => {
+                        if (e.touches.length === 0) activeFingers = 0;
+                    }, {passive: true});
+                });
+            }, 500);
+        });
+    </script></body></html>
