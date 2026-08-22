@@ -249,7 +249,7 @@
         db: null,
         init() {
             return new Promise((resolve, reject) => {
-                const req = indexedDB.open('MiyetsukoDB_v2', 1); // 升级数据库名称防止旧脏数据
+                const req = indexedDB.open('MiyetsukoDB_v2', 1);
                 req.onupgradeneeded = e => {
                     const db = e.target.result;
                     if (!db.objectStoreNames.contains('articles')) {
@@ -341,7 +341,6 @@
         
         if (btn.classList.contains('syncing')) return;
         
-        // 【关键逻辑】如果是自动检测，且本地已经有数据，则静默进行，完全不改变按钮状态
         if (!isAuto || !hasCache) {
             btn.classList.add('syncing');
             icon.classList.add('spin');
@@ -350,26 +349,22 @@
         }
 
         try {
-            // 1. 获取线上最新目录树
             const treeRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/git/trees/${BRANCH}?recursive=1`);
             if (!treeRes.ok) throw new Error("网络受限");
             const treeData = await treeRes.json();
             const remoteHtmlFiles = treeData.tree.filter(i => i.path.endsWith('.html') && !i.path.includes('index.html'));
             
-            // 2. 哈希对比找不同 (Diff)
             let toFetch = [];
             let remotePathSet = new Set();
             
             for (let file of remoteHtmlFiles) {
                 remotePathSet.add(file.path);
                 const local = memoryCorpus[file.path];
-                // 如果本地没有，或者 sha 改变了，就需要重新下载
                 if (!local || local.sha !== file.sha) {
                     toFetch.push(file);
                 }
             }
 
-            // 3. 删除本地已在云端被删除的文件
             let deletedCount = 0;
             for (let path in memoryCorpus) {
                 if (!remotePathSet.has(path)) {
@@ -379,7 +374,6 @@
                 }
             }
 
-            // 4. 执行更新
             if (toFetch.length === 0) {
                 if (!isAuto || !hasCache) {
                     txt.innerText = deletedCount > 0 ? `清理了 ${deletedCount} 篇` : "已是最新";
@@ -387,7 +381,6 @@
                 }
                 updateCountUI();
             } else {
-                // 即便是自动检测，一旦发现真有新文件，也要展示下载进度条
                 btn.classList.add('syncing');
                 icon.classList.add('spin');
                 progBox.style.display = 'block';
@@ -396,14 +389,13 @@
                 let completed = 0;
                 
                 const fetchTask = async (file) => {
-                    // 【致命Bug修复】改用 @main 并追加 ?v=sha 作为缓存克星，且提供备用镜像
                     const primaryUrl = `https://fastly.jsdelivr.net/gh/${GITHUB_REPO}@${BRANCH}/${encodeURIComponent(file.path)}?v=${file.sha}`;
                     const backupUrl = `https://ghproxy.net/https://raw.githubusercontent.com/${GITHUB_REPO}/${BRANCH}/${encodeURIComponent(file.path)}`;
                     
                     try {
                         let res = await fetch(primaryUrl);
                         if (!res.ok) {
-                            res = await fetch(backupUrl); // 如果首选失败，切换代理备用方案
+                            res = await fetch(backupUrl); 
                         }
                         
                         if (res.ok) {
@@ -434,7 +426,6 @@
                 setTimeout(() => txt.innerText = "检测更新", 3000);
             }
         } finally {
-            // 恢复按钮状态
             if (!isAuto || !hasCache || toFetch.length > 0) {
                 btn.classList.remove('syncing');
                 icon.classList.remove('spin');
@@ -474,26 +465,35 @@
         const escapedForms = forms.map(f => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
         const regex = new RegExp('\\b(' + escapedForms.join('|') + ')\\b', 'i');
 
-        let hitPaths = [];
+        let hitResults = [];
         for (const [path, data] of Object.entries(memoryCorpus)) {
-            if (regex.test(data.text)) hitPaths.push(path);
+            // 【核心改动】这里不再只用 test，而是使用 match 把命中的“具体形态”抓出来
+            const match = data.text.match(regex);
+            if (match) {
+                hitResults.push({ path: path, matchedWord: match[0] });
+            }
         }
 
         resultsArea.style.display = 'block';
         list.innerHTML = '';
         omitted.innerHTML = '';
 
-        if (hitPaths.length === 0) {
+        if (hitResults.length === 0) {
             header.innerText = `📭 词库中未找到 "${word}"`;
             return;
         }
 
-        header.innerText = `🎯 命中！包含变形（${forms.slice(0,3).join(', ')}...）在 ${hitPaths.length} 篇文章中出现：`;
+        header.innerText = `🎯 命中！包含变形（${forms.slice(0,3).join(', ')}...）在 ${hitResults.length} 篇文章中出现：`;
 
-        const displayLimit = Math.min(hitPaths.length, DISPLAY_LIMIT);
+        const displayLimit = Math.min(hitResults.length, DISPLAY_LIMIT);
         for (let i = 0; i < displayLimit; i++) {
-            const path = hitPaths[i];
-            const link = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(path)}`;
+            const hit = hitResults[i];
+            
+            // 【核心改动】拼装 Scroll to Text Fragment (文本片段滚动) 特性链接
+            // #:~:text=具体单词 ，浏览器会自动滚动到该位置并高亮
+            const exactWordEncoded = encodeURIComponent(hit.matchedWord);
+            const pathEncoded = encodeURIComponent(hit.path);
+            const link = `https://moodhappy.github.io/MiyetsukoSeries/${pathEncoded}#:~:text=${exactWordEncoded}`;
             
             const a = document.createElement('a');
             a.className = 'result-item';
@@ -501,14 +501,14 @@
             a.target = '_blank';
             a.innerHTML = `
                 <div class="result-idx">${i+1}</div>
-                <div class="result-name">${path.split('/').pop()}</div>
+                <div class="result-name">${hit.path.split('/').pop()}</div>
                 <div class="result-arrow">›</div>
             `;
             list.appendChild(a);
         }
 
-        if (hitPaths.length > DISPLAY_LIMIT) {
-            omitted.innerHTML = `还有 ${hitPaths.length - DISPLAY_LIMIT} 篇结果未展示，<br>建议缩小检索范围以防眼花缭乱~`;
+        if (hitResults.length > DISPLAY_LIMIT) {
+            omitted.innerHTML = `还有 ${hitResults.length - DISPLAY_LIMIT} 篇结果未展示，<br>建议缩小检索范围以防眼花缭乱~`;
             omitted.style.display = 'block';
         } else {
             omitted.style.display = 'none';
@@ -518,25 +518,20 @@
     // ================= 启动程序 =================
     window.onload = async () => {
         try {
-            // 初始化 IndexedDB
             await DB.init();
             
-            // 从本地加载全部缓存到内存
             const cachedItems = await DB.getAll();
             cachedItems.forEach(item => memoryCorpus[item.path] = item);
             updateCountUI();
             
             if (cachedItems.length > 0) {
-                // 如果有缓存，马上开放搜索功能（实现秒开体验）
                 enableSearch();
                 document.getElementById('cacheStatusLabel').innerText = "本地数据库就绪 (支持离线)";
                 document.getElementById('progressBox').style.display = 'none';
             } else {
-                // 没有缓存时，提示用户正在建立
                 document.getElementById('cacheStatusLabel').innerText = "初次使用，正在建立本地缓存...";
             }
             
-            // 后台静默对比 GitHub 文件结构，只有真发现新文章才会转圈
             checkUpdates(true);
             
         } catch(e) {
