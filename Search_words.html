@@ -21,9 +21,9 @@
             --shadow-sm: 0 2px 10px rgba(0,0,0,0.03);
             --shadow-md: 0 8px 30px rgba(0,0,0,0.08);
         }
-        
+
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg-color);
@@ -51,7 +51,7 @@
             align-items: center;
             border-bottom: 1px solid rgba(0,0,0,0.05);
         }
-        
+
         .nav-title {
             font-size: 1.25rem;
             font-weight: 700;
@@ -100,13 +100,72 @@
         }
         .status-number { font-size: 2rem; font-weight: 800; color: var(--primary); margin: 5px 0; }
         .status-label { font-size: 0.85rem; color: var(--text-muted); }
-        
+
         .progress-box { display: none; margin-top: 15px; }
         .progress-bar { width: 100%; height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
         .progress-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.3s; }
         .progress-text { font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; }
 
-        /* 搜索区域 */
+        /* 搜索区域模块 */
+        .search-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            opacity: 0.5;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .search-section.active { opacity: 1; pointer-events: auto; }
+
+        /* 搜索配置选项（复选框） */
+        .search-options {
+            display: flex;
+            gap: 18px;
+            padding: 0 10px;
+        }
+        .custom-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .custom-checkbox input { display: none; }
+        .checkmark {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s ease;
+            background-color: var(--card-bg);
+        }
+        .custom-checkbox input:checked + .checkmark {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        .custom-checkbox input:checked + .checkmark::after {
+            content: "";
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin-top: -2px;
+        }
+        .check-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+        .custom-checkbox input:checked ~ .check-text {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        /* 搜索框 */
         .search-wrapper {
             position: relative;
             box-shadow: var(--shadow-md);
@@ -115,12 +174,7 @@
             display: flex;
             align-items: center;
             padding: 5px 5px 5px 20px;
-            opacity: 0.5;
-            pointer-events: none;
-            transition: opacity 0.3s;
         }
-        .search-wrapper.active { opacity: 1; pointer-events: auto; }
-        
         .search-icon { font-size: 1.2rem; color: var(--text-muted); }
         .search-input {
             flex: 1;
@@ -151,7 +205,7 @@
         /* 结果区域 */
         .results-area { display: none; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
+
         .result-header {
             font-size: 0.9rem;
             font-weight: 600;
@@ -159,7 +213,7 @@
             margin-bottom: 12px;
             padding-left: 5px;
         }
-        
+
         .result-list { display: flex; flex-direction: column; gap: 12px; }
         .result-item {
             background: var(--card-bg);
@@ -174,7 +228,7 @@
             transition: transform 0.2s, background 0.2s;
         }
         .result-item:active { transform: scale(0.98); background: #f9f9f9; }
-        
+
         .result-idx {
             background: var(--bg-color);
             color: var(--text-muted);
@@ -213,18 +267,36 @@
         <div class="status-label" id="cacheStatusLabel">本地数据库就绪</div>
         <div class="status-number" id="articleCount">0</div>
         <div class="status-label">篇已缓存文章</div>
-        
+
         <div class="progress-box" id="progressBox">
             <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
             <div class="progress-text" id="progressText">正在下载...</div>
         </div>
     </div>
 
-    <!-- 搜索框 -->
-    <div class="search-wrapper" id="searchBox">
-        <div class="search-icon">🔍</div>
-        <input type="text" id="searchInput" class="search-input" placeholder="输入单词，秒出结果..." autocomplete="off">
-        <button class="search-action-btn" id="searchBtn">➔</button>
+    <!-- 搜索区统领 -->
+    <div class="search-section" id="searchBox">
+        
+        <!-- 新增：搜索配置选项 -->
+        <div class="search-options">
+            <label class="custom-checkbox">
+                <input type="checkbox" id="randomToggle">
+                <span class="checkmark"></span>
+                <span class="check-text">随机打乱结果</span>
+            </label>
+            <label class="custom-checkbox">
+                <input type="checkbox" id="exactToggle">
+                <span class="checkmark"></span>
+                <span class="check-text">完整精确匹配</span>
+            </label>
+        </div>
+
+        <!-- 搜索框 -->
+        <div class="search-wrapper">
+            <div class="search-icon">🔍</div>
+            <input type="text" id="searchInput" class="search-input" placeholder="输入单词，秒出结果..." autocomplete="off">
+            <button class="search-action-btn" id="searchBtn">➔</button>
+        </div>
     </div>
 
     <!-- 结果区 -->
@@ -240,7 +312,7 @@
     const GITHUB_REPO = "moodHappy/MiyetsukoSeries";
     const BRANCH = "main";
     const DISPLAY_LIMIT = 10;
-    
+
     // 内存缓存字典
     let memoryCorpus = {}; // 格式: { path: { sha, text } }
 
@@ -283,15 +355,25 @@
         }
     };
 
+    // ================= 初始化配置选项(记住用户勾选状态) =================
+    const randomToggle = document.getElementById('randomToggle');
+    const exactToggle = document.getElementById('exactToggle');
+    
+    if(localStorage.getItem('setting_random') === 'true') randomToggle.checked = true;
+    if(localStorage.getItem('setting_exact') === 'true') exactToggle.checked = true;
+
+    randomToggle.addEventListener('change', (e) => localStorage.setItem('setting_random', e.target.checked));
+    exactToggle.addEventListener('change', (e) => localStorage.setItem('setting_exact', e.target.checked));
+
     // ================= HTML 清洗引擎 =================
     function extractPureText(htmlString) {
         let parser = new DOMParser();
         let doc = parser.parseFromString(htmlString, 'text/html');
-        
+
         ['.anno-box', '.zh-para', '.zh-para-auto', '.reader-bar', '#zh-container', 'script', 'style'].forEach(sel => {
             doc.querySelectorAll(sel).forEach(el => el.remove());
         });
-        
+
         let container = doc.getElementById('en-container') || doc.body || doc;
         let text = container.textContent || "";
         return text.replace(/\s+/g, ' ').toLowerCase();
@@ -304,7 +386,7 @@
             let doc = nlp(word);
             let verbs = doc.verbs().conjugate();
             if (verbs && verbs.length > 0) Object.values(verbs[0]).forEach(v => { if(v) forms.add(v.toLowerCase()); });
-            
+
             let nouns = doc.nouns();
             if (nouns && nouns.length > 0) {
                 nouns.toPlural().out('array').forEach(n => forms.add(n.toLowerCase()));
@@ -336,11 +418,11 @@
         const icon = document.getElementById('syncIcon');
         const txt = document.getElementById('syncText');
         const progBox = document.getElementById('progressBox');
-        
+
         const hasCache = Object.keys(memoryCorpus).length > 0;
-        
+
         if (btn.classList.contains('syncing')) return;
-        
+
         if (!isAuto || !hasCache) {
             btn.classList.add('syncing');
             icon.classList.add('spin');
@@ -353,10 +435,10 @@
             if (!treeRes.ok) throw new Error("网络受限");
             const treeData = await treeRes.json();
             const remoteHtmlFiles = treeData.tree.filter(i => i.path.endsWith('.html') && !i.path.includes('index.html'));
-            
+
             let toFetch = [];
             let remotePathSet = new Set();
-            
+
             for (let file of remoteHtmlFiles) {
                 remotePathSet.add(file.path);
                 const local = memoryCorpus[file.path];
@@ -385,24 +467,24 @@
                 icon.classList.add('spin');
                 progBox.style.display = 'block';
                 txt.innerText = `需更新 ${toFetch.length} 篇`;
-                
+
                 let completed = 0;
-                
+
                 const fetchTask = async (file) => {
                     const primaryUrl = `https://fastly.jsdelivr.net/gh/${GITHUB_REPO}@${BRANCH}/${encodeURIComponent(file.path)}?v=${file.sha}`;
                     const backupUrl = `https://ghproxy.net/https://raw.githubusercontent.com/${GITHUB_REPO}/${BRANCH}/${encodeURIComponent(file.path)}`;
-                    
+
                     try {
                         let res = await fetch(primaryUrl);
                         if (!res.ok) {
                             res = await fetch(backupUrl); 
                         }
-                        
+
                         if (res.ok) {
                             const html = await res.text();
                             const cleanText = extractPureText(html);
                             const item = { path: file.path, sha: file.sha, text: cleanText };
-                            
+
                             memoryCorpus[file.path] = item;
                             await DB.put(item);
                         }
@@ -453,6 +535,9 @@
         const word = document.getElementById('searchInput').value.trim();
         if (!word) return;
 
+        const isExact = exactToggle.checked;
+        const isRandom = randomToggle.checked;
+
         const resultsArea = document.getElementById('resultsArea');
         const list = document.getElementById('resultList');
         const header = document.getElementById('resultHeader');
@@ -461,13 +546,13 @@
         // 收起键盘
         document.getElementById('searchInput').blur();
 
-        const forms = getWordForms(word);
+        // 根据“精确匹配”选项决定是否变形
+        const forms = isExact ? [word.toLowerCase()] : getWordForms(word);
         const escapedForms = forms.map(f => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
         const regex = new RegExp('\\b(' + escapedForms.join('|') + ')\\b', 'i');
 
         let hitResults = [];
         for (const [path, data] of Object.entries(memoryCorpus)) {
-            // 【核心改动】这里不再只用 test，而是使用 match 把命中的“具体形态”抓出来
             const match = data.text.match(regex);
             if (match) {
                 hitResults.push({ path: path, matchedWord: match[0] });
@@ -483,18 +568,29 @@
             return;
         }
 
-        header.innerText = `🎯 命中！包含变形（${forms.slice(0,3).join(', ')}...）在 ${hitResults.length} 篇文章中出现：`;
+        // 根据“随机打乱”选项决定是否洗牌数组 (Fisher-Yates)
+        if (isRandom && hitResults.length > 0) {
+            for (let i = hitResults.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [hitResults[i], hitResults[j]] = [hitResults[j], hitResults[i]];
+            }
+        }
+
+        // 调整命中提示文案
+        if (isExact) {
+            header.innerText = `🎯 命中！精确匹配 "${word}" 在 ${hitResults.length} 篇文章中出现：`;
+        } else {
+            header.innerText = `🎯 命中！包含变形（${forms.slice(0,3).join(', ')}...）在 ${hitResults.length} 篇文章中出现：`;
+        }
 
         const displayLimit = Math.min(hitResults.length, DISPLAY_LIMIT);
         for (let i = 0; i < displayLimit; i++) {
             const hit = hitResults[i];
-            
-            // 【核心改动】拼装 Scroll to Text Fragment (文本片段滚动) 特性链接
-            // #:~:text=具体单词 ，浏览器会自动滚动到该位置并高亮
+
             const exactWordEncoded = encodeURIComponent(hit.matchedWord);
             const pathEncoded = encodeURIComponent(hit.path);
             const link = `https://moodhappy.github.io/MiyetsukoSeries/${pathEncoded}#:~:text=${exactWordEncoded}`;
-            
+
             const a = document.createElement('a');
             a.className = 'result-item';
             a.href = link;
@@ -519,11 +615,11 @@
     window.onload = async () => {
         try {
             await DB.init();
-            
+
             const cachedItems = await DB.getAll();
             cachedItems.forEach(item => memoryCorpus[item.path] = item);
             updateCountUI();
-            
+
             if (cachedItems.length > 0) {
                 enableSearch();
                 document.getElementById('cacheStatusLabel').innerText = "本地数据库就绪 (支持离线)";
@@ -531,9 +627,9 @@
             } else {
                 document.getElementById('cacheStatusLabel').innerText = "初次使用，正在建立本地缓存...";
             }
-            
+
             checkUpdates(true);
-            
+
         } catch(e) {
             alert("初始化本地数据库失败！请确认浏览器没有开启无痕模式导致无法存储。");
         }
