@@ -6,6 +6,8 @@
     <title>溯源玩具</title>
     <!-- 引入 Compromise.js 用于自然语言词形变形 -->
     <script src="https://unpkg.com/compromise"></script>
+    <!-- 引入 localForage 库，用于操控 IndexedDB -->
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <style>
         :root {
             --bg-color: #f2f2f7;
@@ -264,7 +266,7 @@
 <div class="container">
     <!-- 状态卡片 -->
     <div class="status-card">
-        <div class="status-label" id="cacheStatusLabel">本地数据库就绪</div>
+        <div class="status-label" id="cacheStatusLabel">共享数据库就绪</div>
         <div class="status-number" id="articleCount">0</div>
         <div class="status-label">篇已缓存文章</div>
 
@@ -276,8 +278,7 @@
 
     <!-- 搜索区统领 -->
     <div class="search-section" id="searchBox">
-        
-        <!-- 新增：搜索配置选项 -->
+        <!-- 搜索配置选项 -->
         <div class="search-options">
             <label class="custom-checkbox">
                 <input type="checkbox" id="randomToggle">
@@ -313,52 +314,21 @@
     const BRANCH = "main";
     const DISPLAY_LIMIT = 10;
 
-    // 内存缓存字典
+    // 内存缓存字典，用于极速搜索
     let memoryCorpus = {}; // 格式: { path: { sha, text } }
 
-    // ================= IndexedDB 封装 =================
-    const DB = {
-        db: null,
-        init() {
-            return new Promise((resolve, reject) => {
-                const req = indexedDB.open('MiyetsukoDB_v2', 1);
-                req.onupgradeneeded = e => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains('articles')) {
-                        db.createObjectStore('articles', { keyPath: 'path' });
-                    }
-                };
-                req.onsuccess = e => { this.db = e.target.result; resolve(); };
-                req.onerror = e => reject(e.target.error);
-            });
-        },
-        getAll() {
-            return new Promise(resolve => {
-                const tx = this.db.transaction('articles', 'readonly');
-                const req = tx.objectStore('articles').getAll();
-                req.onsuccess = () => resolve(req.result || []);
-            });
-        },
-        put(item) {
-            return new Promise(resolve => {
-                const tx = this.db.transaction('articles', 'readwrite');
-                tx.objectStore('articles').put(item);
-                tx.oncomplete = () => resolve();
-            });
-        },
-        delete(path) {
-            return new Promise(resolve => {
-                const tx = this.db.transaction('articles', 'readwrite');
-                tx.objectStore('articles').delete(path);
-                tx.oncomplete = () => resolve();
-            });
-        }
-    };
+    // ================= 共享数据库配置 =================
+    // 这里非常重要：我们设置了一个全局统一的数据库名！
+    // 以后任何网页只要用到 'MiyetsukoSharedDB'，就能直接读取这些文章，不用重复下载。
+    localforage.config({
+        name: 'MiyetsukoSharedDB',
+        storeName: 'articles_corpus' 
+    });
 
     // ================= 初始化配置选项(记住用户勾选状态) =================
     const randomToggle = document.getElementById('randomToggle');
     const exactToggle = document.getElementById('exactToggle');
-    
+
     if(localStorage.getItem('setting_random') === 'true') randomToggle.checked = true;
     if(localStorage.getItem('setting_exact') === 'true') exactToggle.checked = true;
 
@@ -451,7 +421,7 @@
             for (let path in memoryCorpus) {
                 if (!remotePathSet.has(path)) {
                     delete memoryCorpus[path];
-                    await DB.delete(path);
+                    await localforage.removeItem(path); // 同步删除数据库中的废弃文章
                     deletedCount++;
                 }
             }
@@ -486,7 +456,7 @@
                             const item = { path: file.path, sha: file.sha, text: cleanText };
 
                             memoryCorpus[file.path] = item;
-                            await DB.put(item);
+                            await localforage.setItem(file.path, item); // 存入共享数据库
                         }
                     } catch(e) { console.warn(`拉取失败 ${file.path}`); } 
                     finally {
@@ -543,10 +513,8 @@
         const header = document.getElementById('resultHeader');
         const omitted = document.getElementById('omittedText');
 
-        // 收起键盘
         document.getElementById('searchInput').blur();
 
-        // 根据“精确匹配”选项决定是否变形
         const forms = isExact ? [word.toLowerCase()] : getWordForms(word);
         const escapedForms = forms.map(f => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
         const regex = new RegExp('\\b(' + escapedForms.join('|') + ')\\b', 'i');
@@ -568,7 +536,6 @@
             return;
         }
 
-        // 根据“随机打乱”选项决定是否洗牌数组 (Fisher-Yates)
         if (isRandom && hitResults.length > 0) {
             for (let i = hitResults.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -576,7 +543,6 @@
             }
         }
 
-        // 调整命中提示文案
         if (isExact) {
             header.innerText = `🎯 命中！精确匹配 "${word}" 在 ${hitResults.length} 篇文章中出现：`;
         } else {
@@ -614,27 +580,24 @@
     // ================= 启动程序 =================
     window.onload = async () => {
         try {
-            await DB.init();
-
-            const cachedItems = await DB.getAll();
-            cachedItems.forEach(item => memoryCorpus[item.path] = item);
+            // 利用 localForage 遍历并加载共享数据库的数据到内存供快速搜索
+            await localforage.iterate((value, key) => {
+                memoryCorpus[key] = value;
+            });
+            
             updateCountUI();
 
-            if (cachedItems.length > 0) {
+            if (Object.keys(memoryCorpus).length > 0) {
                 enableSearch();
-                document.getElementById('cacheStatusLabel').innerText = "本地数据库就绪 (支持离线)";
+                document.getElementById('cacheStatusLabel').innerText = "共享数据库就绪 (支持离线)";
                 document.getElementById('progressBox').style.display = 'none';
             } else {
-                document.getElementById('cacheStatusLabel').innerText = "初次使用，正在建立本地缓存...";
-            }
-
-            // 仅在首次使用（无缓存数据）时，自动触发更新
-            if (cachedItems.length === 0) {
+                document.getElementById('cacheStatusLabel').innerText = "初次使用，正在建立共享缓存...";
                 checkUpdates(true);
             }
 
         } catch(e) {
-            alert("初始化本地数据库失败！请确认浏览器没有开启无痕模式导致无法存储。");
+            alert("初始化本地数据库失败！请确认浏览器没有开启无痕模式。");
         }
     };
 
