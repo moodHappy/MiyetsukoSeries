@@ -14,6 +14,9 @@
     <!-- 苹果 iOS 设备保存到桌面的图标 -->
     <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/moodHappy/image@main/icon/1785743660293_zvs7r3.png">
 
+    <!-- 引入 localForage 库，用于操控 IndexedDB -->
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+
     <style>
         body { 
             font-family: 'Helvetica Neue', Arial, sans-serif; 
@@ -227,15 +230,9 @@
         }
     </style>
     <style id="nexus-global-styles">
-        /* 1. 防干扰样式：消除翻译段落的批注红点 */
-        p.zh-para-auto .anno-toggle,
-        p.zh-para .anno-toggle,
-        .zh-para-auto + .anno-toggle,
-        .zh-para + .anno-toggle {
+        p.zh-para-auto .anno-toggle, p.zh-para .anno-toggle, .zh-para-auto + .anno-toggle, .zh-para + .anno-toggle {
             display: none !important; opacity: 0 !important; pointer-events: none !important;
         }
-
-        /* 2. 翻译段落默认模糊状态 */
         .zh-para-auto {
             filter: blur(5px); transition: filter 0.3s ease; cursor: pointer;
             -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
@@ -250,17 +247,15 @@
         <h1 id="mainTitle" ondblclick="toggleConfigPanel()">美悦子シリーズ ポータル</h1>
 
         <div class="bg-config-panel" id="configPanel">
-            <!-- 基础壁纸选择与添加 -->
             <div class="config-row">
                 <select id="bgSelect" onchange="changeSelectedWallpaper()"></select>
                 <button class="btn-danger" onclick="deleteWallpaper()">删除当前</button>
             </div>
             <div class="config-row">
                 <input type="text" id="bgNameInput" placeholder="名称 (如: 星空)" style="flex: 0.4;">
-                <input type="text" id="bgUrlInput" placeholder="在此粘贴图片直链" style="flex: 0.6;">
+                <input type="text" id="bgUrlInput" placeholder="在此粘贴图片直链或 Base64" style="flex: 0.6;">
                 <button onclick="addWallpaper()">添加</button>
             </div>
-            <!-- GitHub 同步配置 -->
             <div class="config-row">
                 <input type="password" id="ghTokenInput" placeholder="在此填入 GitHub Token (仅存本地)" style="flex: 0.7;">
                 <button onclick="saveGhToken()" style="flex: 0.3;">💾 保存 Token</button>
@@ -269,7 +264,6 @@
                 <button class="btn-sync-down" onclick="syncFromGitHub()" style="flex: 1;">⬇️ 从 GitHub 下载合并</button>
                 <button class="btn-sync-up" onclick="syncToGitHub()" style="flex: 1;">⬆️ 同步推送到 GitHub</button>
             </div>
-            <!-- 保留本地导入导出作为备用方案 -->
             <div class="config-row">
                 <button onclick="exportWallpapers()" style="flex: 1;">导出本地配置</button>
                 <button onclick="document.getElementById('importInput').click()" style="flex: 1;">导入本地配置</button>
@@ -308,7 +302,6 @@
                     <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Books/Hundred/百年孤独目录_1782298920000.html">百年孤独</a>
                     <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Books/The%20Little%20Prince/小王子目录.html_1782364260000.html">小王子</a>
                     <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Books/SushiGirlHarem/寿司少女后宫_1786100373283.html">寿司少女后宫</a>
-
                 </div>
             </div>
 
@@ -320,11 +313,9 @@
                     <a class="link" href="https://moodhappy.github.io/dual-read-notes/index.html">Dual-Read-Hub</a>
                     <a class="link" href="https://moodhappy.github.io/bbc-news-archive/docs/index.html">BBC Archive</a>
                     <a class="link" href="https://moodhappy.github.io/nyt-news-archive/docs/index.html">NYT Archive</a>
-                    
                     <a class="link" href="https://moodhappy.github.io/Tiktok-File/docs/index.html">Tiktok Archive</a>
                     <a class="link" href="https://moodhappy.github.io/Twitter-archive/docs/index.html">Twitter Archive</a>                  
                     <a class="link" href="https://moodhappy.github.io/YT-Street-Echoes/docs/index.html">YT Street Echoes</a>
-                           
                     <a class="link" href="https://moodhappy.github.io/Echoes-of-History/docs/index.html">Echoes of History</a>
                     <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/style/YouTubeChina24.html">China24</a>
                     <a class="link" href="https://moodhappy.github.io/Daily-Nexus/docs/index.html">Daily Nexus</a>
@@ -337,18 +328,13 @@
                 <div class="links-grid">
                     <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/style/danmu.html?path=Notes%2Fdanmu%2FTool">Tools</a>
                     <a class="link" href="https://moodhappy.github.io/Notes/">Notes</a>
-                    
                     <a class="link" href="https://moodhappy.github.io/MiyetsukoSeries/Search_words.html">Search words</a>
-                    
                     <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/Notes/danmu/Tool/sorted_one_1786774500000.html">Sort one</a>
                     <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/Notes/danmu/Tool/RandomWord_1787725320000.html">Random</a>
                     <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/Notes/danmu/Tool/magazine%20template_1785990360000.html">magazine template</a>
-
                     <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/Notes/danmu/Tool/Article%20template_1787725200000.html">Article Template</a>
-                    
                     <a class="link" href="https://moodhappy.github.io/dual-read-notes/admin.html">Dual Read Admin</a>
                     <a class="link" href="https://moodhappy.github.io/Image/">Image hosting</a>
-
                     <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/Notes/danmu/Tool/%E6%96%87%E6%9C%AC%E5%90%8C%E6%AD%A5_1774630372845.html">Text sync</a>
                     <a class="link" href="https://moodhappy.github.io/Image/image.html">Instagram scraping</a>
                     <a class="link" href="https://moodhappy.github.io/moodHappy.gitHub.io-nce/Notes/danmu/Tool/YouTube_1785990360000.html">YouTube Channel</a>
@@ -363,37 +349,89 @@
     </div>
 
     <script>
-        function toggleConfigPanel() {
-            const panel = document.getElementById('configPanel');
-            if (panel.style.display === 'none' || panel.style.display === '') {
-                panel.style.display = 'flex';
-            } else {
-                panel.style.display = 'none';
+        // -------------------------
+        // 核心存储逻辑 (基于 IndexedDB)
+        // -------------------------
+        let wallpapers = []; 
+        let selectionMode = 'user_random'; 
+        let ghToken = '';
+
+        // 第一次运行：检查并从旧的 LocalStorage 平滑迁移数据
+        async function migrateOldData() {
+            const oldList = localStorage.getItem('miyetsuko_wallpapers_list');
+            if (oldList) {
+                try {
+                    await localforage.setItem('miyetsuko_wallpapers_list', JSON.parse(oldList));
+                    localStorage.removeItem('miyetsuko_wallpapers_list');
+                } catch(e) {}
+            }
+            const oldMode = localStorage.getItem('miyetsuko_wallpaper_index');
+            if (oldMode) {
+                await localforage.setItem('miyetsuko_wallpaper_index', oldMode);
+                localStorage.removeItem('miyetsuko_wallpaper_index');
+            }
+            const oldToken = localStorage.getItem('miyetsuko_gh_token');
+            if (oldToken) {
+                await localforage.setItem('miyetsuko_gh_token', oldToken);
+                localStorage.removeItem('miyetsuko_gh_token');
             }
         }
 
-        // --- 左右滑动切换屏幕逻辑 ---
-        let touchStartX = 0;
-        let touchStartY = 0;
+        async function initWallpaperManager() {
+            await migrateOldData(); // 执行无损迁移
 
-        window.addEventListener('touchstart', function(e) {
+            try {
+                // localForage 直接返回对象，不用自己 parse
+                const savedData = await localforage.getItem('miyetsuko_wallpapers_list');
+                if (savedData && Array.isArray(savedData)) {
+                    wallpapers = savedData.filter(wp => !wp.url.includes("picsum.photos/1920/1080?random=101"));
+                }
+            } catch (e) {
+                wallpapers = [];
+            }
+
+            const savedMode = await localforage.getItem('miyetsuko_wallpaper_index');
+            if (savedMode === 'random' || savedMode === 'user_random') {
+                selectionMode = 'user_random';
+            } else if (savedMode === 'default_random') {
+                selectionMode = 'default_random';
+            } else {
+                selectionMode = savedMode !== null ? savedMode : 'user_random';
+            }
+
+            ghToken = await localforage.getItem('miyetsuko_gh_token') || '';
+            document.getElementById('ghTokenInput').value = ghToken;
+
+            renderSelect();
+            applyCurrentWallpaper();
+        }
+
+        // 保存数据到 IndexedDB (异步执行)
+        async function saveData() {
+            await localforage.setItem('miyetsuko_wallpapers_list', wallpapers);
+            await localforage.setItem('miyetsuko_wallpaper_index', selectionMode);
+        }
+
+        // -------------------------
+        // UI 与 壁纸操作逻辑
+        // -------------------------
+        function toggleConfigPanel() {
+            const panel = document.getElementById('configPanel');
+            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
+        }
+
+        let touchStartX = 0, touchStartY = 0;
+        window.addEventListener('touchstart', e => {
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
         }, { passive: true });
 
-        window.addEventListener('touchend', function(e) {
-            let touchEndX = e.changedTouches[0].screenX;
-            let touchEndY = e.changedTouches[0].screenY;
-
-            let dx = touchEndX - touchStartX;
-            let dy = touchEndY - touchStartY;
-
+        window.addEventListener('touchend', e => {
+            let dx = e.changedTouches[0].screenX - touchStartX;
+            let dy = e.changedTouches[0].screenY - touchStartY;
             if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-                if (dx < 0) {
-                    document.body.classList.add('show-screen2');
-                } else {
-                    document.body.classList.remove('show-screen2');
-                }
+                if (dx < 0) document.body.classList.add('show-screen2');
+                else document.body.classList.remove('show-screen2');
             }
         }, { passive: true });
 
@@ -405,67 +443,21 @@
             `;
         }
 
-        let wallpapers = []; 
-        let selectionMode = 'user_random'; 
-
-        function initWallpaperManager() {
-            const savedData = localStorage.getItem('miyetsuko_wallpapers_list');
-            if (savedData) {
-                try {
-                    wallpapers = JSON.parse(savedData);
-                    wallpapers = wallpapers.filter(wp => !wp.url.includes("picsum.photos/1920/1080?random=101"));
-                } catch (e) {
-                    wallpapers = [];
-                }
-            }
-
-            const savedMode = localStorage.getItem('miyetsuko_wallpaper_index');
-            if (savedMode === 'random' || savedMode === 'user_random') {
-                selectionMode = 'user_random';
-            } else if (savedMode === 'default_random') {
-                selectionMode = 'default_random';
-            } else {
-                selectionMode = savedMode !== null ? savedMode : 'user_random';
-            }
-
-            // 初始化 GitHub Token 输入框
-            document.getElementById('ghTokenInput').value = localStorage.getItem('miyetsuko_gh_token') || '';
-
-            renderSelect();
-            applyCurrentWallpaper();
-        }
-
         function renderSelect() {
             const select = document.getElementById('bgSelect');
             select.innerHTML = '';
 
-            const userRandomOpt = document.createElement('option');
-            userRandomOpt.value = 'user_random';
-            userRandomOpt.textContent = '用户随机图';
-            select.appendChild(userRandomOpt);
-
-            const defaultRandomOpt = document.createElement('option');
-            defaultRandomOpt.value = 'default_random';
-            defaultRandomOpt.textContent = '默认随机图';
-            select.appendChild(defaultRandomOpt);
+            select.appendChild(new Option('用户随机图', 'user_random'));
+            select.appendChild(new Option('默认随机图', 'default_random'));
 
             wallpapers.forEach((wp, index) => {
-                const option = document.createElement('option');
-                option.value = index.toString();
-                option.textContent = wp.name;
-                select.appendChild(option);
+                select.appendChild(new Option(wp.name, index.toString()));
             });
 
-            let optionExists = Array.from(select.options).some(opt => opt.value === selectionMode);
-            if (!optionExists) {
+            if (!Array.from(select.options).some(opt => opt.value === selectionMode)) {
                 selectionMode = 'user_random';
             }
             select.value = selectionMode;
-        }
-
-        function saveData() {
-            localStorage.setItem('miyetsuko_wallpapers_list', JSON.stringify(wallpapers));
-            localStorage.setItem('miyetsuko_wallpaper_index', selectionMode);
         }
 
         function applyCurrentWallpaper() {
@@ -486,91 +478,73 @@
             }
         }
 
-        function changeSelectedWallpaper() {
+        async function changeSelectedWallpaper() {
             selectionMode = document.getElementById('bgSelect').value;
-            saveData();
+            await saveData();
             applyCurrentWallpaper();
         }
 
-        function addWallpaper() {
+        async function addWallpaper() {
             const nameInput = document.getElementById('bgNameInput');
             const urlInput = document.getElementById('bgUrlInput');
             const url = urlInput.value.trim();
             let name = nameInput.value.trim();
 
-            if (!url) {
-                alert('请输入有效的图片链接！');
-                return;
-            }
+            if (!url) return alert('请输入有效的图片链接或 Base64！');
             if (!name) name = `壁纸 ${wallpapers.length + 1}`;
 
-            // 添加前先去重判断
-            const isDuplicate = wallpapers.some(existingWp => existingWp.url === url);
-            if (isDuplicate) {
-                alert('该链接已存在于列表中！');
-                return;
-            }
+            if (wallpapers.some(wp => wp.url === url)) return alert('该图片已存在于列表中！');
 
-            wallpapers.push({ name: name, url: url });
+            wallpapers.push({ name, url });
             selectionMode = (wallpapers.length - 1).toString();
 
-            saveData();
+            await saveData();
             renderSelect();
             applyCurrentWallpaper();
 
-            nameInput.value = '';
-            urlInput.value = '';
+            nameInput.value = ''; urlInput.value = '';
         }
 
-        function deleteWallpaper() {
+        async function deleteWallpaper() {
             if (selectionMode === 'user_random' || selectionMode === 'default_random') {
-                alert('系统级选项无法删除！');
-                return;
+                return alert('系统级选项无法删除！');
             }
 
             let displayIndex = parseInt(selectionMode);
             if (confirm(`确定要删除壁纸 "${wallpapers[displayIndex].name}" 吗？`)) {
                 wallpapers.splice(displayIndex, 1);
                 selectionMode = 'user_random';
-                saveData();
+                await saveData();
                 renderSelect();
                 applyCurrentWallpaper();
             }
         }
 
-        /* ==================== 
-           GitHub 远端同步逻辑
-           ==================== */
+        // -------------------------
+        // GitHub 同步逻辑
+        // -------------------------
         const GH_OWNER = 'moodHappy';
         const GH_REPO = 'moodHappy.gitHub.io-nce';
         const GH_PATH = 'config/wallpapers.json';
         const GH_BRANCH = 'main';
 
-        function saveGhToken() {
-            const token = document.getElementById('ghTokenInput').value.trim();
-            localStorage.setItem('miyetsuko_gh_token', token);
-            alert('Token 已妥善保存在本地浏览器！');
+        async function saveGhToken() {
+            ghToken = document.getElementById('ghTokenInput').value.trim();
+            await localforage.setItem('miyetsuko_gh_token', ghToken);
+            alert('Token 已妥善保存在本地 IndexedDB 数据库中！');
         }
 
-        function getGhToken() {
-            return localStorage.getItem('miyetsuko_gh_token') || '';
-        }
-
-        // 统一获取远端文件信息（包括内容和 sha 以便更新）
         async function fetchGitHubFile() {
-            const token = getGhToken();
             const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}?ref=${GH_BRANCH}`;
             const headers = { 'Accept': 'application/vnd.github.v3+json' };
-            if (token) headers['Authorization'] = `token ${token}`;
+            if (ghToken) headers['Authorization'] = `token ${ghToken}`;
 
             const response = await fetch(url, { headers });
-            if (response.status === 404) return null; // 文件尚不存在
+            if (response.status === 404) return null; 
             if (!response.ok) throw new Error(`获取 GitHub 文件失败: HTTP ${response.status}`);
-
             return await response.json();
         }
 
-        // 支持 UTF-8 的 Base64 编码解码
         function utoa(str) { return btoa(unescape(encodeURIComponent(str))); }
         function atou(b64) { return decodeURIComponent(escape(atob(b64))); }
 
@@ -579,21 +553,14 @@
             btn.innerText = "⏳ 下载中...";
             try {
                 const fileInfo = await fetchGitHubFile();
-                if (!fileInfo) {
-                    alert('GitHub 仓库中尚未创建配置文件 (404)。');
-                    return;
-                }
+                if (!fileInfo) return alert('GitHub 仓库中尚未创建配置文件 (404)。');
 
-                const jsonStr = atou(fileInfo.content);
-                const remoteData = JSON.parse(jsonStr);
-
+                const remoteData = JSON.parse(atou(fileInfo.content));
                 if (Array.isArray(remoteData)) {
                     let addedCount = 0;
                     remoteData.forEach(remoteWp => {
-                        // 确保排除自带的无效图并且链接不重复
                         if (remoteWp.url && !remoteWp.url.includes("picsum.photos/1920/1080?random=101")) {
-                            const isDuplicate = wallpapers.some(localWp => localWp.url === remoteWp.url);
-                            if (!isDuplicate) {
+                            if (!wallpapers.some(localWp => localWp.url === remoteWp.url)) {
                                 wallpapers.push(remoteWp);
                                 addedCount++;
                             }
@@ -601,7 +568,7 @@
                     });
 
                     if (addedCount > 0) {
-                        saveData();
+                        await saveData();
                         renderSelect();
                         applyCurrentWallpaper();
                         alert(`同步成功！已自动去重，共从云端新增 ${addedCount} 张壁纸。`);
@@ -620,23 +587,16 @@
         }
 
         async function syncToGitHub() {
-            const token = getGhToken();
-            if (!token) {
-                alert('请先输入并保存你的 GitHub Token！');
-                return;
-            }
+            if (!ghToken) return alert('请先输入并保存你的 GitHub Token！');
 
             const btn = document.querySelector('.btn-sync-up');
             btn.innerText = "⏳ 推送中...";
             try {
-                // 先获取最新的 sha
                 const fileInfo = await fetchGitHubFile();
                 const sha = fileInfo ? fileInfo.sha : null;
-
-                const jsonStr = JSON.stringify(wallpapers, null, 2);
-                const base64Content = utoa(jsonStr);
-
+                const base64Content = utoa(JSON.stringify(wallpapers, null, 2));
                 const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+                
                 const body = {
                     message: `Update wallpapers config via Web Portal - ${new Date().toLocaleString()}`,
                     content: base64Content,
@@ -648,16 +608,13 @@
                     method: 'PUT',
                     headers: {
                         'Accept': 'application/vnd.github.v3+json',
-                        'Authorization': `token ${token}`,
+                        'Authorization': `token ${ghToken}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(body)
                 });
 
-                if (!response.ok) {
-                    throw new Error(`推送失败: HTTP ${response.status}`);
-                }
-
+                if (!response.ok) throw new Error(`推送失败: HTTP ${response.status}`);
                 alert('✅ 成功将最新配置推送到 GitHub！');
             } catch (err) {
                 console.error(err);
@@ -667,9 +624,9 @@
             }
         }
 
-        /* ==================== 
-           本地文件导入导出 (保留备用)
-           ==================== */
+        // -------------------------
+        // 本地导入导出
+        // -------------------------
         function exportWallpapers() {
             const dataStr = JSON.stringify(wallpapers, null, 2);
             const blob = new Blob([dataStr], { type: "application/json" });
@@ -688,25 +645,18 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
-                    const importedData = JSON.parse(e.target.result);
-                    const cleanImportedData = importedData.filter(wp => !wp.url.includes("picsum.photos/1920/1080?random=101"));
-
-                    if (Array.isArray(cleanImportedData) && cleanImportedData.length > 0 && cleanImportedData[0].url) {
-                        const newWallpapers = [];
-                        cleanImportedData.forEach(importedWp => {
-                            const isDuplicate = wallpapers.some(existingWp => existingWp.url === importedWp.url);
-                            if (!isDuplicate) newWallpapers.push(importedWp);
-                        });
-
-                        if (newWallpapers.length > 0) {
-                            wallpapers = wallpapers.concat(newWallpapers);
-                            selectionMode = (wallpapers.length - newWallpapers.length).toString();
-                            saveData();
+                    const cleanData = JSON.parse(e.target.result).filter(wp => !wp.url.includes("picsum.photos/1920/1080?random=101"));
+                    if (Array.isArray(cleanData) && cleanData.length > 0 && cleanData[0].url) {
+                        const newWps = cleanData.filter(newWp => !wallpapers.some(exWp => exWp.url === newWp.url));
+                        if (newWps.length > 0) {
+                            wallpapers = wallpapers.concat(newWps);
+                            selectionMode = (wallpapers.length - newWps.length).toString();
+                            await saveData();
                             renderSelect();
                             applyCurrentWallpaper();
-                            alert(`导入成功！共新增 ${newWallpapers.length} 张壁纸。`);
+                            alert(`导入成功！共新增 ${newWps.length} 张壁纸。`);
                         } else {
                             alert('导入的壁纸已全部存在于列表中，无需重复导入。');
                         }
@@ -721,9 +671,12 @@
             reader.readAsText(file);
         }
 
+        // 页面启动
         initWallpaperManager();
 
-        /* 底部轮盘与赛博按钮逻辑 */
+        // -------------------------
+        // 赛博抽奖轮盘逻辑 (保持不变)
+        // -------------------------
         const btn = document.getElementById('actionBtn');
         const display = document.getElementById('numberDisplay');
         const links = document.querySelectorAll('.link');
@@ -745,16 +698,12 @@
                 btn.innerText = "START";
                 btn.classList.remove('running');
                 links.forEach(l => l.classList.remove('targeting'));
-                const finalLink = links[Math.floor(Math.random() * links.length)];
-                finalLink.classList.add('locked');
+                links[Math.floor(Math.random() * links.length)].classList.add('locked');
 
                 const finalNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
                 const digits = Array.from(finalNum).map(Number);
-                const minVal = Math.min(...digits);
-                const redIdx = digits.indexOf(minVal); 
-
-                display.innerHTML = Array.from(finalNum).map((n, i) => 
-                    `<span style="color:${i === redIdx ? '#ff5555' : '#fff'}">${n}</span>`).join('');
+                const redIdx = digits.indexOf(Math.min(...digits)); 
+                display.innerHTML = Array.from(finalNum).map((n, i) => `<span style="color:${i === redIdx ? '#ff5555' : '#fff'}">${n}</span>`).join('');
             }
         });
     </script>
