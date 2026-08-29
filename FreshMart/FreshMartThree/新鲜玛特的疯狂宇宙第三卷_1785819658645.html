@@ -23,7 +23,7 @@
         p { margin: 0; font-size: 0.95rem; color: #111; text-align: justify; }
         #config-gear { display: none; position: fixed; top: 15px; right: 20px; font-size: 32px; cursor: pointer; z-index: 9999; transition: transform 0.3s; text-shadow: 2px 2px 0px #1e90ff; user-select: none; }
         #config-gear:hover { transform: rotate(90deg) scale(1.1); }
-        #config-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; backdrop-filter: blur(2px); }
+        .ui-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: 10000; display: none; backdrop-filter: blur(3px); }
         #config-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f0f8ff; border: 4px solid #1e90ff; padding: 25px; z-index: 10001; width: 90%; max-width: 350px; box-shadow: 10px 10px 0px #222; display: none; box-sizing: border-box; }
         #config-modal h2 { margin-top: 0; color: #1e90ff; border-bottom: 2px dashed #222; padding-bottom: 10px; font-size: 1.4rem; text-align: center; }
         .cfg-group { margin-bottom: 12px; text-align: left; }
@@ -34,12 +34,22 @@
         .cfg-group input[readonly]:focus { outline: none; border-color: #999; background: #e9ecef !important; }
         #cfg-save-btn { margin-top: 15px; width: 100%; padding: 12px; background: #222; color: #fff; border: none; font-weight: 900; font-size: 1.1rem; cursor: pointer; border: 2px solid #1e90ff; box-shadow: 4px 4px 0px #1e90ff; transition: all 0.1s; }
         #cfg-save-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #1e90ff; }
+        #custom-dialog-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f0f8ff; border: 4px solid #1e90ff; padding: 22px; z-index: 10005; width: 92%; max-width: 500px; box-shadow: 10px 10px 0px #222; display: none; box-sizing: border-box; flex-direction: column; max-height: 85vh; }
+        #custom-dialog-title { margin-top: 0; color: #00509e; border-bottom: 2px dashed #1e90ff; padding-bottom: 8px; font-size: 1.3rem; text-align: center; }
+        #custom-dialog-body { background: #fff; border: 2px dashed #4682b4; padding: 15px; margin: 12px 0 18px 0; border-radius: 4px; font-size: 0.95rem; line-height: 1.6; color: #111; max-height: 48vh; overflow-y: auto; white-space: pre-wrap; user-select: text !important; -webkit-user-select: text !important; font-family: Consolas, Monaco, "Microsoft YaHei", sans-serif; }
+        .dialog-btn-row { display: flex; gap: 10px; justify-content: flex-end; }
+        .dialog-btn { flex: 1; padding: 10px; font-weight: 900; font-size: 0.95rem; cursor: pointer; border: 2px solid #222; box-shadow: 3px 3px 0px #222; transition: all 0.1s; }
+        .dialog-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px #222; }
+        .btn-copy { background: #fff3cd; color: #856404; border-color: #ffeeba; box-shadow: 3px 3px 0px #ffeeba; }
+        .btn-action { background: #222; color: #fff; border-color: #1e90ff; box-shadow: 3px 3px 0px #1e90ff; }
+        .btn-close { background: #e9ecef; color: #333; }
     </style>
 </head>
 <body>
 
     <div id="config-gear" title="系统配置" style="display: none;">⚙️</div>
-    <div id="config-overlay"></div>
+    <div id="config-overlay" class="ui-overlay"></div>
+    <div id="dialog-overlay" class="ui-overlay" style="z-index: 10004;"></div>
     <div id="config-modal">
         <h2>🛠️ 核心引擎配置</h2>
         <div class="cfg-group"><label>GitHub 拥有者 (Owner):</label><input type="text" id="cfg-owner" placeholder="例如: yourName"></div>
@@ -49,227 +59,236 @@
         <button id="cfg-save-btn">💾 保存并应用</button>
     </div>
 
+    <div id="custom-dialog-modal">
+        <h2 id="custom-dialog-title">📋 诊断报告</h2>
+        <div id="custom-dialog-body"></div>
+        <div class="dialog-btn-row">
+            <button id="dialog-copy-btn" class="dialog-btn btn-copy">📋 复制报告信息</button>
+            <button id="dialog-confirm-btn" class="dialog-btn btn-action">确定</button>
+        </div>
+    </div>
+
     <h1 class="title-edit">新鲜玛特的疯狂宇宙 第三卷</h1>
     <p class="subtitle">—— 欢迎光临！您的底线已过期 ——</p>
 
     <!-- 第1季 -->
     <div class="season-divider">第一季 (1-50章)</div>
     <div class="container" style="display: none;">
-        <div class="ep"><div class="score">8.7</div><div class="title">第1章：四十五度的流亡</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.8</div><div class="title">第2章：北岭暗哨</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.8</div><div class="title">第3章：虚惊一场</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第4章：电影之夜</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.2</div><div class="title">第5章：星座闲聊</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第1章：四十五度的流亡</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第2章：北岭暗哨</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.9</div><div class="title">第3章：虚惊一场</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第4章：电影之夜</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.0</div><div class="title">第5章：星座闲聊</div><p>[内容摘要占位符]</p></div>
         <div class="ep"><div class="score">8.5</div><div class="title">第6章：流星雨</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.6</div><div class="title">第7章：屋顶筹备</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第8章：游客入侵</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第9章：小百合的甜美庇护所</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.5</div><div class="title">第10章：谋划者的目光</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.6</div><div class="title">第11章：奔赴星空</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第12章：坠落之火</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.5</div><div class="title">第13章：征兵浪潮</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第14章：敲门声</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.8</div><div class="title">第15章：精品店疯狂血拼</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第16章：针灸小插曲</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.7</div><div class="title">第17章：店主现身</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.4</div><div class="title">第18章：了结此账</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.4</div><div class="title">第19章：通缉令撤销</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.1</div><div class="title">第20章：海面流灯</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第21章：深夜的卸防</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第22章：精油与肌肤</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第23章：秘密玩具</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.5</div><div class="title">第24章：晨曦微光</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.4</div><div class="title">第25章：自由的旋律</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.2</div><div class="title">第26章：菠菜传奇</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.8</div><div class="title">第27章：暗影潜入</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.8</div><div class="title">第28章：黑暗猎场</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第29章：残酷的陷阱</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第30章：冰冷的记忆</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第31章：哭诉与惊叹</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第32章：金创药与温柔</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第33章：挥之不去的阴影</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第34章：暗网幽灵</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.6</div><div class="title">第35章：黑暗触发</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.4</div><div class="title">第36章：锚点与温度</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.7</div><div class="title">第37章：阳光与疗愈</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.4</div><div class="title">第38章：生灵的治愈</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.0</div><div class="title">第39章：毛茸茸的动物园</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第40章：暴利的绿叶</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.3</div><div class="title">第41章：高层敲门</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.0</div><div class="title">第42章：权力的代价</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.0</div><div class="title">第43章：生活琐事与私密话题</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第44章：意料之外的插曲</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.3</div><div class="title">第45章：月光下的邀请</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.8</div><div class="title">第46章：法院的判决</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.7</div><div class="title">第47章：流亡首相的回忆录</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.3</div><div class="title">第48章：禁书与密藏</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.4</div><div class="title">第49章：女王的文学野心</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.7</div><div class="title">第50章：十个月的现实打击</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第7章：屋顶筹备</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第8章：游客入侵</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第9章：小百合的甜美庇护所</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.9</div><div class="title">第10章：谋划者的目光</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第11章：奔赴星空</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.4</div><div class="title">第12章：坠落之火</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.9</div><div class="title">第13章：征兵浪潮</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第14章：敲门声</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第15章：精品店疯狂血拼</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第16章：针灸小插曲</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.2</div><div class="title">第17章：店主现身</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第18章：了结此账</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第19章：通缉令撤销</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第20章：海面流灯</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第21章：深夜的卸防</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第22章：精油与肌肤</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.2</div><div class="title">第23章：秘密玩具</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.8</div><div class="title">第24章：晨曦微光</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.0</div><div class="title">第25章：自由的旋律</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第26章：菠菜传奇</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.2</div><div class="title">第27章：暗影潜入</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.7</div><div class="title">第28章：黑暗猎场</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.6</div><div class="title">第29章：残酷的陷阱</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.8</div><div class="title">第30章：冰冷的记忆</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第31章：哭诉与惊叹</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第32章：金创药与温柔</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.0</div><div class="title">第33章：挥之不去的阴影</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第34章：暗网幽灵</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.9</div><div class="title">第35章：黑暗触发</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.7</div><div class="title">第36章：锚点与温度</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第37章：阳光与疗愈</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第38章：生灵的治愈</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.1</div><div class="title">第39章：毛茸茸的动物园</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.9</div><div class="title">第40章：暴利的绿叶</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第41章：高层敲门</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.7</div><div class="title">第42章：权力的代价</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.1</div><div class="title">第43章：生活琐事与私密话题</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.7</div><div class="title">第44章：意料之外的插曲</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.9</div><div class="title">第45章：月光下的邀请</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第46章：法院的判决</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第47章：流亡首相的回忆录</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第48章：禁书与密藏</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第49章：女王的文学野心</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.5</div><div class="title">第50章：十个月的现实打击</div><p>[内容摘要占位符]</p></div>
     </div>
 
     <!-- 第2季 -->
     <div class="season-divider">第二季 (51-100章)</div>
     <div class="container" style="display: none;">
-        <div class="ep"><div class="score">9.1</div><div class="title">第51章：开业大吉般的告别</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.5</div><div class="title">第52章：扎人的胡茬</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.8</div><div class="title">第53章：针刺般的温柔</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.0</div><div class="title">第54章：坏掉的灯泡</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第55章：猝然的坠落</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.7</div><div class="title">第56章：无声的病房</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.9</div><div class="title">第51章：开业大吉般的告别</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第52章：扎人的胡茬</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.7</div><div class="title">第53章：针刺般的温柔</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.2</div><div class="title">第54章：坏掉的灯泡</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.8</div><div class="title">第55章：猝然的坠落</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第56章：无声的病房</div><p>[内容摘要占位符]</p></div>
         <div class="ep"><div class="score">9.1</div><div class="title">第57章：病危通知书</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.8</div><div class="title">第58章：最后的献祭</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第59章：奇迹的苏醒</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.2</div><div class="title">第60章：奇迹之后的争功</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.3</div><div class="title">第61章：放弃的索赔</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.8</div><div class="title">第62章：奇迹大促销</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.5</div><div class="title">第63章：半瓶水的抵押</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.6</div><div class="title">第64章：夏日连衣裙</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.6</div><div class="title">第65章：裙下的反差</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.7</div><div class="title">第66章：午夜的清理</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.2</div><div class="title">第67章：紧锁的房门</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.0</div><div class="title">第68章：麻辣味的苹果</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第69章：白日的惩罚</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.4</div><div class="title">第70章：溃败的防线</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.7</div><div class="title">第71章：长筒袜的礼物</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.0</div><div class="title">第72章：香蕉的秘密</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.3</div><div class="title">第73章：漏水的水龙头</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.0</div><div class="title">第74章：行业顾问</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.2</div><div class="title">第75章：女王的标杆</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.2</div><div class="title">第76章：江河日下的时代</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第77章：唯一的对手</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.3</div><div class="title">第78章：当年的惊鸿一瞥</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.9</div><div class="title">第79章：保安室的凝视</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.6</div><div class="title">第80章：更衣室的绝望</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.8</div><div class="title">第81章：传奇隐退之后</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.4</div><div class="title">第82章：保安室的俘虏</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.4</div><div class="title">第83章：私密的舞台</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.1</div><div class="title">第84章：保安的命令</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第85章：专业的赞许</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.6</div><div class="title">第86章：东莱岛的夜色</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.0</div><div class="title">第87章：赤裸裸的偏爱</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.8</div><div class="title">第88章：临别的偷袭</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.7</div><div class="title">第89章：天台的秘密日光浴</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.8</div><div class="title">第90章：天台的不速之客</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第91章：网络疯传的隐私</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第92章：走投无路的僵局</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.4</div><div class="title">第93章：荒诞的百合幻觉</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.8</div><div class="title">第94章：流量密码</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.8</div><div class="title">第95章：终极评判</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第96章：大数据裁决</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第97章：野猫的专属宠爱</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.2</div><div class="title">第98章：神鸣猕猴桃的奇迹</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.7</div><div class="title">第99章：水果摊妇科圣地</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.1</div><div class="title">第100章：泡沫破裂，金库饱满</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.1</div><div class="title">第58章：最后的献祭</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第59章：奇迹的苏醒</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.6</div><div class="title">第60章：奇迹之后的争功</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.4</div><div class="title">第61章：放弃的索赔</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.6</div><div class="title">第62章：奇迹大促销</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第63章：半瓶水的抵押</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.4</div><div class="title">第64章：夏日连衣裙</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第65章：裙下的反差</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.2</div><div class="title">第66章：午夜的清理</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第67章：紧锁的房门</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.1</div><div class="title">第68章：麻辣味的苹果</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.5</div><div class="title">第69章：白日的惩罚</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第70章：溃败的防线</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.0</div><div class="title">第71章：长筒袜的礼物</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第72章：香蕉的秘密</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.6</div><div class="title">第73章：漏水的水龙头</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.2</div><div class="title">第74章：行业顾问</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第75章：女王的标杆</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第76章：江河日下的时代</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第77章：唯一的对手</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第78章：当年的惊鸿一瞥</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第79章：保安室的凝视</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.9</div><div class="title">第80章：更衣室的绝望</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第81章：传奇隐退之后</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第82章：保安室的俘虏</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第83章：私密的舞台</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第84章：保安的命令</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第85章：专业的赞许</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.7</div><div class="title">第86章：东莱岛的夜色</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第87章：赤裸裸的偏爱</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第88章：临别的偷袭</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.9</div><div class="title">第89章：天台的秘密日光浴</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.5</div><div class="title">第90章：天台的不速之客</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.9</div><div class="title">第91章：网络疯传的隐私</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.4</div><div class="title">第92章：走投无路的僵局</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.5</div><div class="title">第93章：荒诞的百合幻觉</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.9</div><div class="title">第94章：流量密码</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.7</div><div class="title">第95章：终极评判</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第96章：大数据裁决</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.7</div><div class="title">第97章：野猫的专属宠爱</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第98章：神鸣猕猴桃的奇迹</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.5</div><div class="title">第99章：水果摊妇科圣地</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.4</div><div class="title">第100章：泡沫破裂，金库饱满</div><p>[内容摘要占位符]</p></div>
     </div>
 
     <!-- 第3季 -->
     <div class="season-divider">第三季 (101-150章)</div>
     <div class="container" style="display: none;">
-        <div class="ep"><div class="score">8.8</div><div class="title">第101章：皮肤医学的“灾难”</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.8</div><div class="title">第102章：博士的专属偏爱</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.0</div><div class="title">第103章：滋润过度的红光</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.2</div><div class="title">第104章：变态的入室窃贼</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.4</div><div class="title">第105章：丢失的丝袜与抚平的褶皱</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.6</div><div class="title">第106章：众目睽睽的炫耀</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.7</div><div class="title">第107章：池边的极速深喉</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.1</div><div class="title">第108章：吐出的奖赏</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.2</div><div class="title">第109章：夏末的战利品与犒赏</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第110章：厨房里的清晨突袭</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.1</div><div class="title">第111章：厨房里的当场抓包</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第112章：反击的录像提议</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.7</div><div class="title">第113章：穿开裆裤的新丫鬟</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.4</div><div class="title">第114章：名门出身的娇贵丫鬟</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.4</div><div class="title">第115章：女人们的私房话</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第116章：闺房里的真心话</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第117章：隆冬的寒意与室内的火热</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.1</div><div class="title">第118章：大家闺秀的冬日暖巢</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第119章：贵族丫鬟的爆笑日常</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.1</div><div class="title">第120章：旧日管家的泪水</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.0</div><div class="title">第121章：开裆裤习惯</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第122章：学业的新生</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第123章：出发前的疯狂后入</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.8</div><div class="title">第124章：校园的离别</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.6</div><div class="title">第125章：冷清的空巢</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第126章：重返“新鲜玛特”的回归</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.6</div><div class="title">第127章：院长的办公室秘密</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第128章：花枝招展下的跳蚤</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.3</div><div class="title">第129章：莱卡纤维与历史巨著</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第101章：皮肤医学的“灾难”</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第102章：博士的专属偏爱</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第103章：滋润过度的红光</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.5</div><div class="title">第104章：变态的入室窃贼</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.5</div><div class="title">第105章：丢失的丝袜与抚平的褶皱</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.0</div><div class="title">第106章：众目睽睽的炫耀</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.2</div><div class="title">第107章：池边的极速深喉</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.4</div><div class="title">第108章：吐出的奖赏</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第109章：夏末的战利品与犒赏</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.5</div><div class="title">第110章：厨房里的清晨突袭</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.5</div><div class="title">第111章：厨房里的当场抓包</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.4</div><div class="title">第112章：反击的录像提议</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第113章：穿开裆裤的新丫鬟</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.5</div><div class="title">第114章：名门出身的娇贵丫鬟</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第115章：女人们的私房话</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第116章：闺房里的真心话</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第117章：隆冬的寒意与室内的火热</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.4</div><div class="title">第118章：大家闺秀的冬日暖巢</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第119章：贵族丫鬟的爆笑日常</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.0</div><div class="title">第120章：旧日管家的泪水</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第121章：开裆裤习惯</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第122章：学业的新生</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第123章：出发前的疯狂后入</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.4</div><div class="title">第124章：校园的离别</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第125章：冷清的空巢</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.7</div><div class="title">第126章：重返“新鲜玛特”的回归</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第127章：院长的办公室秘密</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第128章：花枝招展下的跳蚤</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第129章：莱卡纤维与历史巨著</div><p>[内容摘要占位符]</p></div>
         <div class="ep"><div class="score">9.8</div><div class="title">第130章：上流社会的邀约</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.6</div><div class="title">第131章：上流社会的慈善晚宴</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第132章：宴会上的意外重逢</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.9</div><div class="title">第131章：上流社会的慈善晚宴</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.5</div><div class="title">第132章：宴会上的意外重逢</div><p>[内容摘要占位符]</p></div>
         <div class="ep"><div class="score">8.4</div><div class="title">第133章：宴会小隔间的惩罚</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第134章：裙摆上的白浊烙印</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.5</div><div class="title">第135章：晚宴落幕与得意的归途</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.4</div><div class="title">第136章：关于自由的质问</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第137章：甘愿戴上的枷锁</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.8</div><div class="title">第138章：至甜的臣服</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.6</div><div class="title">第139章：指尖的甜意</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.4</div><div class="title">第140章：远山之影</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.6</div><div class="title">第141章：微薄的烛火</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第142章：套壳的善意</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.4</div><div class="title">第143章：鸡蛋引发的“奇迹”</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.5</div><div class="title">第144章：鸡蛋背后的真实目的</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.1</div><div class="title">第145章：天降的“一发入魂”</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第146章：喜当爹的抉择与孤儿院</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第147章：虚无的哺乳</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.5</div><div class="title">第148章：热身示范与妥协</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第149章：孤儿院里的荒唐哺乳</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.7</div><div class="title">第150章：心疼的补偿</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.5</div><div class="title">第134章：裙摆上的白浊烙印</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.4</div><div class="title">第135章：晚宴落幕与得意的归途</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第136章：关于自由的质问</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.8</div><div class="title">第137章：甘愿戴上的枷锁</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.7</div><div class="title">第138章：至甜的臣服</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第139章：指尖的甜意</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.4</div><div class="title">第140章：远山之影</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第141章：微薄的烛火</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第142章：套壳的善意</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.2</div><div class="title">第143章：鸡蛋引发的“奇迹”</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.7</div><div class="title">第144章：鸡蛋背后的真实目的</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.7</div><div class="title">第145章：天降的“一发入魂”</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.0</div><div class="title">第146章：喜当爹的抉择与孤儿院</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第147章：虚无的哺乳</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.5</div><div class="title">第148章：热身示范与妥协</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第149章：孤儿院里的荒唐哺乳</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.5</div><div class="title">第150章：心疼的补偿</div><p>[内容摘要占位符]</p></div>
     </div>
 
     <!-- 第4季 -->
     <div class="season-divider">第四季 (151-200章)</div>
     <div class="container" style="display: none;">
-        <div class="ep"><div class="score">9.8</div><div class="title">第151章：床榻上的诱惑</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.4</div><div class="title">第152章：温柔的拒绝与风俗店的传说</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.4</div><div class="title">第153章：温柔乡的层级</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.7</div><div class="title">第154章：传奇头牌的摧残</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第155章：暴力的补偿与温存</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第156章：头牌失踪的真相</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.6</div><div class="title">第157章：权力的倒错与肉便器</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.5</div><div class="title">第158章：东莱岛的丛林法则</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第159章：血肉的“绝对平等”</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.4</div><div class="title">第160章：残羹冷炙与虚假公平</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第161章：二大爷的无理要求</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.7</div><div class="title">第162章：老当益壮的花魁大礼</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.7</div><div class="title">第163章：二大爷的抗压测试</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第164章：沙发区压力测试</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.6</div><div class="title">第165章：潜伏的心率裁判员</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第166章：老当益壮的狂野通关</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第167章：VIP包间的巅峰对决</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第168章：二大爷的狂野肉搏</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.0</div><div class="title">第169章：终身免费的特权</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.5</div><div class="title">第170章：老爷子的凯旋</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第171章：归家的八卦局</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.2</div><div class="title">第172章：家族基因的吸引力</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.1</div><div class="title">第173章：造反的小丫鬟</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.7</div><div class="title">第174章：半个苹果的完败</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.6</div><div class="title">第175章：美悦子的学术滑铁卢</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.3</div><div class="title">第176章：智囊的绝地反击</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.5</div><div class="title">第177章：深夜的回忆与唯一的抱怨</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.8</div><div class="title">第178章：风雪深处的温柔拥抱</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.1</div><div class="title">第179章：融化的冰山与傻傻分不清</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.7</div><div class="title">第180章：元老级甜妹的抗议</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.7</div><div class="title">第181章：餐桌上的“人体酒杯”</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.0</div><div class="title">第182章：冰火两重天的可乐口交</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.6</div><div class="title">第183章：碳酸冲击与暴射</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第184章：独宠的抱怨</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.6</div><div class="title">第185章：打破垄断</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.0</div><div class="title">第186章：临别之夜</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第187章：岳母的禁忌诱惑</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第151章：床榻上的诱惑</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第152章：温柔的拒绝与风俗店的传说</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.9</div><div class="title">第153章：温柔乡的层级</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第154章：传奇头牌的摧残</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第155章：暴力的补偿与温存</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第156章：头牌失踪的真相</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第157章：权力的倒错与肉便器</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第158章：东莱岛的丛林法则</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第159章：血肉的“绝对平等”</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.8</div><div class="title">第160章：残羹冷炙与虚假公平</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第161章：二大爷的无理要求</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.4</div><div class="title">第162章：老当益壮的花魁大礼</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第163章：二大爷的抗压测试</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第164章：沙发区压力测试</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第165章：潜伏的心率裁判员</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.5</div><div class="title">第166章：老当益壮的狂野通关</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.0</div><div class="title">第167章：VIP包间的巅峰对决</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.7</div><div class="title">第168章：二大爷的狂野肉搏</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.1</div><div class="title">第169章：终身免费的特权</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第170章：老爷子的凯旋</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.7</div><div class="title">第171章：归家的八卦局</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第172章：家族基因的吸引力</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.0</div><div class="title">第173章：造反的小丫鬟</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.2</div><div class="title">第174章：半个苹果的完败</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.6</div><div class="title">第175章：美悦子的学术滑铁卢</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.4</div><div class="title">第176章：智囊的绝地反击</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.7</div><div class="title">第177章：深夜的回忆与唯一的抱怨</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第178章：风雪深处的温柔拥抱</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第179章：融化的冰山与傻傻分不清</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.9</div><div class="title">第180章：元老级甜妹的抗议</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.9</div><div class="title">第181章：餐桌上的“人体酒杯”</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第182章：冰火两重天的可乐口交</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.2</div><div class="title">第183章：碳酸冲击与暴射</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第184章：独宠的抱怨</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第185章：打破垄断</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第186章：临别之夜</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第187章：岳母的禁忌诱惑</div><p>[内容摘要占位符]</p></div>
         <div class="ep"><div class="score">8.3</div><div class="title">第188章：打起岳母的主意</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.2</div><div class="title">第189章：残酷的现实</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.5</div><div class="title">第190章：紧急通报</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.7</div><div class="title">第191章：严禁进入的警戒线</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.9</div><div class="title">第192章：枪声大作</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.5</div><div class="title">第193章：人潮的尽头</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第194章：归家的温度</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.3</div><div class="title">第195章：生者的低语</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.6</div><div class="title">第196章：山坡上的告白</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">8.9</div><div class="title">第197章：病态的升迁</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.4</div><div class="title">第198章：恋恋不舍的离别</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">7.8</div><div class="title">第199章：史上最贱的恶作剧</div><p>[内容摘要占位符]</p></div>
-        <div class="ep"><div class="score">9.1</div><div class="title">第200章：真正的重体力活</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.0</div><div class="title">第189章：残酷的现实</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第190章：紧急通报</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.0</div><div class="title">第191章：严禁进入的警戒线</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.4</div><div class="title">第192章：枪声大作</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.7</div><div class="title">第193章：人潮的尽头</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第194章：归家的温度</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.4</div><div class="title">第195章：生者的低语</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.7</div><div class="title">第196章：山坡上的告白</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第197章：病态的升迁</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.8</div><div class="title">第198章：恋恋不舍的离别</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第199章：史上最贱的恶作剧</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.0</div><div class="title">第200章：真正的重体力活</div><p>[内容摘要占位符]</p></div>
     </div>
 
     <!-- 极简增删与同步控件 (编辑模式下显示) -->
@@ -292,7 +311,76 @@
         const engineScript = document.getElementById('core-engine');
 
         // ==========================================
-        // 阿拉伯数字转中文数字 (用于生成 第一季、第二季...)
+        // 0. 通用高颜值自定义弹窗调度器 (支持一键复制)
+        // ==========================================
+        const dialogModal = document.getElementById('custom-dialog-modal');
+        const dialogOverlay = document.getElementById('dialog-overlay');
+        const dialogTitle = document.getElementById('custom-dialog-title');
+        const dialogBody = document.getElementById('custom-dialog-body');
+        const dialogCopyBtn = document.getElementById('dialog-copy-btn');
+        const dialogConfirmBtn = document.getElementById('dialog-confirm-btn');
+
+        let currentDialogCallback = null;
+
+        function showAppDialog(options) {
+            const { title = '提示', text = '', confirmText = '确定', showCopy = true, onConfirm = null } = options;
+            dialogTitle.innerText = title;
+            dialogBody.innerText = text;
+            dialogConfirmBtn.innerText = confirmText;
+            dialogCopyBtn.style.display = showCopy ? 'inline-block' : 'none';
+            dialogCopyBtn.innerText = '📋 复制报告信息';
+            dialogCopyBtn.style.color = '';
+
+            currentDialogCallback = onConfirm;
+
+            dialogModal.style.display = 'flex';
+            dialogOverlay.style.display = 'block';
+        }
+
+        dialogConfirmBtn.addEventListener('click', () => {
+            dialogModal.style.display = 'none';
+            dialogOverlay.style.display = 'none';
+            if (typeof currentDialogCallback === 'function') {
+                const cb = currentDialogCallback;
+                currentDialogCallback = null;
+                cb();
+            }
+        });
+
+        dialogOverlay.addEventListener('click', () => {
+            dialogModal.style.display = 'none';
+            dialogOverlay.style.display = 'none';
+            currentDialogCallback = null;
+        });
+
+        dialogCopyBtn.addEventListener('click', async () => {
+            const textToCopy = dialogBody.innerText;
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(textToCopy);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = textToCopy;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+                dialogCopyBtn.innerText = '✅ 已成功复制到剪贴板！';
+                dialogCopyBtn.style.color = '#28a745';
+                setTimeout(() => {
+                    dialogCopyBtn.innerText = '📋 复制报告信息';
+                    dialogCopyBtn.style.color = '';
+                }, 2000);
+            } catch (e) {
+                dialogCopyBtn.innerText = '❌ 复制失败，请直接划选文本';
+            }
+        });
+
+        // ==========================================
+        // 阿拉伯数字转中文数字
         // ==========================================
         function numberToChinese(num) {
             const chnNumChar = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
@@ -303,7 +391,7 @@
         }
 
         // ==========================================
-        // 0. 配置中心逻辑
+        // 1. 配置中心逻辑
         // ==========================================
         const gearBtn = document.getElementById('config-gear');
         const cfgModal = document.getElementById('config-modal');
@@ -352,15 +440,20 @@
         function ensureConfig() {
             const cfg = getSysConfig();
             if (!cfg.token || !cfg.path || !cfg.owner || !cfg.repo) {
-                alert('⚠️ 缺少必要配置参数！\n请先在右上角 ⚙️ 配置中心补全信息。');
-                gearBtn.click();
+                showAppDialog({
+                    title: '⚠️ 配置未完成',
+                    text: '缺少必要配置参数！\n请在右上角 ⚙️ 配置中心填写 Token、仓库名等信息。',
+                    confirmText: '去配置',
+                    showCopy: false,
+                    onConfirm: () => gearBtn.click()
+                });
                 return false;
             }
             return cfg;
         }
 
         // ==========================================
-        // 1. 基础解析与缓存机制
+        // 2. 基础解析、排序与缓存机制
         // ==========================================
         function chnToNumber(chnStr) {
             if (!chnStr) return 0;
@@ -434,7 +527,7 @@
         }
 
         // ==========================================
-        // 2. 界面交互与模式切换 (折叠展开逻辑)
+        // 3. 界面交互与模式切换 (折叠展开逻辑)
         // ==========================================
         function bindCollapseEvent(dividers) {
             dividers.forEach(button => {
@@ -492,10 +585,10 @@
         }
 
         document.addEventListener('touchstart', (e) => { 
-            if (e.touches.length === 2 && !cfgOverlay.style.display.includes('block')) { e.preventDefault(); toggleEditMode(); } 
+            if (e.touches.length === 2 && !cfgOverlay.style.display.includes('block') && !dialogOverlay.style.display.includes('block')) { e.preventDefault(); toggleEditMode(); } 
         }, { passive: false });
         document.addEventListener('dblclick', (e) => { 
-            if (e.altKey && !cfgOverlay.style.display.includes('block')) { window.getSelection().removeAllRanges(); toggleEditMode(); } 
+            if (e.altKey && !cfgOverlay.style.display.includes('block') && !dialogOverlay.style.display.includes('block')) { window.getSelection().removeAllRanges(); toggleEditMode(); } 
         });
 
         document.addEventListener('click', async (e) => {
@@ -510,10 +603,14 @@
                 const titleEl = epCard.querySelector('.title');
                 if (titleEl) {
                     const titleText = titleEl.innerText.trim();
-                    if (titleText.includes('占位符')) return alert('🚧 该章节暂未更新，敬请期待！');
+                    if (titleText.includes('占位符')) {
+                        return showAppDialog({ title: '🚧 尚未更新', text: '该章节暂未更新，敬请期待！', showCopy: false });
+                    }
 
                     const match = titleText.match(/第(.+?)章/);
-                    if (!match) return alert('无法从标题中解析出章节序号！');
+                    if (!match) {
+                        return showAppDialog({ title: '⚠️ 解析失败', text: '无法从卡片标题中解析出章节序号！' });
+                    }
 
                     const chnStr = match[1];
                     const chapterNum = chnToNumber(chnStr);
@@ -528,13 +625,17 @@
                     epCard.style.backgroundColor = originalBg;
                     epCard.style.cursor = 'pointer';
 
-                    if (files.length === 0) return alert('未能获取到目录文件列表，请检查网络或配置。');
+                    if (files.length === 0) {
+                        return showAppDialog({ title: '❌ 错误', text: '未能获取到目录文件列表，请检查网络或配置。' });
+                    }
 
                     const targetPrefix = `Chapter_${paddedNum}__`;
                     const targetFile = files.find(f => f.startsWith(targetPrefix));
 
                     if (targetFile) { window.location.href = targetFile; } 
-                    else { alert(`🔍 找不到对应的章节文件\n（期望前缀: ${targetPrefix}）`); }
+                    else { 
+                        showAppDialog({ title: '🔍 找不到章节', text: `未找到对应的章节文件！\n\n期望前缀：${targetPrefix}` });
+                    }
                 }
             }
         });
@@ -542,7 +643,7 @@
         function generateRandomScore() { return (Math.random() * (9.9 - 7.5) + 7.5).toFixed(1); }
 
         // ==========================================
-        // 3. ✨核心进阶：智能抓取、重复与跳号双向检测✨
+        // 4. ✨核心进阶：智能抓取、重复与跳号精准诊断✨
         // ==========================================
         document.getElementById('sync-titles-btn').addEventListener('click', async () => {
             const cfg = ensureConfig();
@@ -561,7 +662,7 @@
 
                 if (chapterFiles.length === 0) throw new Error("目录下没有找到 Chapter_ 开头的文件，请确认文件路径是否正确。");
 
-                // 对待抓取文件先按章节数字排序
+                // 按章节数字排序
                 chapterFiles.sort((a, b) => {
                     const matchA = a.match(/Chapter_(\d+)/);
                     const matchB = b.match(/Chapter_(\d+)/);
@@ -586,7 +687,7 @@
                     results.push(...batchRes.filter(r => r));
                 }
 
-                // 确保结果严格按章节序号升序排列
+                // 排序抓取结果
                 results.sort((a, b) => {
                     const matchA = a.filename.match(/Chapter_(\d+)/);
                     const matchB = b.filename.match(/Chapter_(\d+)/);
@@ -595,7 +696,7 @@
                     return numA - numB;
                 });
 
-                // 🔍 1. 重复章节分析 (统计同一个序号下的所有文件)
+                // 🔍 1. 统计同序号多文件情况
                 const numFileMap = new Map();
                 results.forEach(item => {
                     const match = item.filename.match(/Chapter_(\d+)/);
@@ -672,18 +773,18 @@
                     }
                 });
 
-                // 强制容器内卡片 DOM 重排序
+                // 排序容器内卡片
                 sortAllContainers();
 
-                // 🔍 2. 重复章节清单整理
+                // 🔍 2. 重复章节清单
                 const duplicateReports = [];
                 numFileMap.forEach((fileList, num) => {
                     if (fileList.length > 1) {
-                        duplicateReports.push(`第${num}章 (${fileList.length}份: ${fileList.join(', ')})`);
+                        duplicateReports.push(`第${num}章 (${fileList.length}份文件):\n     ${fileList.join('\n     ')}`);
                     }
                 });
 
-                // 🔍 3. 跳号/缺号检测
+                // 🔍 3. 缺号清单
                 let maxChapter = 0;
                 numFileMap.forEach((_, num) => { if (num > maxChapter) maxChapter = num; });
 
@@ -697,31 +798,38 @@
                 let alertDetails = [];
 
                 if (duplicateReports.length > 0) {
-                    const dupLimit = 10;
-                    const dupStr = duplicateReports.slice(0, dupLimit).join('\n   ');
-                    const dupMore = duplicateReports.length > dupLimit ? `\n   ...等共 ${duplicateReports.length} 处重复` : '';
-                    alertDetails.push(`🚨【发现重复章节 (同序号存在多个文件)】\n   ${dupStr}${dupMore}`);
+                    const dupLimit = 15;
+                    const dupStr = duplicateReports.slice(0, dupLimit).join('\n  • ');
+                    const dupMore = duplicateReports.length > dupLimit ? `\n  ...等共 ${duplicateReports.length} 处重复` : '';
+                    alertDetails.push(`🚨【发现重复章节 (同序号存在多个文件)】\n  • ${dupStr}${dupMore}`);
                 }
 
                 if (missingChapters.length > 0) {
-                    const missLimit = 20;
+                    const missLimit = 25;
                     const missStr = missingChapters.slice(0, missLimit).map(n => `第${n}章`).join('、');
                     const missMore = missingChapters.length > missLimit ? ` 等共 ${missingChapters.length} 章` : '';
-                    alertDetails.push(`⚠️【发现跳号/缺号】\n   似乎跳过了：${missStr}${missMore}`);
+                    alertDetails.push(`⚠️【发现跳号/缺号】\n  似乎跳过了：${missStr}${missMore}`);
                 }
 
                 if (duplicateReports.length === 0 && missingChapters.length === 0 && maxChapter > 0) {
                     alertDetails.push(`✨【序号完美】第1章 至 第${maxChapter}章 全部连续无重无漏！`);
                 }
 
-                const reportMsg = `✅ 扫荡完毕！\n\n• 扫描到总文件数: ${results.length} 个\n• 更新了 ${updatedCount} 个已有标题\n• 补齐了 ${addedCount} 个缺失章节\n\n${alertDetails.join('\n\n')}\n\n点击确定后，会自动帮你提交同步到 GitHub！`;
-                alert(reportMsg);
-                
-                if (updatedCount > 0 || addedCount > 0) saveBtn.click();
+                const reportMsg = `【扫描统计汇总】\n• 扫描到总文件数: ${results.length} 篇\n• 更新已有标题: ${updatedCount} 处\n• 补齐缺失卡片: ${addedCount} 处\n\n` + alertDetails.join('\n\n') + '\n\n-------------------------\n点击下方按钮，将自动同步提交到 GitHub！';
+
+                showAppDialog({
+                    title: '📊 章节扫描与诊断报告',
+                    text: reportMsg,
+                    confirmText: '🚀 确定并同步 GitHub',
+                    showCopy: true,
+                    onConfirm: () => {
+                        if (updatedCount > 0 || addedCount > 0) saveBtn.click();
+                    }
+                });
 
             } catch (e) {
                 console.error(e);
-                alert('抓取失败: ' + e.message);
+                showAppDialog({ title: '❌ 抓取失败', text: '抓取过程中出错:\n' + e.message, showCopy: true });
             } finally {
                 btn.innerText = originalText;
                 btn.style.pointerEvents = 'auto';
@@ -763,12 +871,17 @@
             newEdits.forEach(el => el.setAttribute('contenteditable', 'true'));
 
             sortAllContainers();
-            alert(`✨ 【${sName}】的大标题和50个坑位已生成完毕！\n\n接下来直接点中间的 🔄同步按钮，引擎会自动去填坑。`);
+            showAppDialog({
+                title: '✨ 季生成完毕',
+                text: `【${sName}】的大标题和 50 个坑位已生成完毕！\n接下来直接点击中间的 🔄 同步按钮，引擎会自动填坑。`,
+                confirmText: '好的',
+                showCopy: false
+            });
         });
 
         document.getElementById('simple-del-btn').addEventListener('click', () => {
             const dividers = document.querySelectorAll('.season-divider');
-            if (dividers.length === 0) return alert('已经删光了！');
+            if (dividers.length === 0) return showAppDialog({ title: '提示', text: '已经删光了！', showCopy: false });
             const lastDivider = dividers[dividers.length - 1];
             const lastContainer = lastDivider.nextElementSibling;
             if (confirm(`⚠️ 确定要整个删除【${lastDivider.innerText}】以及里面所有的卡片吗？`)) {
@@ -778,10 +891,10 @@
         });
 
         // ==========================================
-        // 4. 白名单重建引擎与 GitHub 同步 (强制所有季折叠 & 强制保序)
+        // 5. 白名单重建引擎与 GitHub 同步 (强制折叠 & 保序)
         // ==========================================
         function getPurifiedHTML() {
-            sortAllContainers(); // 保存前最后执行一次全局严格排序
+            sortAllContainers(); // 严格排序
             const mainTitle = document.querySelector('.title-edit').innerText.trim() || '[书名占位符]';
             const subTitle = document.querySelector('.subtitle').innerText.trim() || '—— [副标题/寄语占位符] ——';
 
@@ -826,7 +939,7 @@
             htmlBlocks.push('        p { margin: 0; font-size: 0.95rem; color: #111; text-align: justify; }');
             htmlBlocks.push('        #config-gear { display: none; position: fixed; top: 15px; right: 20px; font-size: 32px; cursor: pointer; z-index: 9999; transition: transform 0.3s; text-shadow: 2px 2px 0px #1e90ff; user-select: none; }');
             htmlBlocks.push('        #config-gear:hover { transform: rotate(90deg) scale(1.1); }');
-            htmlBlocks.push('        #config-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; backdrop-filter: blur(2px); }');
+            htmlBlocks.push('        .ui-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: 10000; display: none; backdrop-filter: blur(3px); }');
             htmlBlocks.push('        #config-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f0f8ff; border: 4px solid #1e90ff; padding: 25px; z-index: 10001; width: 90%; max-width: 350px; box-shadow: 10px 10px 0px #222; display: none; box-sizing: border-box; }');
             htmlBlocks.push('        #config-modal h2 { margin-top: 0; color: #1e90ff; border-bottom: 2px dashed #222; padding-bottom: 10px; font-size: 1.4rem; text-align: center; }');
             htmlBlocks.push('        .cfg-group { margin-bottom: 12px; text-align: left; }');
@@ -837,10 +950,20 @@
             htmlBlocks.push('        .cfg-group input[readonly]:focus { outline: none; border-color: #999; background: #e9ecef !important; }');
             htmlBlocks.push('        #cfg-save-btn { margin-top: 15px; width: 100%; padding: 12px; background: #222; color: #fff; border: none; font-weight: 900; font-size: 1.1rem; cursor: pointer; border: 2px solid #1e90ff; box-shadow: 4px 4px 0px #1e90ff; transition: all 0.1s; }');
             htmlBlocks.push('        #cfg-save-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #1e90ff; }');
+            htmlBlocks.push('        #custom-dialog-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f0f8ff; border: 4px solid #1e90ff; padding: 22px; z-index: 10005; width: 92%; max-width: 500px; box-shadow: 10px 10px 0px #222; display: none; box-sizing: border-box; flex-direction: column; max-height: 85vh; }');
+            htmlBlocks.push('        #custom-dialog-title { margin-top: 0; color: #00509e; border-bottom: 2px dashed #1e90ff; padding-bottom: 8px; font-size: 1.3rem; text-align: center; }');
+            htmlBlocks.push('        #custom-dialog-body { background: #fff; border: 2px dashed #4682b4; padding: 15px; margin: 12px 0 18px 0; border-radius: 4px; font-size: 0.95rem; line-height: 1.6; color: #111; max-height: 48vh; overflow-y: auto; white-space: pre-wrap; user-select: text !important; -webkit-user-select: text !important; font-family: Consolas, Monaco, "Microsoft YaHei", sans-serif; }');
+            htmlBlocks.push('        .dialog-btn-row { display: flex; gap: 10px; justify-content: flex-end; }');
+            htmlBlocks.push('        .dialog-btn { flex: 1; padding: 10px; font-weight: 900; font-size: 0.95rem; cursor: pointer; border: 2px solid #222; box-shadow: 3px 3px 0px #222; transition: all 0.1s; }');
+            htmlBlocks.push('        .dialog-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px #222; }');
+            htmlBlocks.push('        .btn-copy { background: #fff3cd; color: #856404; border-color: #ffeeba; box-shadow: 3px 3px 0px #ffeeba; }');
+            htmlBlocks.push('        .btn-action { background: #222; color: #fff; border-color: #1e90ff; box-shadow: 3px 3px 0px #1e90ff; }');
+            htmlBlocks.push('        .btn-close { background: #e9ecef; color: #333; }');
             htmlBlocks.push('    </style>\n</head>\n<body>\n');
 
             htmlBlocks.push('    <div id="config-gear" title="系统配置" style="display: none;">⚙️</div>');
-            htmlBlocks.push('    <div id="config-overlay"></div>');
+            htmlBlocks.push('    <div id="config-overlay" class="ui-overlay"></div>');
+            htmlBlocks.push('    <div id="dialog-overlay" class="ui-overlay" style="z-index: 10004;"></div>');
             htmlBlocks.push('    <div id="config-modal">');
             htmlBlocks.push('        <h2>🛠️ 核心引擎配置</h2>');
             htmlBlocks.push('        <div class="cfg-group"><label>GitHub 拥有者 (Owner):</label><input type="text" id="cfg-owner" placeholder="例如: yourName"></div>');
@@ -848,6 +971,15 @@
             htmlBlocks.push('        <div class="cfg-group"><label>GitHub Token (PAT):</label><input type="password" id="cfg-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"></div>');
             htmlBlocks.push('        <div class="cfg-group"><label>主目录绑定路径 (Path):</label><input type="text" id="cfg-path" placeholder="例如: book/index.html" readonly></div>');
             htmlBlocks.push('        <button id="cfg-save-btn">💾 保存并应用</button>');
+            htmlBlocks.push('    </div>\n');
+
+            htmlBlocks.push('    <div id="custom-dialog-modal">');
+            htmlBlocks.push('        <h2 id="custom-dialog-title">📋 诊断报告</h2>');
+            htmlBlocks.push('        <div id="custom-dialog-body"></div>');
+            htmlBlocks.push('        <div class="dialog-btn-row">');
+            htmlBlocks.push('            <button id="dialog-copy-btn" class="dialog-btn btn-copy">📋 复制报告信息</button>');
+            htmlBlocks.push('            <button id="dialog-confirm-btn" class="dialog-btn btn-action">确定</button>');
+            htmlBlocks.push('        </div>');
             htmlBlocks.push('    </div>\n');
 
             htmlBlocks.push(`    <h1 class="title-edit">${mainTitle}</h1>`);
@@ -923,14 +1055,25 @@
                 });
 
                 if (putRes.ok) {
-                    alert('🎉 完美成功！数据已纯净重建并存入云端。');
-                    if (controls.style.display === 'block') toggleEditMode(); 
+                    showAppDialog({
+                        title: '🎉 完美同步成功！',
+                        text: '数据已纯净白名单重建，并成功推送到 GitHub 云端！',
+                        confirmText: '太棒了',
+                        showCopy: false,
+                        onConfirm: () => {
+                            if (controls.style.display === 'block') toggleEditMode();
+                        }
+                    });
                 } else {
                     const err = await putRes.json();
                     throw new Error(err.message || '保存失败');
                 }
             } catch (e) { 
-                alert('网络或配置错误: ' + e.message); 
+                showAppDialog({
+                    title: '❌ 同步失败',
+                    text: '网络或配置错误:\n' + e.message,
+                    showCopy: true
+                });
                 controls.style.display = 'block'; 
             } finally { 
                 saveBtn.innerText = '🚀 同步提交到 GitHub'; 
