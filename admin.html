@@ -41,31 +41,31 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            /* 移除 overflow: hidden; 从而允许 header 的 sticky 吸顶生效 */
+            position: relative;
         }
 
-        #file-list {
-            border-radius: 0 0 12px 12px;
-            overflow: hidden; /* 维持底部圆角的切边效果 */
-        }
-
-        /* ================= Header ================= */
+        /* ================= Header (Sticky 吸顶) ================= */
         header { 
-            display: block; 
-            padding: 15px 20px; 
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #fff;
             border-bottom: 1px solid var(--border); 
-            background: #fff; 
-            position: sticky; 
-            top: 0; 
-            z-index: 998; 
             border-radius: 12px 12px 0 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            padding: 12px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
-        .header-main {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
         }
+
         h1 { margin: 0; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: #24292f; }
 
         .header-actions { display: flex; gap: 8px; align-items: center; }
@@ -86,22 +86,46 @@
             font-size: 13px; color: var(--text-main); cursor: pointer; outline: none;
         }
 
-        .search-bar {
-            margin-top: 12px;
+        /* 搜索框 */
+        .search-container {
+            position: relative;
             width: 100%;
+            display: flex;
+            align-items: center;
         }
         .search-input {
             width: 100%;
-            padding: 8px 12px;
+            padding: 7px 32px 7px 10px;
+            font-size: 13px;
             border: 1px solid var(--border);
             border-radius: 6px;
-            font-size: 14px;
+            background: #f6f8fa;
+            color: var(--text-main);
             outline: none;
-            transition: border-color 0.2s;
-            font-family: inherit;
+            transition: border-color 0.2s, background 0.2s;
         }
         .search-input:focus {
+            background: #ffffff;
             border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
+        }
+        .search-clear-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: #d0d7de;
+            color: #57606a;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 11px;
+            line-height: 18px;
+            text-align: center;
+            cursor: pointer;
+            display: none;
+            padding: 0;
         }
 
         /* ================= Breadcrumb ================= */
@@ -117,8 +141,8 @@
 
         /* ================= List Area ================= */
         ul { list-style: none; padding: 0; margin: 0; }
-        li { border-bottom: 1px solid #eaecef; background: #fff;}
-        li:last-child { border-bottom: none; }
+        li { border-bottom: 1px solid #eaecef; background: #fff; }
+        li:last-child { border-bottom: none; border-radius: 0 0 12px 12px; }
 
         .list-item {
             display: flex; align-items: center; padding: 14px 20px; 
@@ -151,7 +175,7 @@
         .folder-action:active { transform: scale(0.9); }
         .selection-mode .folder-action { display: none; }
 
-        /* ================= Action Bar ================= */
+        /* ================= Action Bar (PC 端样式) ================= */
         .action-bar {
             position: fixed; 
             bottom: 30px; 
@@ -162,7 +186,7 @@
             color: white; padding: 12px 20px; border-radius: 50px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 15px;
             z-index: 999; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
-            width: max-content; 
+            width: max-content;
         }
         .action-bar.visible { transform: translate(-50%, 0); }
         .action-count { font-weight: bold; white-space: nowrap; }
@@ -198,13 +222,13 @@
 
         #content-editor { width: 100%; height: 40vh; padding: 10px; border: 1px solid #d0d7de; border-radius: 6px; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.5; resize: vertical; background: #f6f8fa; }
 
-        .btn-group { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; flex-wrap: wrap;}
+        .btn-group { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
         .btn { padding: 10px 18px; border-radius: 6px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
         .btn:active { opacity: 0.8; }
         .btn-secondary { background: #f3f4f6; color: #24292f; border: 1px solid #d0d7de; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
-        .mr-auto { margin-right: auto; }
+        .btn-danger-outline { background: #fff; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-danger-outline:hover { background: #ffebe9; }
 
         .loading { padding: 40px; text-align: center; color: #666; font-size: 15px; font-weight: 500; }
 
@@ -212,16 +236,18 @@
         @media (max-width: 768px) {
             body { 
                 padding: 10px; 
-                padding-bottom: 200px; 
+                padding-bottom: 200px;
             } 
 
+            /* 顶部栏优化 */
             header {
-                padding: 15px; 
+                padding: 12px 15px;
+                gap: 10px;
             }
-            .header-main {
+            .header-top {
                 flex-direction: column;
                 align-items: stretch;
-                gap: 12px;
+                gap: 10px;
             }
             .header-actions {
                 width: 100%;
@@ -234,26 +260,28 @@
             }
             .icon-btn {
                 flex: 1;
-                padding: 0 5px; 
+                padding: 0 5px;
             }
 
             .list-item { padding: 12px 15px; }
 
+            /* 底部操作栏变到底部面板 */
             .action-bar {
-                width: 100%;       
+                width: 100%;
                 max-width: 100%;
-                left: 0;           
-                bottom: 0;         
+                left: 0;
+                bottom: 0;
                 transform: translate(0, 350%); 
-                border-radius: 20px 20px 0 0; 
-                flex-wrap: wrap;   
-                padding: 15px 20px 25px 20px; 
+                border-radius: 20px 20px 0 0;
+                flex-wrap: wrap;
+                padding: 15px 20px 25px 20px;
                 gap: 10px;
                 justify-content: space-between;
             }
             .action-bar.visible {
-                transform: translate(0, 0); 
+                transform: translate(0, 0);
             }
+
             .action-count {
                 width: 100%;
                 text-align: center;
@@ -262,10 +290,11 @@
                 padding-bottom: 8px;
                 margin-bottom: 5px;
             }
+
             .action-btn {
-                width: calc(50% - 5px); 
+                width: calc(50% - 5px);
                 margin: 0;
-                padding: 12px 0; 
+                padding: 12px 0;
                 font-size: 14px;
                 border-radius: 12px;
                 text-align: center;
@@ -276,7 +305,6 @@
 
             .modal { padding: 20px; }
             .btn-group { flex-direction: column; gap: 10px; }
-            .mr-auto { margin-right: 0; }
             .btn-group .btn { width: 100%; }
             #content-editor { height: 50vh; }
         }
@@ -288,7 +316,7 @@
 
 <div class="container">
     <header>
-        <div class="header-main">
+        <div class="header-top">
             <h1><span style="cursor:pointer;" onclick="loadPath('')">💻</span> Nexus</h1>
             <div class="header-actions">
                 <select id="sort-select" class="sort-select" onchange="changeSortMode()">
@@ -300,9 +328,11 @@
                 <button class="icon-btn" onclick="openSettings()">⚙️ 配置</button>
             </div>
         </div>
-        <div class="search-bar">
-            <!-- 加上 autocomplete="off" 阻止浏览器自动填充 -->
-            <input type="text" id="search-input" class="search-input" placeholder="🔍 搜索当前文件夹..." autocomplete="off" oninput="filterFiles()">
+        <div class="search-container">
+            <input type="text" id="search-input" class="search-input" placeholder="🔍 搜索当前目录文件..." 
+                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                   oninput="handleSearch(this.value)">
+            <button id="search-clear-btn" class="search-clear-btn" onclick="clearSearch()" title="清空搜索">✕</button>
         </div>
     </header>
 
@@ -347,12 +377,11 @@
     <div class="modal" style="max-width: 800px; width: 95%;">
         <h3>✍️ 正文/代码编辑器</h3>
         <div class="form-group" style="flex: 1; display: flex; flex-direction: column;">
-            <label id="content-file-name" style="color: var(--primary);">filename.html</label>
+            <label id="content-file-name" style="color: var(--primary); margin-bottom: 8px;">filename.html</label>
             <textarea id="content-editor" spellcheck="false" placeholder="Loading content..."></textarea>
         </div>
         <div class="btn-group">
-            <!-- 新增一键清空代码按钮 -->
-            <button class="btn btn-danger mr-auto" onclick="clearContentEditor()">🗑️ 清空代码</button>
+            <button class="btn btn-danger-outline" onclick="clearEditorContent()">🗑️ 清空代码</button>
             <button class="btn btn-secondary" onclick="closeModal('content-modal')">放弃修改</button>
             <button id="btn-save-content" class="btn btn-primary" onclick="execSaveContent()">保存提交</button>
         </div>
@@ -418,6 +447,7 @@
     let sortableInstance = null;
     let currentSortSha = null;
     let sortOrder = [];
+    let searchKeyword = '';
 
     // 文件夹重命名状态
     let currentRenameFolderPath = '';
@@ -476,19 +506,19 @@
         });
     }
 
-    // ================= 新增：搜索过滤逻辑 =================
-    function filterFiles() {
-        const term = document.getElementById('search-input').value.toLowerCase();
-        const items = document.querySelectorAll('#file-list li');
-        items.forEach(li => {
-            const name = li.dataset.filename;
-            if (!name) return;
-            if (name.toLowerCase().includes(term)) {
-                li.style.display = '';
-            } else {
-                li.style.display = 'none';
-            }
-        });
+    // ================= 搜索功能 =================
+    function handleSearch(val) {
+        searchKeyword = val.trim().toLowerCase();
+        const clearBtn = document.getElementById('search-clear-btn');
+        clearBtn.style.display = searchKeyword ? 'block' : 'none';
+        renderList();
+    }
+
+    function clearSearch() {
+        const input = document.getElementById('search-input');
+        input.value = '';
+        handleSearch('');
+        input.focus();
     }
 
     // ================= 核心加载逻辑 =================
@@ -496,8 +526,13 @@
         if (isBatchMode) toggleBatchMode(); 
         currentPath = path;
 
-        // 每次进入新目录，清空搜索框
-        document.getElementById('search-input').value = '';
+        // 切换目录时清空搜索
+        searchKeyword = '';
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = '';
+            document.getElementById('search-clear-btn').style.display = 'none';
+        }
 
         if (addToHistory) {
             history.pushState({ path: path }, '', `?path=${encodeURIComponent(path)}`);
@@ -530,7 +565,11 @@
                     continue; 
                 }
 
+                // 排除核心文件以及隐藏文件
                 if (item.name === 'index.html' || item.name === 'admin.html' || item.name.startsWith('.')) continue;
+
+                // 【新增过滤逻辑】：如果是文件，且后缀不是 .html 则直接忽略跳过，文件夹则正常保留
+                if (item.type === 'file' && !item.name.toLowerCase().endsWith('.html')) continue;
 
                 currentItems.push(item);
             }
@@ -594,10 +633,20 @@
             return;
         }
 
+        // 根据搜索关键词过滤展示列表
+        const displayItems = searchKeyword 
+            ? currentItems.filter(item => item.name.toLowerCase().includes(searchKeyword))
+            : currentItems;
+
+        if (displayItems.length === 0) {
+            listEl.innerHTML = '<div class="loading">🔍 未找到匹配的文件或文件夹</div>';
+            return;
+        }
+
         const ul = document.createElement('ul');
         if(isBatchMode) ul.classList.add('selection-mode');
 
-        currentItems.forEach(item => {
+        displayItems.forEach(item => {
             const li = document.createElement('li');
             li.dataset.filename = item.name; 
 
@@ -635,15 +684,12 @@
         listEl.appendChild(ul);
 
         if (sortableInstance) { try { sortableInstance.destroy(); } catch(e){} sortableInstance = null; }
-        if (currentSortMode === 'custom') {
+        if (currentSortMode === 'custom' && !searchKeyword) {
             sortableInstance = new Sortable(ul, {
                 handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost',
                 onEnd: saveSortOrder
             });
         }
-
-        // 每次重绘列表（如点选复选框等）确保搜索过滤状态维持
-        filterFiles();
     }
 
     async function saveSortOrder() {
@@ -735,10 +781,11 @@
         }
     }
 
-    // 新增：一键清空代码功能
-    function clearContentEditor() {
-        if (confirm("⚠️ 确定要清空正文/代码吗？此操作不可撤销！")) {
-            document.getElementById('content-editor').value = '';
+    function clearEditorContent() {
+        if (confirm("⚠️ 确认一键清空当前编辑器内的全部内容吗？")) {
+            const editor = document.getElementById('content-editor');
+            editor.value = '';
+            editor.focus();
         }
     }
 
@@ -802,18 +849,15 @@
     }
 
     async function renameDirectoryRecursively(oldDir, newDir) {
-        // GitHub Api 规定只有重命名文件(新创再删)，没有直接重命名文件夹接口，只能递归实现
         const data = await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${oldDir}`);
         for (const item of data) {
             if (item.type === 'file') {
                 const fileData = await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${item.path}`);
                 const newFilePath = newDir + '/' + item.name;
-                // 在新路径创建
                 await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${newFilePath}`, {
                     method: 'PUT',
                     body: JSON.stringify({ message: `Rename folder: move ${item.name}`, content: fileData.content })
                 });
-                // 删除旧路径
                 await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${item.path}`, {
                     method: 'DELETE',
                     body: JSON.stringify({ message: `Rename folder: delete old ${item.name}`, sha: item.sha })
