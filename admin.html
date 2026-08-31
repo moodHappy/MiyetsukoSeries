@@ -41,15 +41,37 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            overflow: hidden;
         }
 
-        /* ================= Header ================= */
-        header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 20px; border-bottom: 1px solid var(--border); background: #fff; 
+        /* ================= 悬浮顶部区域 ================= */
+        .sticky-wrap {
+            position: sticky;
+            top: 15px;
+            z-index: 100;
+            background: var(--card-bg);
+            border-radius: 12px 12px 0 0;
         }
-        h1 { margin: 0; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: #24292f; }
+
+        header { 
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+            padding: 15px 20px; border-bottom: 1px solid var(--border); background: #fff; 
+            border-radius: 12px 12px 0 0;
+        }
+
+        .header-left { 
+            display: flex; align-items: center; gap: 15px; flex: 1; min-width: 250px; 
+        }
+
+        h1 { margin: 0; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: #24292f; white-space: nowrap;}
+
+        .search-input {
+            background: #f6f8fa; border: 1px solid var(--border);
+            border-radius: 6px; padding: 0 12px; height: 36px;
+            font-size: 14px; color: var(--text-main); outline: none;
+            flex: 1; max-width: 250px; transition: all 0.2s;
+            -webkit-appearance: none; appearance: none; /* 屏蔽原生默认样式 */
+        }
+        .search-input:focus { border-color: var(--primary); background: #fff; }
 
         .header-actions { display: flex; gap: 8px; align-items: center; }
 
@@ -81,6 +103,10 @@
         .breadcrumb-current { color: var(--text-muted); font-weight: 600; }
 
         /* ================= List Area ================= */
+        #file-list {
+            border-radius: 0 0 12px 12px;
+            overflow: hidden; 
+        }
         ul { list-style: none; padding: 0; margin: 0; }
         li { border-bottom: 1px solid #eaecef; background: #fff;}
         li:last-child { border-bottom: none; }
@@ -111,7 +137,7 @@
         .selection-mode .select-checkbox { display: block; }
         .arrow-icon { color: #d0d7de; font-size: 18px; font-weight: bold; }
         .selection-mode .arrow-icon { display: none; }
-        
+
         .folder-action { font-size: 16px; margin-right: 15px; padding: 5px; cursor: pointer; transition: transform 0.2s; }
         .folder-action:active { transform: scale(0.9); }
         .selection-mode .folder-action { display: none; }
@@ -127,7 +153,7 @@
             color: white; padding: 12px 20px; border-radius: 50px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 15px;
             z-index: 999; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
-            width: max-content; /* PC端允许自适应内部宽度 */
+            width: max-content; 
         }
         .action-bar.visible { transform: translate(-50%, 0); }
         .action-count { font-weight: bold; white-space: nowrap; }
@@ -168,23 +194,37 @@
         .btn:active { opacity: 0.8; }
         .btn-secondary { background: #f3f4f6; color: #24292f; border: 1px solid #d0d7de; }
         .btn-primary { background: var(--primary); color: white; }
+        .btn-danger-outline { background: #fff; color: var(--danger); border: 1px solid var(--danger); }
 
         .loading { padding: 40px; text-align: center; color: #666; font-size: 15px; font-weight: 500; }
 
-        /* ================= 针对移动端(屏幕宽度 < 768px)的绝对拦截 ================= */
+        /* ================= 针对移动端(屏幕宽度 < 768px) ================= */
         @media (max-width: 768px) {
             body { 
                 padding: 10px; 
-                padding-bottom: 200px; /* 底部面板变大，留出充足的滑动空间防止遮挡文件列表 */
+                padding-bottom: 200px; 
             } 
+            
+            .sticky-wrap { top: 10px; } 
 
-            /* 顶部拦优化：控件平铺填充，不挤压 */
             header {
                 flex-direction: column;
                 align-items: stretch;
                 gap: 12px;
                 padding: 15px;
             }
+            .header-left { 
+                flex-direction: column; 
+                align-items: stretch; 
+                gap: 12px; 
+                width: 100%; 
+            }
+            .search-input { 
+                max-width: 100%; 
+                width: 100%; 
+                height: 38px; /* 强制提升移动端高度，拒绝被压扁 */
+            }
+
             .header-actions {
                 width: 100%;
                 justify-content: space-between;
@@ -196,30 +236,27 @@
             }
             .icon-btn {
                 flex: 1;
-                padding: 0 5px; /* 允许按钮平均分配空间 */
+                padding: 0 5px; 
             }
 
             .list-item { padding: 12px 15px; }
 
-            /* 核心修复：将底部操作栏变成 100% 宽度的原生底部面板 */
             .action-bar {
-                width: 100%;       /* 强制占满屏幕 */
+                width: 100%;       
                 max-width: 100%;
-                left: 0;           /* 靠左对齐，去除居中逻辑 */
-                bottom: 0;         /* 吸底 */
-                /* 【修复 Edge 漏出问题】：将下沉比例从 150% 加大到 350%，深埋到屏幕最底部 */
+                left: 0;           
+                bottom: 0;         
                 transform: translate(0, 350%); 
-                border-radius: 20px 20px 0 0; /* 仅左上右上圆角，模拟原生抽屉 */
-                flex-wrap: wrap;   /* 彻底允许内部换行 */
-                padding: 15px 20px 25px 20px; /* 增加底部留白，适配手机全面屏手势条 */
+                border-radius: 20px 20px 0 0; 
+                flex-wrap: wrap;   
+                padding: 15px 20px 25px 20px; 
                 gap: 10px;
                 justify-content: space-between;
             }
             .action-bar.visible {
-                transform: translate(0, 0); /* 弹出时回归原位 */
+                transform: translate(0, 0); 
             }
 
-            /* "已选 1" 独占第一排 */
             .action-count {
                 width: 100%;
                 text-align: center;
@@ -229,11 +266,10 @@
                 margin-bottom: 5px;
             }
 
-            /* 四个操作按钮变成标准的 2x2 网格，绝不可能溢出 */
             .action-btn {
-                width: calc(50% - 5px); /* 严格占据一半屏幕宽度（减去gap） */
+                width: calc(50% - 5px); 
                 margin: 0;
-                padding: 12px 0; /* 增加点击高度，手指好按 */
+                padding: 12px 0; 
                 font-size: 14px;
                 border-radius: 12px;
                 text-align: center;
@@ -242,10 +278,9 @@
                 align-items: center;
             }
 
-            /* 弹窗按钮移动端优化 */
             .modal { padding: 20px; }
             .btn-group { flex-direction: column; gap: 10px; }
-            .btn-group .btn { width: 100%; }
+            .btn-group .btn { width: 100%; margin-right: 0 !important; }
             #content-editor { height: 50vh; }
         }
     </style>
@@ -255,20 +290,25 @@
 <div id="toast" class="toast">操作成功</div>
 
 <div class="container">
-    <header>
-        <h1><span style="cursor:pointer;" onclick="loadPath('')">💻</span> Nexus</h1>
-        <div class="header-actions">
-            <select id="sort-select" class="sort-select" onchange="changeSortMode()">
-                <option value="custom">☰ 自定义排序</option>
-                <option value="name_asc">🔤 名称升序</option>
-                <option value="name_desc">🔤 名称降序</option>
-            </select>
-            <button id="batch-btn" class="icon-btn" onclick="toggleBatchMode()">✅ 批量操作</button>
-            <button class="icon-btn" onclick="openSettings()">⚙️ 配置</button>
-        </div>
-    </header>
-
-    <div id="breadcrumb" class="breadcrumb"></div>
+    <div class="sticky-wrap">
+        <header>
+            <div class="header-left">
+                <h1><span style="cursor:pointer;" onclick="loadPath('')">💻</span> Nexus</h1>
+                <!-- 彻底禁用自动填充并屏蔽拼写检查 -->
+                <input type="text" id="search-input" class="search-input" name="search-disable-autofill" placeholder="🔍 搜索当前目录..." oninput="filterList()" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="header-actions">
+                <select id="sort-select" class="sort-select" onchange="changeSortMode()">
+                    <option value="custom">☰ 自定义排序</option>
+                    <option value="name_asc">🔤 名称升序</option>
+                    <option value="name_desc">🔤 名称降序</option>
+                </select>
+                <button id="batch-btn" class="icon-btn" onclick="toggleBatchMode()">✅ 批量操作</button>
+                <button class="icon-btn" onclick="openSettings()">⚙️ 配置</button>
+            </div>
+        </header>
+        <div id="breadcrumb" class="breadcrumb"></div>
+    </div>
 
     <div id="file-list">
         <div class="loading">正在接驳 GitHub 数据库...</div>
@@ -313,6 +353,7 @@
             <textarea id="content-editor" spellcheck="false" placeholder="Loading content..."></textarea>
         </div>
         <div class="btn-group">
+            <button class="btn btn-danger-outline" style="margin-right: auto;" onclick="clearEditor()">一键清空</button>
             <button class="btn btn-secondary" onclick="closeModal('content-modal')">放弃修改</button>
             <button id="btn-save-content" class="btn btn-primary" onclick="execSaveContent()">保存提交</button>
         </div>
@@ -378,7 +419,7 @@
     let sortableInstance = null;
     let currentSortSha = null;
     let sortOrder = [];
-    
+
     // 文件夹重命名状态
     let currentRenameFolderPath = '';
     let currentRenameFolderName = '';
@@ -440,6 +481,9 @@
     async function loadPath(path, addToHistory = true) {
         if (isBatchMode) toggleBatchMode(); 
         currentPath = path;
+
+        const searchInput = document.getElementById('search-input');
+        if(searchInput) searchInput.value = '';
 
         if (addToHistory) {
             history.pushState({ path: path }, '', `?path=${encodeURIComponent(path)}`);
@@ -585,6 +629,21 @@
         }
     }
 
+    function filterList() {
+        const keyword = document.getElementById('search-input').value.toLowerCase();
+        const items = document.querySelectorAll('#file-list li');
+        items.forEach(li => {
+            const name = li.dataset.filename;
+            if (name) {
+                if (name.toLowerCase().includes(keyword)) {
+                    li.style.display = '';
+                } else {
+                    li.style.display = 'none';
+                }
+            }
+        });
+    }
+
     async function saveSortOrder() {
         if (!config.token) return;
         const ul = document.querySelector('#file-list ul');
@@ -610,7 +669,6 @@
         loadPath(currentPath, false);
     }
 
-    // ================= 交互与模态框 =================
     function handleDirClick(e, path) {
         if (isBatchMode) return; 
         loadPath(path);
@@ -651,7 +709,6 @@
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    // ================= 功能：正文编辑器 =================
     let currentEditFile = null;
     async function openContentModal() {
         const file = selectedFilesMap.values().next().value;
@@ -671,6 +728,13 @@
             btn.disabled = false;
         } catch (e) {
             editor.value = "加载内容失败: " + e.message;
+        }
+    }
+
+    function clearEditor() {
+        if(confirm("⚠️ 确定要清空所有代码吗？此操作无法撤销。")) {
+            document.getElementById('content-editor').value = '';
+            document.getElementById('content-editor').focus();
         }
     }
 
@@ -694,7 +758,6 @@
         }
     }
 
-    // ================= 功能：文件重命名 =================
     function openRenameModal() {
         const file = selectedFilesMap.values().next().value;
         document.getElementById('rename-input').value = file.name;
@@ -725,7 +788,6 @@
         finally { btn.disabled = false; btn.innerText = "确认修改"; }
     }
 
-    // ================= 功能：文件夹重命名 =================
     function openFolderRenameModal(name, path) {
         currentRenameFolderName = name;
         currentRenameFolderPath = path;
@@ -734,18 +796,15 @@
     }
 
     async function renameDirectoryRecursively(oldDir, newDir) {
-        // GitHub Api 规定只有重命名文件(新创再删)，没有直接重命名文件夹接口，只能递归实现
         const data = await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${oldDir}`);
         for (const item of data) {
             if (item.type === 'file') {
                 const fileData = await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${item.path}`);
                 const newFilePath = newDir + '/' + item.name;
-                // 在新路径创建
                 await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${newFilePath}`, {
                     method: 'PUT',
                     body: JSON.stringify({ message: `Rename folder: move ${item.name}`, content: fileData.content })
                 });
-                // 删除旧路径
                 await ghFetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/${item.path}`, {
                     method: 'DELETE',
                     body: JSON.stringify({ message: `Rename folder: delete old ${item.name}`, sha: item.sha })
@@ -781,7 +840,6 @@
         }
     }
 
-    // ================= 功能：移动与删除 =================
     function openMoveModal() {
         document.getElementById('move-target-path').value = currentPath;
         document.getElementById('move-modal').style.display = 'flex';
@@ -829,7 +887,6 @@
         finally { btn.innerText = "🗑️ 删除"; }
     }
 
-    // ================= 设置面板 =================
     function openSettings() {
         document.getElementById('settings-modal').style.display = 'flex';
         document.getElementById('cfg-user').value = config.user;
