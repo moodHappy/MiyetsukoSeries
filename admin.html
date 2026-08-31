@@ -222,7 +222,7 @@
             .search-input { 
                 max-width: 100%; 
                 width: 100%; 
-                height: 38px; /* 强制提升移动端高度，拒绝被压扁 */
+                height: 38px;
             }
 
             .header-actions {
@@ -294,7 +294,6 @@
         <header>
             <div class="header-left">
                 <h1><span style="cursor:pointer;" onclick="loadPath('')">💻</span> Nexus</h1>
-                <!-- 彻底禁用自动填充并屏蔽拼写检查 -->
                 <input type="text" id="search-input" class="search-input" name="search-disable-autofill" placeholder="🔍 搜索当前目录..." oninput="filterList()" autocomplete="off" spellcheck="false">
             </div>
             <div class="header-actions">
@@ -420,14 +419,25 @@
     let currentSortSha = null;
     let sortOrder = [];
 
-    // 文件夹重命名状态
     let currentRenameFolderPath = '';
     let currentRenameFolderName = '';
 
     // ================= 初始化与 API =================
     function getConfig() {
         const stored = localStorage.getItem('gh_admin_config'); 
-        return stored ? { ...DEFAULTS, ...JSON.parse(stored) } : DEFAULTS;
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            // 【核心修复】深度清理已经存入本地的脏数据，防止 undefined 被当做合法字符串渲染
+            if (parsed.user === 'undefined' || !parsed.user) parsed.user = DEFAULTS.user;
+            if (parsed.repo === 'undefined' || !parsed.repo) parsed.repo = DEFAULTS.repo;
+            
+            return {
+                user: parsed.user,
+                repo: parsed.repo,
+                token: parsed.token || ''
+            };
+        }
+        return DEFAULTS;
     }
 
     function showToast(msg, type = 'info') {
@@ -889,15 +899,20 @@
 
     function openSettings() {
         document.getElementById('settings-modal').style.display = 'flex';
-        document.getElementById('cfg-user').value = config.user;
-        document.getElementById('cfg-repo').value = config.repo;
-        document.getElementById('cfg-token').value = config.token;
+        // 【核心修复】防止给输入框赋值字面量 "undefined"
+        document.getElementById('cfg-user').value = (config.user && config.user !== 'undefined') ? config.user : DEFAULTS.user;
+        document.getElementById('cfg-repo').value = (config.repo && config.repo !== 'undefined') ? config.repo : DEFAULTS.repo;
+        document.getElementById('cfg-token').value = config.token || '';
     }
 
     function saveSettings() {
+        // 【核心修复】过滤空值和 "undefined" 字面量
+        let u = document.getElementById('cfg-user').value.trim();
+        let r = document.getElementById('cfg-repo').value.trim();
+        
         const newCfg = {
-            user: document.getElementById('cfg-user').value.trim() || DEFAULTS.user,
-            repo: document.getElementById('cfg-repo').value.trim() || DEFAULTS.repo,
+            user: (u && u !== 'undefined') ? u : DEFAULTS.user,
+            repo: (r && r !== 'undefined') ? r : DEFAULTS.repo,
             token: document.getElementById('cfg-token').value.trim()
         };
         localStorage.setItem('gh_admin_config', JSON.stringify(newCfg));
