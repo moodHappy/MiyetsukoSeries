@@ -70,22 +70,24 @@
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); z-index: 999; display: none; justify-content: center; align-items: flex-end; opacity: 0; transition: opacity 0.3s; }
         .modal-overlay.show { display: flex; opacity: 1; }
-        .modal-content { width: 100%; max-width: 600px; height: 85vh; background: var(--bg-color); border-radius: 24px 24px 0 0; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -4px 20px rgba(0,0,0,0.1); }
+        .modal-content { width: 100%; max-width: 600px; height: 85vh; max-height: 85vh; background: var(--bg-color); border-radius: 24px 24px 0 0; display: flex; flex-direction: column; overflow: hidden; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -4px 20px rgba(0,0,0,0.1); }
         .modal-overlay.show .modal-content { transform: translateY(0); }
         
         .center-modal { top: 50%; transform: translateY(-50%) scale(0.9); margin: 0 auto; height: auto; max-height: 80vh; max-width: 90%; border-radius: 24px; position: absolute; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s !important; opacity: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         .modal-overlay.show .center-modal { transform: translateY(-50%) scale(1); opacity: 1; }
 
-        .modal-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); background: var(--card-bg); border-radius: 24px 24px 0 0; }
+        .modal-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); background: var(--card-bg); border-radius: 24px 24px 0 0; flex-shrink: 0; }
         .modal-header h3 { margin: 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
         .cloud-sync-btn { background: var(--primary-light); color: var(--primary); border: none; border-radius: 20px; padding: 5px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
         .cloud-sync-btn:active { transform: scale(0.9); }
         .close-btn { background: #f0f0f0; border: none; width: 30px; height: 30px; border-radius: 15px; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #666; transition: background 0.2s; }
         .close-btn:active { background: #e0e0e0; }
-        .modal-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+        
+        /* 模态框主体滚动修复 */
+        .modal-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom) + 50px); display: flex; flex-direction: column; gap: 14px; }
 
         /* 二级目录：年份 > 12个月份网格样式 */
-        .year-section { background: var(--card-bg); border-radius: var(--radius-md); border: 1px solid #e5e5ea; overflow: hidden; box-shadow: var(--shadow-sm); }
+        .year-section { background: var(--card-bg); border-radius: var(--radius-md); border: 1px solid #e5e5ea; overflow: hidden; box-shadow: var(--shadow-sm); flex-shrink: 0; }
         .year-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #fff; user-select: none; transition: background 0.2s; }
         .year-header:active { background: #f8f8fa; }
         .year-title { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
@@ -99,7 +101,7 @@
         .month-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; background: #ececf2; padding: 6px; border-radius: 12px; }
         @media (max-width: 440px) { .month-grid { grid-template-columns: repeat(4, 1fr); } }
         
-        .month-btn { border: none; background: #ffffff; padding: 8px 2px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: all 0.2s ease; }
+        .month-btn { border: none; background: #ffffff; padding: 8px 2px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; color: var(--text-muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: all 0.2s ease; }
         .month-btn:active { transform: scale(0.95); }
         .month-btn.has-items { color: var(--text-main); font-weight: 700; }
         .month-btn.active { background: var(--primary); color: #fff !important; box-shadow: 0 3px 8px rgba(0, 122, 255, 0.3); }
@@ -156,7 +158,7 @@
                 </svg>
             </button>
         </div>
-        <div action-bars class="action-bars">
+        <div class="action-bars">
             <button class="feature-btn highlight" onclick="generateRandomCards()">🎲 随机漫游</button>
             <button class="feature-btn" onclick="openFavModal()">❤️ 我的收藏</button>
         </div>
@@ -203,8 +205,9 @@
     const GITHUB_REPO = "moodHappy/MiyetsukoSeries"; const BRANCH = "main"; const DISPLAY_LIMIT = 5; let memoryCorpus = {}; 
     const FAV_REPO = "moodHappy/moodHappy.gitHub.io-nce"; const FAV_PATH = "config/favorites.json";
     
-    // 目录状态管理：记录展开的年份与各年份选中的月份
-    let openYears = new Set(); 
+    // 初始化默认展开当前年份
+    const initYearStr = String(new Date().getFullYear());
+    let openYears = new Set([initYearStr]); 
     let selectedMonths = {}; 
 
     localforage.config({ name: 'MiyetsukoSharedDB', storeName: 'articles_corpus_v3' });
@@ -327,7 +330,7 @@
     };
 
     // ==========================================
-    // 渲染二级目录收藏夹 (年份 > 01~12月)
+    // 渲染二级目录收藏夹 (年份 > 01~12纯数字网格)
     // ==========================================
     async function renderFavoritesList() {
         const list = document.getElementById('favList');
@@ -342,7 +345,6 @@
         // 所有收藏首先按最近时间倒序（最新收藏在最前）
         activeFavs.sort((a, b) => (b.time || 0) - (a.time || 0));
 
-        // 按年份与月份构建多级树
         const now = new Date();
         const curYearStr = String(now.getFullYear());
         const curMonthStr = String(now.getMonth() + 1).padStart(2, '0');
@@ -374,11 +376,6 @@
 
         const sortedYears = Object.keys(yearMap).sort((a, b) => b.localeCompare(a));
 
-        // 默认展开规则：首次进入默认展开当前年份，并选中当前月份
-        if (openYears.size === 0) {
-            openYears.add(curYearStr);
-        }
-
         sortedYears.forEach(year => {
             const yearData = yearMap[year];
             const isOpen = openYears.has(year);
@@ -400,7 +397,7 @@
             const activeMStr = selectedMonths[year];
             const curMonthItems = yearData.months[activeMStr] || [];
 
-            // 1. 生成 01 ~ 12 月份网格按钮
+            // 1. 生成 01 ~ 12 纯数字月份网格按钮 (去掉了"月"字)
             let monthGridHtml = '<div class="month-grid">';
             for (let m = 1; m <= 12; m++) {
                 const mStr = String(m).padStart(2, '0');
@@ -411,7 +408,7 @@
                 monthGridHtml += `
                     <button class="month-btn ${isSelected ? 'active' : ''} ${hasItems ? 'has-items' : ''}" 
                             onclick="selectMonth('${year}', '${mStr}')">
-                        <span>${mStr}月</span>
+                        <span>${mStr}</span>
                         <span class="month-dot">${count > 0 ? `${count}篇` : '·'}</span>
                     </button>
                 `;
