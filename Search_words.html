@@ -12,12 +12,25 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; transition: background-color 0.3s; }
         .navbar { position: sticky; top: 0; width: 100%; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; padding: env(safe-area-inset-top) 20px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); transition: opacity 0.3s; }
         .nav-title { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-        .nav-actions { display: flex; align-items: center; gap: 8px; }
-        .sync-btn { background: var(--primary-light); color: var(--primary); border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .cloud-db-btn { background: #34c75918; color: #28a745; border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .sync-btn.syncing, .cloud-db-btn:disabled { background: #eee; color: #999; pointer-events: none; }
+        
+        /* 顶部齿轮设置按钮 */
+        .settings-btn { background: #ffffff; border: 1px solid #e0e0e0; color: #444; width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.15rem; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s; }
+        .settings-btn:active { transform: rotate(45deg) scale(0.92); background: #f0f0f2; }
+        
+        /* 下拉动作菜单 */
+        .settings-dropdown { position: absolute; top: calc(env(safe-area-inset-top) + 52px); right: 20px; background: rgba(255,255,255,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; box-shadow: var(--shadow-md); padding: 6px; display: none; flex-direction: column; gap: 4px; z-index: 101; min-width: 175px; transform-origin: top right; animation: menuPop 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .settings-dropdown.show { display: flex; }
+        @keyframes menuPop { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+        
+        .menu-item { background: transparent; border: none; border-radius: 10px; padding: 10px 14px; font-size: 0.9rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 10px; cursor: pointer; text-align: left; transition: background 0.15s; }
+        .menu-item:hover, .menu-item:active { background: rgba(0,0,0,0.05); }
+        .menu-item.highlight-green { color: #28a745; }
+        .menu-item.highlight-blue { color: var(--primary); }
+        .menu-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 2px 4px; }
+
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
         .container { width: 100%; max-width: 600px; padding: 20px; display: flex; flex-direction: column; gap: 20px; transition: padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .status-card { background: var(--card-bg); border-radius: var(--radius-lg); padding: 15px; box-shadow: var(--shadow-sm); text-align: center; transition: opacity 0.3s; }
         .status-number { font-size: 2rem; font-weight: 800; color: var(--primary); margin: 5px 0; }
@@ -144,11 +157,24 @@
 <body>
 <div class="navbar">
     <div class="nav-title">🧸 溯源双语</div>
-    <div class="nav-actions">
-        <button class="cloud-db-btn" id="cloudDbBtn" onclick="triggerDbCloudSync()" title="将完整双语数据库同步推送到 GitHub 供 Anki 云端直连">☁️ 同步到 GitHub</button>
-        <button class="sync-btn" id="syncBtn" onclick="checkUpdates(false)"><span id="syncIcon">🔄</span><span id="syncText">检测更新</span></button>
+    <div style="position: relative;">
+        <button class="settings-btn" id="gearBtn" onclick="toggleSettingsMenu(event)" title="设置与工具">⚙️</button>
+        <!-- 设置下拉操作菜单 -->
+        <div class="settings-dropdown" id="settingsDropdown">
+            <button class="menu-item highlight-blue" onclick="handleMenuAction('checkUpdates')">
+                <span id="syncMenuIcon">🔄</span><span id="syncMenuText">检测并更新</span>
+            </button>
+            <div class="menu-divider"></div>
+            <button class="menu-item highlight-green" onclick="handleMenuAction('cloudSync')">
+                <span>☁️</span><span>同步到 GitHub</span>
+            </button>
+            <button class="menu-item" onclick="handleMenuAction('exportJs')">
+                <span>📦</span><span>导出离线 JS</span>
+            </button>
+        </div>
     </div>
 </div>
+
 <div class="container">
     <div class="status-card">
         <div class="status-label" id="cacheStatusLabel">共享数据库就绪</div>
@@ -248,6 +274,29 @@
     randomToggle.addEventListener('change', e => localStorage.setItem('setting_random', e.target.checked));
     exactToggle.addEventListener('change', e => localStorage.setItem('setting_exact', e.target.checked));
 
+    // ==========================================
+    // 齿轮菜单控制逻辑
+    // ==========================================
+    window.toggleSettingsMenu = function(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('settingsDropdown');
+        menu.classList.toggle('show');
+    };
+
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('settingsDropdown');
+        if (menu && menu.classList.contains('show') && !e.target.closest('#settingsDropdown') && !e.target.closest('#gearBtn')) {
+            menu.classList.remove('show');
+        }
+    });
+
+    window.handleMenuAction = function(action) {
+        document.getElementById('settingsDropdown').classList.remove('show');
+        if (action === 'checkUpdates') checkUpdates(false);
+        else if (action === 'cloudSync') triggerDbCloudSync();
+        else if (action === 'exportJs') exportAnkiDatabase();
+    };
+
     function extractBilingualSegments(htmlString) {
         let parser = new DOMParser(); let doc = parser.parseFromString(htmlString, 'text/html'); let container = doc.getElementById('content-container') || doc.body; let segments = []; let children = container.children;
         for (let i = 0; i < children.length; i++) {
@@ -286,10 +335,14 @@
     async function asyncPool(poolLimit, array, iteratorFn) { const ret = [], executing = []; for (const item of array) { const p = Promise.resolve().then(() => iteratorFn(item)); ret.push(p); if (poolLimit <= array.length) { const e = p.then(() => executing.splice(executing.indexOf(e), 1)); executing.push(e); if (executing.length >= poolLimit) await Promise.race(executing); } } return Promise.all(ret); }
 
     async function checkUpdates(isAuto = false) {
-        const btn = document.getElementById('syncBtn'), icon = document.getElementById('syncIcon'), txt = document.getElementById('syncText'), progBox = document.getElementById('progressBox');
+        const icon = document.getElementById('syncMenuIcon'), txt = document.getElementById('syncMenuText'), progBox = document.getElementById('progressBox');
         const hasCache = Object.keys(memoryCorpus).length > 0;
-        if (btn.classList.contains('syncing')) return;
-        if (!isAuto || !hasCache) { btn.classList.add('syncing'); icon.classList.add('spin'); txt.innerText = "检索树结构..."; progBox.style.display = 'block'; }
+        if (icon.classList.contains('spin')) return;
+        
+        icon.classList.add('spin'); 
+        txt.innerText = "检索中..."; 
+        if (!isAuto || !hasCache) { progBox.style.display = 'block'; }
+        
         try {
             const treeRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/git/trees/${BRANCH}?recursive=1`);
             if (!treeRes.ok) throw new Error("网络受限");
@@ -298,22 +351,68 @@
             let toFetch = [], remotePathSet = new Set();
             for (let file of remoteHtmlFiles) { remotePathSet.add(file.path); const local = memoryCorpus[file.path]; if (!local || local.sha !== file.sha) toFetch.push(file); }
             for (let path in memoryCorpus) { if (!remotePathSet.has(path)) { delete memoryCorpus[path]; await localforage.removeItem(path); } }
-            if (toFetch.length === 0) { if (!isAuto || !hasCache) { txt.innerText = "已是最新"; setTimeout(() => txt.innerText = "检测更新", 2000); } updateCountUI(); } 
-            else {
-                btn.classList.add('syncing'); icon.classList.add('spin'); progBox.style.display = 'block'; txt.innerText = `需更新 ${toFetch.length} 篇`;
+            if (toFetch.length === 0) { 
+                txt.innerText = "已是最新"; 
+                setTimeout(() => txt.innerText = "检测并更新", 2000); 
+                updateCountUI(); 
+            } else {
+                progBox.style.display = 'block'; 
+                txt.innerText = `更新中(${toFetch.length})...`;
                 let completed = 0;
                 const fetchTask = async (file) => {
                     const url = `https://fastly.jsdelivr.net/gh/${GITHUB_REPO}@${BRANCH}/${encodeURIComponent(file.path)}?v=${file.sha}`;
                     try { let res = await fetch(url); if(res.ok) { const item = { path: file.path, sha: file.sha, segments: extractBilingualSegments(await res.text()) }; memoryCorpus[file.path] = item; await localforage.setItem(file.path, item); }
                     } catch(e) {} finally { completed++; document.getElementById('progressFill').style.width = Math.round((completed / toFetch.length) * 100) + '%'; document.getElementById('progressText').innerText = `高速解析中 (${completed}/${toFetch.length})...`; updateCountUI(); }
                 };
-                await asyncPool(8, toFetch, fetchTask); txt.innerText = "完成"; setTimeout(() => txt.innerText = "检测更新", 2000);
+                await asyncPool(8, toFetch, fetchTask); 
+                txt.innerText = "更新完成"; 
+                setTimeout(() => txt.innerText = "检测并更新", 2000);
             }
-        } catch(e) { console.error(e); } finally { if (!isAuto || !hasCache || toFetch.length > 0) { btn.classList.remove('syncing'); icon.classList.remove('spin'); setTimeout(() => { progBox.style.display = 'none'; document.getElementById('progressFill').style.width = '0%'; }, 1000); } enableSearch(); }
+        } catch(e) { 
+            console.error(e); 
+            txt.innerText = "更新失败";
+            setTimeout(() => txt.innerText = "检测并更新", 2000);
+        } finally { 
+            icon.classList.remove('spin'); 
+            setTimeout(() => { progBox.style.display = 'none'; document.getElementById('progressFill').style.width = '0%'; }, 1000); 
+            enableSearch(); 
+        }
     }
 
     function updateCountUI() { document.getElementById('articleCount').innerText = Object.keys(memoryCorpus).length; }
     function enableSearch() { if(Object.keys(memoryCorpus).length > 0) { const sb = document.getElementById('searchBox'); sb.style.pointerEvents = 'auto'; sb.style.opacity = '1'; } }
+
+    // =========================================================================
+    // 💡 导出离线 JS 数据库供 Anki 本地放入 collection.media
+    // =========================================================================
+    window.exportAnkiDatabase = function() {
+        const total = Object.keys(memoryCorpus).length;
+        if (total === 0) {
+            alert("当前本地尚未缓存任何双语文章，请先点击【检测并更新】完成后再导出！");
+            return;
+        }
+
+        let compactData = [];
+        for (const [path, item] of Object.entries(memoryCorpus)) {
+            if (item && item.segments && item.segments.length > 0) {
+                compactData.push({
+                    p: path,
+                    s: item.segments.map(seg => [seg.en, seg.zh])
+                });
+            }
+        }
+
+        const jsContent = `/* 溯源双语本地数据库 - 共 ${total} 篇 */\nwindow.__SUYUAN_CORPUS__ = ` + JSON.stringify(compactData) + `;`;
+        const blob = new Blob([jsContent], { type: "application/javascript;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "_suyuan_db.js";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
 
     // =========================================================================
     // 🔥 突破 GitHub 1MB 上传限制：采用 Git Data API (Blob -> Tree -> Commit)
@@ -321,7 +420,7 @@
     window.triggerDbCloudSync = function() {
         const total = Object.keys(memoryCorpus).length;
         if (total === 0) {
-            alert("当前本地尚未缓存任何双语文章，请先点击【检测更新】下载完成后再同步！");
+            alert("当前本地尚未缓存任何双语文章，请先点击【检测并更新】完成后再同步！");
             return;
         }
 
@@ -335,11 +434,12 @@
     };
 
     async function uploadLargeDatabaseToGithub(token) {
-        const btn = document.getElementById('cloudDbBtn');
-        btn.innerText = "⏳ 正在构建超大索引..."; btn.disabled = true;
+        const progBox = document.getElementById('progressBox');
+        progBox.style.display = 'block';
+        document.getElementById('progressText').innerText = "⏳ 正在突破 1MB 限制构建云端索引...";
+        document.getElementById('progressFill').style.width = "40%";
 
         try {
-            // 1. 紧凑化数据
             let compactData = [];
             for (const [path, item] of Object.entries(memoryCorpus)) {
                 if (item && item.segments && item.segments.length > 0) {
@@ -351,10 +451,9 @@
             }
             const jsContent = `/* 溯源双语云端实时数据库 - 共 ${compactData.length} 篇 - 生成于 ${new Date().toISOString()} */\nwindow.__SUYUAN_CORPUS__ = ` + JSON.stringify(compactData) + `;`;
             
-            btn.innerText = "⏳ 突破1MB限制上传中...";
+            document.getElementById('progressText').innerText = "⏳ 正在上传大文件 Blob...";
+            document.getElementById('progressFill').style.width = "70%";
 
-            // 2. 通过 GitHub Git Data API 上传 Blob (支持高达 100MB 单文件)
-            // UTF-8 转 Base64
             const utf8ToBase64 = (str) => {
                 const bytes = new TextEncoder().encode(str);
                 let binary = '';
@@ -371,7 +470,6 @@
             const blobData = await blobRes.json();
             const blobSha = blobData.sha;
 
-            // 3. 获取当前 Branch 的 Commit SHA
             const refRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/ref/heads/${DB_TARGET_BRANCH}`, {
                 headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
             });
@@ -379,7 +477,6 @@
             const refData = await refRes.json();
             const latestCommitSha = refData.object.sha;
 
-            // 4. 获取该 Commit 的 Base Tree
             const commitRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/commits/${latestCommitSha}`, {
                 headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
             });
@@ -387,7 +484,6 @@
             const commitData = await commitRes.json();
             const baseTreeSha = commitData.tree.sha;
 
-            // 5. 创建新 Tree
             const newTreeRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/trees`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
@@ -399,7 +495,6 @@
             if (!newTreeRes.ok) throw new Error((await newTreeRes.json()).message || "构建新 Tree 失败");
             const newTreeData = await newTreeRes.json();
 
-            // 6. 创建新 Commit
             const newCommitRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/commits`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
@@ -412,7 +507,6 @@
             if (!newCommitRes.ok) throw new Error((await newCommitRes.json()).message || "创建提交失败");
             const newCommitData = await newCommitRes.json();
 
-            // 7. 更新分支指针
             const updateRefRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/refs/heads/${DB_TARGET_BRANCH}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
@@ -420,17 +514,15 @@
             });
             if (!updateRefRes.ok) throw new Error((await updateRefRes.json()).message || "更新分支指针失败");
 
-            btn.innerText = "✅ 同步成功";
-            alert(`🎉 成功将 ${compactData.length} 篇双语文章同步到 GitHub！\nAnki 稍后即可秒级读取最新语境。`);
-            setTimeout(() => btn.innerText = "☁️ 同步到 GitHub", 2500);
+            document.getElementById('progressFill').style.width = "100%";
+            document.getElementById('progressText').innerText = "✅ 同步成功！";
+            alert(`🎉 成功将 ${compactData.length} 篇双语文章同步到 GitHub！\nAnki 即刻可无缝云端直连。`);
 
         } catch (e) {
             console.error(e);
-            btn.innerText = "❌ 同步失败";
             alert(`同步失败: ${e.message}\n请检查 Token 是否具备该仓库的写入权限。`);
-            setTimeout(() => btn.innerText = "☁️ 同步到 GitHub", 2500);
         } finally {
-            btn.disabled = false;
+            setTimeout(() => { progBox.style.display = 'none'; document.getElementById('progressFill').style.width = '0%'; }, 1500);
         }
     }
 
@@ -674,13 +766,7 @@
 
             let merged = Array.from(map.values()).sort((a,b) => (b.time || 0) - (a.time || 0));
             
-            const utf8ToBase64 = (str) => {
-                const bytes = new TextEncoder().encode(str);
-                let binary = '';
-                for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
-                return btoa(binary);
-            };
-
+            const utf8ToBase64 = (str) => btoa(unescape(encodeURIComponent(str)));
             let putBody = { message: "Auto-sync favorites", content: utf8ToBase64(JSON.stringify(merged, null, 2)), branch: "main" };
             if (remoteSha) putBody.sha = remoteSha;
 
