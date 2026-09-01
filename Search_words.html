@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>溯源玩具</title>
+    <title>溯源玩具 (双语版)</title>
     <script src="https://unpkg.com/compromise"></script>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <style>
         :root {
             --bg-color: #f2f2f7; --card-bg: #ffffff; --text-main: #1c1c1e;
             --text-muted: #8e8e93; --primary: #007aff; --primary-light: #e5f1ff;
-            --danger: #ff3b30; --success: #34c759; --radius-lg: 20px; --radius-md: 14px;
+            --danger: #d32f2f; --success: #34c759; --radius-lg: 20px; --radius-md: 14px;
             --shadow-sm: 0 2px 10px rgba(0,0,0,0.03); --shadow-md: 0 8px 30px rgba(0,0,0,0.08);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
         
+        /* 顶部导航与状态 */
         .navbar { position: sticky; top: 0; width: 100%; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; padding: env(safe-area-inset-top) 20px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); }
         .nav-title { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
         .sync-btn { background: var(--primary-light); color: var(--primary); border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
@@ -33,6 +34,7 @@
         .progress-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.3s; }
         .progress-text { font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; }
 
+        /* 搜索框 */
         .search-section { display: flex; flex-direction: column; gap: 12px; opacity: 0.5; pointer-events: none; transition: opacity 0.3s; }
         .search-section.active { opacity: 1; pointer-events: auto; }
         .search-options { display: flex; gap: 18px; padding: 0 10px; }
@@ -41,18 +43,69 @@
         .search-input { flex: 1; border: none; outline: none; padding: 10px; font-size: 1.05rem; background: transparent; }
         .search-action-btn { background: var(--primary); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3); }
 
+        /* 结果区域 - 深度复刻 Anki 截图效果 */
         .results-area { display: none; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .result-header { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; padding-left: 5px; }
-        .result-list { display: flex; flex-direction: column; gap: 12px; }
+        .result-list { display: flex; flex-direction: column; gap: 15px; }
         
-        /* 深度定制的结果卡片样式 */
-        .result-item { background: var(--card-bg); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: var(--text-main); }
-        .result-top-row { display: flex; align-items: center; gap: 10px; }
-        .result-idx { background: var(--bg-color); color: var(--text-muted); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; flex-shrink: 0;}
-        .result-name { flex: 1; font-weight: 600; font-size: 0.85rem; color: var(--primary); word-break: break-all; }
-        .result-snippet { font-size: 0.95rem; line-height: 1.5; color: #333; background: #f9f9f9; padding: 10px; border-radius: 8px; font-style: italic; border-left: 3px solid var(--primary-light);}
-        .word-highlight { color: var(--danger); font-weight: bold; background: #fff0f0; padding: 0 2px; border-radius: 3px; }
+        /* 独立 Context 卡片样式 */
+        .context-card {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+        .context-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 8px;
+        }
+        .context-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #111;
+        }
+        .context-source {
+            font-size: 0.75rem;
+            color: var(--primary);
+            text-decoration: none;
+            background: var(--primary-light);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .context-divider {
+            border: 0;
+            border-top: 1px solid #ccc;
+            margin: 0 0 14px 0;
+            width: 100%;
+        }
+        .context-en {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #222;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+        .context-zh {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #555;
+            font-family: "Noto Serif SC", "Songti SC", serif;
+        }
+        .word-highlight {
+            color: var(--danger);
+            font-weight: bold;
+            background-color: rgba(211, 47, 47, 0.08);
+            padding: 0 3px;
+            border-radius: 4px;
+        }
 
         .omitted-text { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 20px; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 20px; }
     </style>
@@ -60,7 +113,7 @@
 <body>
 
 <div class="navbar">
-    <div class="nav-title">🧸 溯源玩具</div>
+    <div class="nav-title">🧸 溯源双语</div>
     <button class="sync-btn" id="syncBtn" onclick="checkUpdates(false)"><span id="syncIcon">🔄</span><span id="syncText">检测更新</span></button>
 </div>
 
@@ -68,8 +121,8 @@
     <div class="status-card">
         <div class="status-label" id="cacheStatusLabel">共享数据库就绪</div>
         <div class="status-number" id="articleCount">0</div>
-        <div class="status-label">篇已缓存文章</div>
-        <div class="progress-box" id="progressBox"><div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div><div class="progress-text" id="progressText">正在下载...</div></div>
+        <div class="status-label">篇已缓存双语文章</div>
+        <div class="progress-box" id="progressBox"><div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div><div class="progress-text" id="progressText">正在解析下载...</div></div>
     </div>
 
     <div class="search-section" id="searchBox">
@@ -94,10 +147,11 @@
 <script>
     const GITHUB_REPO = "moodHappy/MiyetsukoSeries";
     const BRANCH = "main";
-    const DISPLAY_LIMIT = 5; // 限制展示数量，防止 Anki 内嵌过长
+    const DISPLAY_LIMIT = 5; 
     let memoryCorpus = {}; 
 
-    localforage.config({ name: 'MiyetsukoSharedDB', storeName: 'articles_corpus' });
+    // 【核心升级】：更新了数据库名为 v2，强制重新下载解析结构化的中英数据
+    localforage.config({ name: 'MiyetsukoSharedDB', storeName: 'articles_corpus_v2' });
 
     const randomToggle = document.getElementById('randomToggle');
     const exactToggle = document.getElementById('exactToggle');
@@ -106,15 +160,33 @@
     randomToggle.addEventListener('change', e => localStorage.setItem('setting_random', e.target.checked));
     exactToggle.addEventListener('change', e => localStorage.setItem('setting_exact', e.target.checked));
 
-    // 修改：清洗 HTML 但保留原始大小写，以供优雅展示原句
-    function extractPureText(htmlString) {
+    // 【核心升级】：根据源码 DOM 结构，精准配对提取中英文段落
+    function extractBilingualSegments(htmlString) {
         let parser = new DOMParser();
         let doc = parser.parseFromString(htmlString, 'text/html');
-        ['.anno-box', '.zh-para', '.zh-para-auto', '.reader-bar', '#zh-container', 'script', 'style'].forEach(sel => {
-            doc.querySelectorAll(sel).forEach(el => el.remove());
-        });
-        let container = doc.getElementById('en-container') || doc.body || doc;
-        return (container.textContent || "").replace(/\s+/g, ' '); // 移除了 .toLowerCase()
+        let container = doc.getElementById('content-container') || doc.body;
+        let segments = [];
+        
+        let pTags = container.querySelectorAll('p');
+        for(let i = 0; i < pTags.length; i++) {
+            let p = pTags[i];
+            
+            // 跳过中文段落，我们在处理英文段落时会顺便获取它
+            if(p.classList.contains('zh-para')) continue; 
+            
+            let enText = p.textContent.trim();
+            if(!enText) continue;
+
+            let zhText = "";
+            let nextP = pTags[i+1];
+            // 检查下一个 <p> 是否是翻译段落
+            if(nextP && nextP.classList.contains('zh-para')) {
+                zhText = nextP.textContent.trim();
+            }
+            
+            segments.push({ en: enText, zh: zhText });
+        }
+        return segments;
     }
 
     function getWordForms(word) {
@@ -185,7 +257,8 @@
                     try {
                         let res = await fetch(url);
                         if(res.ok) {
-                            const item = { path: file.path, sha: file.sha, text: extractPureText(await res.text()) };
+                            // 存储结构升级：保存为段落数组
+                            const item = { path: file.path, sha: file.sha, segments: extractBilingualSegments(await res.text()) };
                             memoryCorpus[file.path] = item; await localforage.setItem(file.path, item);
                         }
                     } catch(e) {} finally {
@@ -209,7 +282,7 @@
     function updateCountUI() { document.getElementById('articleCount').innerText = Object.keys(memoryCorpus).length; }
     function enableSearch() { if(Object.keys(memoryCorpus).length > 0) document.getElementById('searchBox').classList.add('active'); }
 
-    // 核心修改：匹配时提取句子，并高亮
+    // 【核心升级】：检索段落数组，并渲染 Context 卡片
     function performSearch() {
         const word = document.getElementById('searchInput').value.trim();
         if (!word) return;
@@ -219,26 +292,27 @@
 
         const forms = isExact ? [word.toLowerCase()] : getWordForms(word);
         const escapedForms = forms.map(f => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-        const regex = new RegExp('\\b(' + escapedForms.join('|') + ')\\b', 'i'); // 不区分大小写匹配
+        const regex = new RegExp('\\b(' + escapedForms.join('|') + ')\\b', 'i');
 
         let hitResults = [];
+        
         for (const [path, data] of Object.entries(memoryCorpus)) {
-            const match = data.text.match(regex);
-            if (match) {
-                // 提取前后各60个字符的语境
-                let start = Math.max(0, match.index - 60);
-                let end = Math.min(data.text.length, match.index + match[0].length + 60);
-                let snippet = data.text.substring(start, end);
-                
-                // 增加省略号
-                if(start > 0) snippet = "..." + snippet;
-                if(end < data.text.length) snippet = snippet + "...";
-
-                // 高亮单词
-                const hlRegex = new RegExp('\\b(' + escapedForms.join('|') + ')\\b', 'gi');
-                snippet = snippet.replace(hlRegex, '<span class="word-highlight">$1</span>');
-
-                hitResults.push({ path: path, matchedWord: match[0], snippet: snippet });
+            if (!data.segments) continue; // 保护代码
+            
+            for (let seg of data.segments) {
+                const match = seg.en.match(regex);
+                if (match) {
+                    // 对英文原句进行高亮处理
+                    const hlRegex = new RegExp('\\b(' + escapedForms.join('|') + ')\\b', 'gi');
+                    let highlightedEn = seg.en.replace(hlRegex, '<span class="word-highlight">$1</span>');
+                    
+                    hitResults.push({ 
+                        path: path, 
+                        matchedWord: match[0], 
+                        en: highlightedEn, 
+                        zh: seg.zh 
+                    });
+                }
             }
         }
 
@@ -249,31 +323,34 @@
             for (let i = hitResults.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [hitResults[i], hitResults[j]] = [hitResults[j], hitResults[i]]; }
         }
 
-        header.innerText = `🎯 命中 ${hitResults.length} 篇：`;
+        header.innerText = `🎯 命中 ${hitResults.length} 个原文语境：`;
         const displayLimit = Math.min(hitResults.length, DISPLAY_LIMIT);
         
         for (let i = 0; i < displayLimit; i++) {
             const hit = hitResults[i];
-            const a = document.createElement('a');
-            a.className = 'result-item';
-            a.href = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(hit.path)}#:~:text=${encodeURIComponent(hit.matchedWord)}`;
-            a.target = '_blank';
-            a.innerHTML = `
-                <div class="result-top-row">
-                    <div class="result-idx">${i+1}</div>
-                    <div class="result-name">${hit.path.split('/').pop().replace('.html', '')}</div>
+            const articleName = hit.path.split('/').pop().replace('.html', '');
+            const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(hit.path)}#:~:text=${encodeURIComponent(hit.matchedWord)}`;
+            
+            const card = document.createElement('div');
+            card.className = 'context-card';
+            card.innerHTML = `
+                <div class="context-title-row">
+                    <div class="context-title">Context ${i+1}</div>
+                    <a href="${targetUrl}" target="_blank" class="context-source">阅读全文 ➔</a>
                 </div>
-                <div class="result-snippet">“${hit.snippet}”</div>
+                <hr class="context-divider">
+                <div class="context-en">${hit.en}</div>
+                ${hit.zh ? `<div class="context-zh">${hit.zh}</div>` : ''}
             `;
-            list.appendChild(a);
+            list.appendChild(card);
         }
 
         if (hitResults.length > DISPLAY_LIMIT) {
-            omitted.innerHTML = `还有 ${hitResults.length - DISPLAY_LIMIT} 篇结果未展示`; omitted.style.display = 'block';
+            omitted.innerHTML = `还有 ${hitResults.length - DISPLAY_LIMIT} 个语境未展示，防眼花已折叠~`; omitted.style.display = 'block';
         }
     }
 
-    // 核心修改：启动时读取 URL 并自动触发搜索
+    // 接收 URL 传参，自动触发搜索
     window.onload = async () => {
         try {
             await localforage.iterate((value, key) => { memoryCorpus[key] = value; });
@@ -293,11 +370,11 @@
                 enableSearch();
                 document.getElementById('cacheStatusLabel').innerText = "共享数据库 (支持离线)";
                 document.getElementById('progressBox').style.display = 'none';
-                triggerAutoSearch(); // 缓存就绪，直接查
+                triggerAutoSearch(); 
             } else {
-                document.getElementById('cacheStatusLabel').innerText = "初次使用，建立缓存...";
-                await checkUpdates(true); // 等待下载完
-                triggerAutoSearch(); // 下载完再查
+                document.getElementById('cacheStatusLabel').innerText = "升级新架构，正在建立缓存...";
+                await checkUpdates(true); 
+                triggerAutoSearch(); 
             }
         } catch(e) { console.error(e); }
     };
