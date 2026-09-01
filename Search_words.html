@@ -14,8 +14,8 @@
         .nav-title { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
         .nav-actions { display: flex; align-items: center; gap: 8px; }
         .sync-btn { background: var(--primary-light); color: var(--primary); border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .export-btn { background: #34c75918; color: #28a745; border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .sync-btn.syncing { background: #eee; color: #999; pointer-events: none; }
+        .cloud-db-btn { background: #34c75918; color: #28a745; border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .sync-btn.syncing, .cloud-db-btn:disabled { background: #eee; color: #999; pointer-events: none; }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .container { width: 100%; max-width: 600px; padding: 20px; display: flex; flex-direction: column; gap: 20px; transition: padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -145,7 +145,7 @@
 <div class="navbar">
     <div class="nav-title">🧸 溯源双语</div>
     <div class="nav-actions">
-        <button class="export-btn" id="exportBtn" onclick="exportAnkiDatabase()" title="导出供 Anki 本地使用的数据库">📦 导出离线库</button>
+        <button class="cloud-db-btn" id="cloudDbBtn" onclick="triggerDbCloudSync()" title="将完整双语数据库同步推送到 GitHub 供 Anki 云端直连">☁️ 同步到 GitHub</button>
         <button class="sync-btn" id="syncBtn" onclick="checkUpdates(false)"><span id="syncIcon">🔄</span><span id="syncText">检测更新</span></button>
     </div>
 </div>
@@ -198,7 +198,7 @@
 <div class="modal-overlay" id="favModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>❤️ 我的收藏 <button class="cloud-sync-btn" id="favSyncBtn" onclick="triggerCloudSync()">☁️ 云端同步</button></h3>
+            <h3>❤️ 我的收藏 <button class="cloud-sync-btn" id="favSyncBtn" onclick="triggerCloudSync()">☁️ 收藏云同步</button></h3>
             <button class="close-btn" onclick="closeFavModal()">×</button>
         </div>
         <div class="modal-body" id="favList"></div>
@@ -213,7 +213,7 @@
             <button class="close-btn" onclick="document.getElementById('tokenModal').classList.remove('show')">×</button>
         </div>
         <div class="modal-body" style="padding-bottom: 25px;">
-            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-top: 0;">为了实现跨设备同步，请提供您 GitHub 账号的 Personal Access Token (需勾选 repo 权限)。该 Token <strong style="color:var(--danger)">仅保存在当前设备本地</strong>，不经过任何第三方服务器。</p>
+            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-top: 0;">为了实现跨设备与云端数据库同步，请提供您 GitHub 账号的 Personal Access Token (需勾选 repo 权限)。该 Token <strong style="color:var(--danger)">仅保存在当前设备本地</strong>，不经过任何第三方服务器。</p>
             <input type="password" id="githubTokenInput" placeholder="输入 ghp_ 开头的 Token..." style="width: 100%; padding: 12px 15px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='#eee'">
             <button class="feature-btn highlight" style="width: 100%; justify-content: center; margin-top: 15px; padding: 12px; font-size: 1.05rem;" onclick="saveTokenAndSync()">保存并执行同步</button>
         </div>
@@ -221,9 +221,21 @@
 </div>
 
 <script>
-    const GITHUB_REPO = "moodHappy/MiyetsukoSeries"; const BRANCH = "main"; const DISPLAY_LIMIT = 5; let memoryCorpus = {}; 
-    const FAV_REPO = "moodHappy/moodHappy.gitHub.io-nce"; const FAV_PATH = "config/favorites.json";
+    const GITHUB_REPO = "moodHappy/MiyetsukoSeries"; 
+    const BRANCH = "main"; 
+    const DISPLAY_LIMIT = 5; 
+    let memoryCorpus = {}; 
+
+    // 数据库同步目标仓库
+    const DB_TARGET_REPO = "moodHappy/moodHappy.gitHub.io-nce";
+    const DB_TARGET_PATH = "config/_suyuan_db.js";
+    const DB_TARGET_BRANCH = "main";
+
+    const FAV_REPO = "moodHappy/moodHappy.gitHub.io-nce"; 
+    const FAV_PATH = "config/favorites.json";
     
+    let currentPendingAction = 'fav'; // 'fav' | 'db'
+
     const initYearStr = String(new Date().getFullYear());
     let openYears = new Set([initYearStr]); 
     let selectedMonths = {}; 
@@ -303,39 +315,128 @@
     function updateCountUI() { document.getElementById('articleCount').innerText = Object.keys(memoryCorpus).length; }
     function enableSearch() { if(Object.keys(memoryCorpus).length > 0) { const sb = document.getElementById('searchBox'); sb.style.pointerEvents = 'auto'; sb.style.opacity = '1'; } }
 
-    // ==========================================
-    // 💡 导出离线数据库供 Anki 使用 (直接生成 _suyuan_db.js)
-    // ==========================================
-    window.exportAnkiDatabase = function() {
+    // =========================================================================
+    // 🔥 突破 GitHub 1MB 上传限制：采用 Git Data API (Blob -> Tree -> Commit)
+    // =========================================================================
+    window.triggerDbCloudSync = function() {
         const total = Object.keys(memoryCorpus).length;
         if (total === 0) {
-            alert("当前本地尚未缓存任何双语文章，请先点击【检测更新】下载完成后再导出！");
+            alert("当前本地尚未缓存任何双语文章，请先点击【检测更新】下载完成后再同步！");
             return;
         }
 
-        // 仅导出核心的 path 与 segments，大幅精简体积
-        let compactData = [];
-        for (const [path, item] of Object.entries(memoryCorpus)) {
-            if (item && item.segments && item.segments.length > 0) {
-                compactData.push({
-                    p: path,
-                    s: item.segments.map(seg => [seg.en, seg.zh])
-                });
-            }
+        let token = localStorage.getItem('gh_token_fav');
+        if (!token) {
+            currentPendingAction = 'db';
+            document.getElementById('tokenModal').classList.add('show');
+        } else {
+            uploadLargeDatabaseToGithub(token);
         }
-
-        const jsContent = `/* 溯源双语本地数据库 - 共 ${total} 篇 */\nwindow.__SUYUAN_CORPUS__ = ` + JSON.stringify(compactData) + `;`;
-        const blob = new Blob([jsContent], { type: "application/javascript;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "_suyuan_db.js"; // 命名带下划线，防止被 Anki 清理未使用媒体时误删
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
     };
 
+    async function uploadLargeDatabaseToGithub(token) {
+        const btn = document.getElementById('cloudDbBtn');
+        btn.innerText = "⏳ 正在构建超大索引..."; btn.disabled = true;
+
+        try {
+            // 1. 紧凑化数据
+            let compactData = [];
+            for (const [path, item] of Object.entries(memoryCorpus)) {
+                if (item && item.segments && item.segments.length > 0) {
+                    compactData.push({
+                        p: path,
+                        s: item.segments.map(seg => [seg.en, seg.zh])
+                    });
+                }
+            }
+            const jsContent = `/* 溯源双语云端实时数据库 - 共 ${compactData.length} 篇 - 生成于 ${new Date().toISOString()} */\nwindow.__SUYUAN_CORPUS__ = ` + JSON.stringify(compactData) + `;`;
+            
+            btn.innerText = "⏳ 突破1MB限制上传中...";
+
+            // 2. 通过 GitHub Git Data API 上传 Blob (支持高达 100MB 单文件)
+            // UTF-8 转 Base64
+            const utf8ToBase64 = (str) => {
+                const bytes = new TextEncoder().encode(str);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
+                return btoa(binary);
+            };
+
+            const blobRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/blobs`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+                body: JSON.stringify({ content: utf8ToBase64(jsContent), encoding: 'base64' })
+            });
+            if (!blobRes.ok) throw new Error((await blobRes.json()).message || "创建 Blob 失败");
+            const blobData = await blobRes.json();
+            const blobSha = blobData.sha;
+
+            // 3. 获取当前 Branch 的 Commit SHA
+            const refRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/ref/heads/${DB_TARGET_BRANCH}`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+            });
+            if (!refRes.ok) throw new Error((await refRes.json()).message || "获取最新分支失败");
+            const refData = await refRes.json();
+            const latestCommitSha = refData.object.sha;
+
+            // 4. 获取该 Commit 的 Base Tree
+            const commitRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/commits/${latestCommitSha}`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+            });
+            if (!commitRes.ok) throw new Error((await commitRes.json()).message || "获取基础 Tree 失败");
+            const commitData = await commitRes.json();
+            const baseTreeSha = commitData.tree.sha;
+
+            // 5. 创建新 Tree
+            const newTreeRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/trees`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+                body: JSON.stringify({
+                    base_tree: baseTreeSha,
+                    tree: [{ path: DB_TARGET_PATH, mode: "100644", type: "blob", sha: blobSha }]
+                })
+            });
+            if (!newTreeRes.ok) throw new Error((await newTreeRes.json()).message || "构建新 Tree 失败");
+            const newTreeData = await newTreeRes.json();
+
+            // 6. 创建新 Commit
+            const newCommitRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/commits`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+                body: JSON.stringify({
+                    message: `Auto-sync _suyuan_db.js (${compactData.length} articles)`,
+                    tree: newTreeData.sha,
+                    parents: [latestCommitSha]
+                })
+            });
+            if (!newCommitRes.ok) throw new Error((await newCommitRes.json()).message || "创建提交失败");
+            const newCommitData = await newCommitRes.json();
+
+            // 7. 更新分支指针
+            const updateRefRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/refs/heads/${DB_TARGET_BRANCH}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+                body: JSON.stringify({ sha: newCommitData.sha })
+            });
+            if (!updateRefRes.ok) throw new Error((await updateRefRes.json()).message || "更新分支指针失败");
+
+            btn.innerText = "✅ 同步成功";
+            alert(`🎉 成功将 ${compactData.length} 篇双语文章同步到 GitHub！\nAnki 稍后即可秒级读取最新语境。`);
+            setTimeout(() => btn.innerText = "☁️ 同步到 GitHub", 2500);
+
+        } catch (e) {
+            console.error(e);
+            btn.innerText = "❌ 同步失败";
+            alert(`同步失败: ${e.message}\n请检查 Token 是否具备该仓库的写入权限。`);
+            setTimeout(() => btn.innerText = "☁️ 同步到 GitHub", 2500);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // ==========================================
+    // 收藏夹与 Token 管理
+    // ==========================================
     async function getFavorites() { return (await localforage.getItem('miyetsuko_favs_v3')) || []; }
     async function getActiveFavorites() { 
         const favs = await getFavorites(); 
@@ -514,6 +615,7 @@
     window.triggerCloudSync = function() {
         let token = localStorage.getItem('gh_token_fav');
         if (!token) {
+            currentPendingAction = 'fav';
             document.getElementById('tokenModal').classList.add('show');
         } else {
             performSync(token);
@@ -525,7 +627,11 @@
         if (token) {
             localStorage.setItem('gh_token_fav', token);
             document.getElementById('tokenModal').classList.remove('show');
-            performSync(token);
+            if (currentPendingAction === 'db') {
+                uploadLargeDatabaseToGithub(token);
+            } else {
+                performSync(token);
+            }
         }
     };
 
@@ -568,7 +674,13 @@
 
             let merged = Array.from(map.values()).sort((a,b) => (b.time || 0) - (a.time || 0));
             
-            const utf8ToBase64 = (str) => btoa(unescape(encodeURIComponent(str)));
+            const utf8ToBase64 = (str) => {
+                const bytes = new TextEncoder().encode(str);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
+                return btoa(binary);
+            };
+
             let putBody = { message: "Auto-sync favorites", content: utf8ToBase64(JSON.stringify(merged, null, 2)), branch: "main" };
             if (remoteSha) putBody.sha = remoteSha;
 
@@ -579,7 +691,7 @@
             if (putRes.ok) {
                 await saveFavorites(merged);
                 syncBtn.innerText = "✅ 同步成功"; renderFavoritesList();
-                setTimeout(() => syncBtn.innerText = "☁️ 云端同步", 2000);
+                setTimeout(() => syncBtn.innerText = "☁️ 收藏云同步", 2000);
             } else { 
                 let errJson = await putRes.json().catch(() => ({}));
                 throw new Error(errJson.message || `写入失败状态码: ${putRes.status}`); 
@@ -591,7 +703,7 @@
             localStorage.removeItem('gh_token_fav'); 
             document.getElementById('githubTokenInput').value = '';
             document.getElementById('tokenModal').classList.add('show');
-            setTimeout(() => syncBtn.innerText = "☁️ 云端同步", 2000);
+            setTimeout(() => syncBtn.innerText = "☁️ 收藏云同步", 2000);
         } finally { syncBtn.disabled = false; }
     }
 
