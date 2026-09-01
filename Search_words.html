@@ -95,10 +95,21 @@
         try {
             const treeRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/git/trees/${BRANCH}?recursive=1`);
             if (!treeRes.ok) throw new Error("网络受限");
-            const treeData = await treeRes.json(); const remoteHtmlFiles = treeData.tree.filter(i => i.path.endsWith('.html') && !i.path.includes('index.html'));
+            const treeData = await treeRes.json(); 
+            
+            // 👇 核心修改：在这里加入排除规则，屏蔽包含 'Books/Hundred' 的文件夹 👇
+            const remoteHtmlFiles = treeData.tree.filter(i => 
+                i.path.endsWith('.html') && 
+                !i.path.includes('index.html') &&
+                !i.path.includes('Books/Hundred') // <--- 新增的排除条件
+            );
+            
             let toFetch = [], remotePathSet = new Set();
             for (let file of remoteHtmlFiles) { remotePathSet.add(file.path); const local = memoryCorpus[file.path]; if (!local || local.sha !== file.sha) toFetch.push(file); }
+            
+            // 下方逻辑会自动删掉本地有多余的文件（包括之前不小心下进来的 Books/Hundred 文件）
             for (let path in memoryCorpus) { if (!remotePathSet.has(path)) { delete memoryCorpus[path]; await localforage.removeItem(path); } }
+            
             if (toFetch.length === 0) { if (!isAuto || !hasCache) { txt.innerText = "已是最新"; setTimeout(() => txt.innerText = "检测更新", 2000); } updateCountUI(); } 
             else {
                 btn.classList.add('syncing'); icon.classList.add('spin'); progBox.style.display = 'block'; txt.innerText = `需更新 ${toFetch.length} 篇`;
@@ -140,7 +151,7 @@
         }
 
         // ==========================================
-        // 【核心新增：隐形 API 模式】处理 Anki 发来的静默请求
+        // 【核心 API 模式】处理 Anki 发来的静默请求
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('api') === '1') {
             if (hitResults.length > 0) {
