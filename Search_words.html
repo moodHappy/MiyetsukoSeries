@@ -83,10 +83,8 @@
         .close-btn { background: #f0f0f0; border: none; width: 30px; height: 30px; border-radius: 15px; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #666; transition: background 0.2s; }
         .close-btn:active { background: #e0e0e0; }
         
-        /* 模态框主体滚动修复 */
         .modal-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom) + 50px); display: flex; flex-direction: column; gap: 14px; }
 
-        /* 二级目录：年份 > 12个月份网格样式 */
         .year-section { background: var(--card-bg); border-radius: var(--radius-md); border: 1px solid #e5e5ea; overflow: hidden; box-shadow: var(--shadow-sm); flex-shrink: 0; }
         .year-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #fff; user-select: none; transition: background 0.2s; }
         .year-header:active { background: #f8f8fa; }
@@ -110,7 +108,6 @@
         .month-list-container { display: flex; flex-direction: column; gap: 12px; }
         .empty-month-tip { text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 25px 0; background: rgba(0,0,0,0.02); border-radius: 12px; }
 
-        /* 沉浸模式置顶 */
         body.immersive-mode .navbar,
         body.immersive-mode .status-card,
         body.immersive-mode .search-section,
@@ -125,7 +122,6 @@
         .immersive-tip { display: none; position: fixed; bottom: 25px; color: #999; font-size: 0.8rem; letter-spacing: 1px; width: 100%; text-align: center; }
         body.immersive-mode .immersive-tip { display: block; animation: fadeIn 1s; }
 
-        /* 玩具溯源专属半透明小熊图标 */
         .mf-source-icon {
             font-size: 0.75em;
             opacity: 0.4;
@@ -205,7 +201,6 @@
     const GITHUB_REPO = "moodHappy/MiyetsukoSeries"; const BRANCH = "main"; const DISPLAY_LIMIT = 5; let memoryCorpus = {}; 
     const FAV_REPO = "moodHappy/moodHappy.gitHub.io-nce"; const FAV_PATH = "config/favorites.json";
     
-    // 初始化默认展开当前年份
     const initYearStr = String(new Date().getFullYear());
     let openYears = new Set([initYearStr]); 
     let selectedMonths = {}; 
@@ -235,10 +230,22 @@
     }
 
     function getWordForms(word) {
-        let forms = new Set([word.toLowerCase()]);
-        try { let doc = nlp(word); let verbs = doc.verbs().conjugate(); if (verbs && verbs.length > 0) Object.values(verbs[0]).forEach(v => { if(v) forms.add(v.toLowerCase()); });
-            let nouns = doc.nouns(); if (nouns && nouns.length > 0) { nouns.toPlural().out('array').forEach(n => forms.add(n.toLowerCase())); nlp(word).nouns().toSingular().out('array').forEach(n => forms.add(n.toLowerCase())); }
-        } catch(e) {} return Array.from(forms);
+        let forms = new Set([word.toLowerCase().trim()]);
+        try {
+            if (typeof nlp !== 'undefined') {
+                let doc = nlp(word);
+                let verbs = doc.verbs().conjugate();
+                if (verbs && verbs.length > 0) {
+                    Object.values(verbs[0]).forEach(v => { if(v) forms.add(v.toLowerCase()); });
+                }
+                let nouns = doc.nouns();
+                if (nouns && nouns.length > 0) {
+                    nouns.toPlural().out('array').forEach(n => forms.add(n.toLowerCase()));
+                    nlp(word).nouns().toSingular().out('array').forEach(n => forms.add(n.toLowerCase()));
+                }
+            }
+        } catch(e) {}
+        return Array.from(forms);
     }
 
     async function asyncPool(poolLimit, array, iteratorFn) { const ret = [], executing = []; for (const item of array) { const p = Promise.resolve().then(() => iteratorFn(item)); ret.push(p); if (poolLimit <= array.length) { const e = p.then(() => executing.splice(executing.indexOf(e), 1)); executing.push(e); if (executing.length >= poolLimit) await Promise.race(executing); } } return Promise.all(ret); }
@@ -273,9 +280,6 @@
     function updateCountUI() { document.getElementById('articleCount').innerText = Object.keys(memoryCorpus).length; }
     function enableSearch() { if(Object.keys(memoryCorpus).length > 0) { const sb = document.getElementById('searchBox'); sb.style.pointerEvents = 'auto'; sb.style.opacity = '1'; } }
 
-    // ==========================================
-    // 收藏夹管理 (支持软删除防覆盖)
-    // ==========================================
     async function getFavorites() { return (await localforage.getItem('miyetsuko_favs_v3')) || []; }
     async function getActiveFavorites() { 
         const favs = await getFavorites(); 
@@ -291,12 +295,10 @@
 
         if (item) {
             if (!item.deleted) {
-                // 取消收藏（打上时间戳墓碑）
                 item.deleted = true;
                 item.time = now;
                 if (btn) { btn.classList.remove('active'); btn.innerHTML = '🤍'; }
             } else {
-                // 重新收藏
                 item.deleted = false;
                 item.time = now;
                 item.zh = zh;
@@ -329,9 +331,6 @@
         renderFavoritesList();
     };
 
-    // ==========================================
-    // 渲染二级目录收藏夹 (年份 > 01~12纯数字网格)
-    // ==========================================
     async function renderFavoritesList() {
         const list = document.getElementById('favList');
         const activeFavs = await getActiveFavorites();
@@ -342,7 +341,6 @@
             return; 
         }
 
-        // 所有收藏首先按最近时间倒序（最新收藏在最前）
         activeFavs.sort((a, b) => (b.time || 0) - (a.time || 0));
 
         const now = new Date();
@@ -350,8 +348,6 @@
         const curMonthStr = String(now.getMonth() + 1).padStart(2, '0');
 
         const yearMap = {};
-
-        // 确保当前年份默认存在
         yearMap[curYearStr] = { total: 0, months: {} };
         for (let m = 1; m <= 12; m++) {
             const mStr = String(m).padStart(2, '0');
@@ -380,7 +376,6 @@
             const yearData = yearMap[year];
             const isOpen = openYears.has(year);
 
-            // 若未选择月份，默认选中当前月份 (或该年最新有数据的月份)
             if (!selectedMonths[year]) {
                 if (year === curYearStr) {
                     selectedMonths[year] = curMonthStr;
@@ -397,7 +392,6 @@
             const activeMStr = selectedMonths[year];
             const curMonthItems = yearData.months[activeMStr] || [];
 
-            // 1. 生成 01 ~ 12 纯数字月份网格按钮 (去掉了"月"字)
             let monthGridHtml = '<div class="month-grid">';
             for (let m = 1; m <= 12; m++) {
                 const mStr = String(m).padStart(2, '0');
@@ -415,7 +409,6 @@
             }
             monthGridHtml += '</div>';
 
-            // 2. 生成当前选中月份的语境卡片列表 (已保证最新收藏在最前)
             let itemsHtml = '';
             if (curMonthItems.length > 0) {
                 curMonthItems.forEach(fav => {
@@ -440,7 +433,6 @@
                 itemsHtml = `<div class="empty-month-tip">${year}年${activeMStr}月 暂无收藏记录</div>`;
             }
 
-            // 3. 组装整年卡片
             const yearSection = document.createElement('div');
             yearSection.className = 'year-section';
             yearSection.innerHTML = `
@@ -463,9 +455,6 @@
         });
     }
 
-    // ==========================================
-    // GitHub 云端双向同步 (准确同步删除状态)
-    // ==========================================
     window.triggerCloudSync = function() {
         let token = localStorage.getItem('gh_token_fav');
         if (!token) {
@@ -508,7 +497,6 @@
                 throw new Error(errJson.message || `API 错误状态码: ${fileRes.status}`);
             }
 
-            // 双端时间戳对齐合并 (以较晚时间的操作为准，确保删除能正确生效)
             let map = new Map();
             remoteFavs.forEach(f => {
                 if (!f.time) f.time = 0;
@@ -551,9 +539,6 @@
         } finally { syncBtn.disabled = false; }
     }
 
-    // ==========================================
-    // 沉浸模式：双击空白处退出
-    // ==========================================
     document.addEventListener('dblclick', function(e) {
         if (document.body.classList.contains('immersive-mode')) {
             if (!e.target.closest('.context-card')) {
@@ -562,9 +547,6 @@
         }
     });
 
-    // ==========================================
-    // 随机漫游卡片 (手势滑动) + 小熊图标
-    // ==========================================
     window.generateRandomCards = async function() {
         document.getElementById('resultsArea').style.display = 'none'; 
         document.body.classList.add('immersive-mode');
@@ -617,18 +599,32 @@
     };
 
     // ==========================================
-    // 基础搜索与 Anki 隐形 API 联动（保持完全兼容）
+    // 基础搜索与 Anki 隐形 API 联动（已彻底修复容错与跨形态匹配）
     // ==========================================
     function performSearch() {
         document.body.classList.remove('immersive-mode');
         document.getElementById('carouselArea').style.display = 'none'; 
         
-        const word = document.getElementById('searchInput').value.trim();
+        let word = document.getElementById('searchInput').value.trim();
         if (!word) return;
-        const isExact = exactToggle.checked, isRandom = randomToggle.checked;
-        const resultsArea = document.getElementById('resultsArea'), list = document.getElementById('resultList'), header = document.getElementById('resultHeader'), omitted = document.getElementById('omittedText');
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const isApiMode = (urlParams.get('api') === '1');
+
+        // 如果是 Anki API 调用，强制宽松全形态匹配，忽略网页复选框状态
+        const isExact = isApiMode ? false : exactToggle.checked;
+        const isRandom = randomToggle.checked;
+        
+        const resultsArea = document.getElementById('resultsArea'), 
+              list = document.getElementById('resultList'), 
+              header = document.getElementById('resultHeader'), 
+              omitted = document.getElementById('omittedText');
+              
         document.getElementById('searchInput').blur();
-        const forms = isExact ? [word.toLowerCase()] : getWordForms(word);
+        
+        let forms = isExact ? [word.toLowerCase()] : getWordForms(word);
+        if (!forms.includes(word.toLowerCase())) forms.push(word.toLowerCase());
+
         const escapedForms = forms.map(f => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
         const regex = new RegExp('\\b(' + escapedForms.join('|') + ')\\b', 'i');
         let hitResults = [];
@@ -645,8 +641,8 @@
             }
         }
 
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('api') === '1') {
+        // Anki API 响应通道
+        if (isApiMode) {
             if (hitResults.length > 0) {
                 const randomHit = hitResults[Math.floor(Math.random() * hitResults.length)];
                 window.parent.postMessage({ type: 'suyuan_result', data: randomHit }, '*');
@@ -656,7 +652,12 @@
 
         resultsArea.style.display = 'block'; list.innerHTML = ''; omitted.innerHTML = '';
         if (hitResults.length === 0) { header.innerText = `📭 未找到 "${word}"`; return; }
-        if (isRandom && hitResults.length > 0) { for (let i = hitResults.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [hitResults[i], hitResults[j]] = [hitResults[j], hitResults[i]]; } }
+        if (isRandom && hitResults.length > 0) { 
+            for (let i = hitResults.length - 1; i > 0; i--) { 
+                const j = Math.floor(Math.random() * (i + 1)); 
+                [hitResults[i], hitResults[j]] = [hitResults[j], hitResults[i]]; 
+            } 
+        }
         header.innerText = `🎯 命中 ${hitResults.length} 个原文语境：`;
         const displayLimit = Math.min(hitResults.length, DISPLAY_LIMIT);
         
@@ -686,10 +687,10 @@
             
             const triggerAutoSearch = () => { 
                 if (queryWord) { 
-                    document.getElementById('searchInput').value = queryWord; 
+                    document.getElementById('searchInput').value = decodeURIComponent(queryWord).trim(); 
                     performSearch(); 
                 } else {
-                    openFavModal(); // 默认进入我的收藏
+                    openFavModal();
                 }
             };
 
@@ -700,7 +701,8 @@
                 triggerAutoSearch(); 
             } else {
                 document.getElementById('cacheStatusLabel').innerText = "建立纯净缓存...";
-                await checkUpdates(true); triggerAutoSearch(); 
+                await checkUpdates(true); 
+                triggerAutoSearch(); 
             }
         } catch(e) { console.error(e); }
     };
