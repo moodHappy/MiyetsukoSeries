@@ -59,23 +59,56 @@
 
 <script>
     const GITHUB_REPO = "moodHappy/MiyetsukoSeries"; const BRANCH = "main"; const DISPLAY_LIMIT = 5; let memoryCorpus = {}; 
-    localforage.config({ name: 'MiyetsukoSharedDB', storeName: 'articles_corpus_v2' });
+    // 👇 升级到 v3 数据库，强制清理之前的带有批注的脏数据 👇
+    localforage.config({ name: 'MiyetsukoSharedDB', storeName: 'articles_corpus_v3' });
     const randomToggle = document.getElementById('randomToggle'); const exactToggle = document.getElementById('exactToggle');
     if(localStorage.getItem('setting_random') === 'true') randomToggle.checked = true;
     if(localStorage.getItem('setting_exact') === 'true') exactToggle.checked = true;
     randomToggle.addEventListener('change', e => localStorage.setItem('setting_random', e.target.checked));
     exactToggle.addEventListener('change', e => localStorage.setItem('setting_exact', e.target.checked));
 
+    // 👇 核心重写：结构化智能提取，彻底免疫批注干扰 👇
     function extractBilingualSegments(htmlString) {
-        let parser = new DOMParser(); let doc = parser.parseFromString(htmlString, 'text/html');
-        let container = doc.getElementById('content-container') || doc.body; let segments = []; let pTags = container.querySelectorAll('p');
-        for(let i = 0; i < pTags.length; i++) {
-            let p = pTags[i]; if(p.classList.contains('zh-para')) continue; 
-            let enText = p.textContent.trim(); if(!enText) continue;
-            let zhText = ""; let nextP = pTags[i+1];
-            if(nextP && nextP.classList.contains('zh-para')) { zhText = nextP.textContent.trim(); }
-            segments.push({ en: enText, zh: zhText });
-        } return segments;
+        let parser = new DOMParser(); 
+        let doc = parser.parseFromString(htmlString, 'text/html');
+        let container = doc.getElementById('content-container') || doc.body; 
+        let segments = []; 
+        let children = container.children;
+
+        for (let i = 0; i < children.length; i++) {
+            let el = children[i];
+            let enNode = null;
+
+            // 情况1：纯净的普通段落
+            if (el.tagName && el.tagName.toLowerCase() === 'p' && !el.classList.contains('zh-para')) {
+                enNode = el;
+            } 
+            // 情况2：包裹了批注的 para-wrap 段落
+            else if (el.classList && el.classList.contains('para-wrap')) {
+                // 仅抓取包裹内的直接 P 标签，天生无视后面的 anno-box
+                enNode = el.querySelector('p');
+            }
+
+            if (enNode) {
+                // 深度克隆以便操作
+                let clone = enNode.cloneNode(true);
+                // 剥离掉句子中可能带有的图标、按钮 (例如 .anno-toggle)
+                clone.querySelectorAll('.anno-toggle, .ai-toggle').forEach(n => n.remove());
+                
+                let enText = clone.textContent.replace(/\s+/g, ' ').trim();
+                if (!enText) continue;
+
+                let zhText = ""; 
+                // 往下找中文翻译段落
+                let nextEl = children[i + 1];
+                if (nextEl && nextEl.tagName && nextEl.tagName.toLowerCase() === 'p' && nextEl.classList.contains('zh-para')) { 
+                    zhText = nextEl.textContent.replace(/\s+/g, ' ').trim(); 
+                }
+
+                segments.push({ en: enText, zh: zhText });
+            }
+        }
+        return segments;
     }
 
     function getWordForms(word) {
@@ -97,17 +130,16 @@
             if (!treeRes.ok) throw new Error("网络受限");
             const treeData = await treeRes.json(); 
             
-            // 👇 核心修改：在这里加入排除规则，屏蔽包含 'Books/Hundred' 的文件夹 👇
+            // 保留你的过滤规则，排除 Books/Hundred
             const remoteHtmlFiles = treeData.tree.filter(i => 
                 i.path.endsWith('.html') && 
                 !i.path.includes('index.html') &&
-                !i.path.includes('Books/Hundred') // <--- 新增的排除条件
+                !i.path.includes('Books/Hundred') 
             );
             
             let toFetch = [], remotePathSet = new Set();
             for (let file of remoteHtmlFiles) { remotePathSet.add(file.path); const local = memoryCorpus[file.path]; if (!local || local.sha !== file.sha) toFetch.push(file); }
             
-            // 下方逻辑会自动删掉本地有多余的文件（包括之前不小心下进来的 Books/Hundred 文件）
             for (let path in memoryCorpus) { if (!remotePathSet.has(path)) { delete memoryCorpus[path]; await localforage.removeItem(path); } }
             
             if (toFetch.length === 0) { if (!isAuto || !hasCache) { txt.innerText = "已是最新"; setTimeout(() => txt.innerText = "检测更新", 2000); } updateCountUI(); } 
@@ -117,7 +149,7 @@
                 const fetchTask = async (file) => {
                     const url = `https://fastly.jsdelivr.net/gh/${GITHUB_REPO}@${BRANCH}/${encodeURIComponent(file.path)}?v=${file.sha}`;
                     try { let res = await fetch(url); if(res.ok) { const item = { path: file.path, sha: file.sha, segments: extractBilingualSegments(await res.text()) }; memoryCorpus[file.path] = item; await localforage.setItem(file.path, item); }
-                    } catch(e) {} finally { completed++; document.getElementById('progressFill').style.width = Math.round((completed / toFetch.length) * 100) + '%'; document.getElementById('progressText').innerText = `高速缓存 (${completed}/${toFetch.length})...`; updateCountUI(); }
+                    } catch(e) {} finally { completed++; document.getElementById('progressFill').style.width = Math.round((completed / toFetch.length) * 100) + '%'; document.getElementById('progressText').innerText = `高速解析中 (${completed}/${toFetch.length})...`; updateCountUI(); }
                 };
                 await asyncPool(8, toFetch, fetchTask); txt.innerText = "完成"; setTimeout(() => txt.innerText = "检测更新", 2000);
             }
@@ -150,18 +182,14 @@
             }
         }
 
-        // ==========================================
-        // 【核心 API 模式】处理 Anki 发来的静默请求
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('api') === '1') {
             if (hitResults.length > 0) {
-                // 如果命中多条，直接随机抽取最精华的一条！
                 const randomHit = hitResults[Math.floor(Math.random() * hitResults.length)];
                 window.parent.postMessage({ type: 'suyuan_result', data: randomHit }, '*');
             }
-            return; // API 模式下停止执行，不渲染页面 UI
+            return; 
         }
-        // ==========================================
 
         resultsArea.style.display = 'block'; list.innerHTML = ''; omitted.innerHTML = '';
         if (hitResults.length === 0) { header.innerText = `📭 未找到 "${word}"`; return; }
@@ -193,7 +221,7 @@
                 document.getElementById('progressBox').style.display = 'none';
                 triggerAutoSearch(); 
             } else {
-                document.getElementById('cacheStatusLabel').innerText = "升级新架构，正在建立缓存...";
+                document.getElementById('cacheStatusLabel').innerText = "清理脏数据，建立v3纯净缓存...";
                 await checkUpdates(true); triggerAutoSearch(); 
             }
         } catch(e) { console.error(e); }
