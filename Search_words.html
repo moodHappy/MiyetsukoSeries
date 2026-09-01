@@ -72,14 +72,19 @@
         .modal-overlay.show { display: flex; opacity: 1; }
         .modal-content { width: 100%; max-width: 600px; height: 85vh; background: var(--bg-color); border-radius: 24px 24px 0 0; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -4px 20px rgba(0,0,0,0.1); }
         .modal-overlay.show .modal-content { transform: translateY(0); }
+        
+        .center-modal { top: 50%; transform: translateY(-50%) scale(0.9); margin: 0 auto; height: auto; max-height: 80vh; max-width: 90%; border-radius: 24px; position: absolute; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s !important; opacity: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-overlay.show .center-modal { transform: translateY(-50%) scale(1); opacity: 1; }
+
         .modal-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); background: var(--card-bg); border-radius: 24px 24px 0 0; }
         .modal-header h3 { margin: 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
         .cloud-sync-btn { background: var(--primary-light); color: var(--primary); border: none; border-radius: 20px; padding: 5px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
         .cloud-sync-btn:active { transform: scale(0.9); }
-        .close-btn { background: #f0f0f0; border: none; width: 30px; height: 30px; border-radius: 15px; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #666; }
+        .close-btn { background: #f0f0f0; border: none; width: 30px; height: 30px; border-radius: 15px; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #666; transition: background 0.2s; }
+        .close-btn:active { background: #e0e0e0; }
         .modal-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
 
-        /* 👇 沉浸模式样式 👇 */
+        /* 👇 修改：沉浸模式移至最顶部 👇 */
         body.immersive-mode .navbar,
         body.immersive-mode .status-card,
         body.immersive-mode .search-section,
@@ -89,10 +94,28 @@
             pointer-events: none;
         }
         body.immersive-mode .container {
-            padding-top: 25vh; /* 黄金 1/4 位置 */
+            padding-top: 20px;
+            padding-top: calc(env(safe-area-inset-top) + 20px); 
         }
         .immersive-tip { display: none; position: fixed; bottom: 25px; color: #999; font-size: 0.8rem; letter-spacing: 1px; }
         body.immersive-mode .immersive-tip { display: block; animation: fadeIn 1s; }
+
+        /* 👇 新增：玩具溯源专属半透明小熊图标 👇 */
+        .mf-source-icon {
+            font-size: 0.75em;
+            opacity: 0.4;
+            margin-left: 6px;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: baseline;
+            transition: opacity 0.2s, transform 0.2s;
+            filter: grayscale(0.6);
+        }
+        .mf-source-icon:hover, .mf-source-icon:active {
+            opacity: 1;
+            transform: scale(1.15);
+            filter: grayscale(0);
+        }
     </style>
 </head>
 <body>
@@ -131,10 +154,25 @@
 <div class="modal-overlay" id="favModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>❤️ 我的收藏 <button class="cloud-sync-btn" id="favSyncBtn" onclick="syncFavorites()">☁️ 云端同步</button></h3>
+            <h3>❤️ 我的收藏 <button class="cloud-sync-btn" id="favSyncBtn" onclick="triggerCloudSync()">☁️ 云端同步</button></h3>
             <button class="close-btn" onclick="closeFavModal()">×</button>
         </div>
         <div class="modal-body" id="favList"></div>
+    </div>
+</div>
+
+<!-- Token 输入模态框 -->
+<div class="modal-overlay" id="tokenModal">
+    <div class="modal-content center-modal">
+        <div class="modal-header">
+            <h3>🔑 配置 GitHub Token</h3>
+            <button class="close-btn" onclick="document.getElementById('tokenModal').classList.remove('show')">×</button>
+        </div>
+        <div class="modal-body" style="padding-bottom: 25px;">
+            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-top: 0;">为了实现跨设备同步，请提供您 GitHub 账号的 Personal Access Token (需勾选 repo 权限)。该 Token <strong style="color:var(--danger)">仅加密保存在当前设备本地</strong>，不经过任何第三方服务器。</p>
+            <input type="password" id="githubTokenInput" placeholder="输入 ghp_ 开头的 Token..." style="width: 100%; padding: 12px 15px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='#eee'">
+            <button class="feature-btn highlight" style="width: 100%; justify-content: center; margin-top: 15px; padding: 12px; font-size: 1.05rem;" onclick="saveTokenAndSync()">保存并执行同步</button>
+        </div>
     </div>
 </div>
 
@@ -244,14 +282,25 @@
     // ==========================================
     // 突破 1MB 限制的 GitHub 云端同步
     // ==========================================
-    window.syncFavorites = async function() {
+    window.triggerCloudSync = function() {
         let token = localStorage.getItem('gh_token_fav');
         if (!token) {
-            token = prompt("首次同步请输入您的 GitHub Token (需含 repo 权限)：\n此 Token 仅保存在本地设备中。");
-            if (!token) return;
-            localStorage.setItem('gh_token_fav', token);
+            document.getElementById('tokenModal').classList.add('show');
+        } else {
+            performSync(token);
         }
-        
+    }
+
+    window.saveTokenAndSync = function() {
+        const token = document.getElementById('githubTokenInput').value.trim();
+        if (token) {
+            localStorage.setItem('gh_token_fav', token);
+            document.getElementById('tokenModal').classList.remove('show');
+            performSync(token);
+        }
+    }
+
+    async function performSync(token) {
         const syncBtn = document.getElementById('favSyncBtn');
         syncBtn.innerText = "⏳ 同步中..."; syncBtn.disabled = true;
 
@@ -259,35 +308,33 @@
             let localFavs = await getFavorites();
             let remoteSha = null; let remoteFavs = [];
 
-            // 1. 获取目录树寻找文件 SHA
-            let treeRes = await fetch(`https://api.github.com/repos/${FAV_REPO}/contents/config`, { headers: { 'Authorization': `token ${token}` } });
+            let treeRes = await fetch(`https://api.github.com/repos/${FAV_REPO}/contents/config`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (treeRes.ok) {
                 let tree = await treeRes.json();
-                let file = tree.find(f => f.name === 'favorites.json');
-                if (file) {
-                    remoteSha = file.sha;
-                    // 2. 绕过 API 的 1MB 限制，直接使用 raw URL 获取内容
-                    let rawRes = await fetch(`https://raw.githubusercontent.com/${FAV_REPO}/main/${FAV_PATH}?t=${Date.now()}`, { headers: { 'Authorization': `token ${token}` } });
-                    if (rawRes.ok) {
-                        let txt = await rawRes.text();
-                        if(txt) remoteFavs = JSON.parse(txt);
+                if (Array.isArray(tree)) {
+                    let file = tree.find(f => f.name === 'favorites.json');
+                    if (file) {
+                        remoteSha = file.sha;
+                        let rawRes = await fetch(`https://raw.githubusercontent.com/${FAV_REPO}/main/${FAV_PATH}?t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                        if (rawRes.ok) {
+                            let txt = await rawRes.text();
+                            if(txt) remoteFavs = JSON.parse(txt);
+                        }
                     }
                 }
             } else if (treeRes.status !== 404) { throw new Error("API受限或Token无效"); }
 
-            // 3. 时间戳智能合并
             let map = new Map();
             remoteFavs.forEach(f => map.set(f.en, f));
             localFavs.forEach(f => { if (!map.has(f.en) || f.time > map.get(f.en).time) map.set(f.en, f); });
             let merged = Array.from(map.values()).sort((a,b) => a.time - b.time);
             
-            // 4. Base64 编码并推送更新 (Contents API 上传上限为 50MB)
             const utf8ToBase64 = (str) => btoa(unescape(encodeURIComponent(str)));
             let putBody = { message: "Auto-sync favorites", content: utf8ToBase64(JSON.stringify(merged, null, 2)), branch: "main" };
             if (remoteSha) putBody.sha = remoteSha;
 
             let putRes = await fetch(`https://api.github.com/repos/${FAV_REPO}/contents/${FAV_PATH}`, {
-                method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(putBody)
+                method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(putBody)
             });
 
             if (putRes.ok) {
@@ -307,7 +354,6 @@
     // ==========================================
     document.addEventListener('dblclick', function(e) {
         if (document.body.classList.contains('immersive-mode')) {
-            // 点击卡片内部不退出，点空白处才退出
             if (!e.target.closest('.context-card')) {
                 document.body.classList.remove('immersive-mode');
             }
@@ -315,12 +361,10 @@
     });
 
     // ==========================================
-    // 随机漫游卡片 (手势滑动)
+    // 随机漫游卡片 (手势滑动) + 小熊图标
     // ==========================================
     window.generateRandomCards = async function() {
         document.getElementById('resultsArea').style.display = 'none'; 
-        
-        // 开启沉浸模式
         document.body.classList.add('immersive-mode');
 
         let allSegments = [];
@@ -344,6 +388,11 @@
             const isFav = favs.some(f => f.en === item.en);
             const enSafe = encodeURIComponent(item.en); const zhSafe = encodeURIComponent(item.zh); const pathSafe = encodeURIComponent(item.path);
             
+            // 提取前5个单词用于精确跳转定位
+            const excerpt = item.en.split(' ').slice(0, 5).join(' '); 
+            const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(item.path)}#:~:text=${encodeURIComponent(excerpt)}`;
+            let iconHtml = `<a href="${targetUrl}" target="_blank" class="mf-source-icon" title="查看原文">🧸</a>`;
+            
             slide.innerHTML = `
                 <div class="context-card" style="height:100%;">
                     <div class="context-title-row">
@@ -351,8 +400,8 @@
                         <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(this, '${enSafe}', '${zhSafe}', '${pathSafe}')">${isFav ? '❤️' : '🤍'}</button>
                     </div>
                     <hr class="context-divider">
-                    <div class="context-en">${item.en}</div>
-                    <div class="context-zh">${item.zh}</div>
+                    <div class="context-en">${item.en}${!item.zh ? iconHtml : ''}</div>
+                    ${item.zh ? `<div class="context-zh">${item.zh}${iconHtml}</div>` : ''}
                 </div>`;
             track.appendChild(slide);
             const dot = document.createElement('div'); dot.className = `carousel-dot ${index === 0 ? 'active' : ''}`; indicators.appendChild(dot);
@@ -427,6 +476,7 @@
         if (hitResults.length > DISPLAY_LIMIT) { omitted.innerHTML = `还有 ${hitResults.length - DISPLAY_LIMIT} 个语境未展示，防眼花已折叠~`; omitted.style.display = 'block'; }
     }
 
+    // 👇 修改：判断是否自动触发搜索或默认打开收藏夹 👇
     window.onload = async () => {
         try {
             await localforage.iterate((value, key) => { memoryCorpus[key] = value; });
@@ -434,7 +484,15 @@
             const urlParams = new URLSearchParams(window.location.search);
             const queryWord = urlParams.get('q');
             
-            const triggerAutoSearch = () => { if (queryWord) { document.getElementById('searchInput').value = queryWord; performSearch(); } };
+            const triggerAutoSearch = () => { 
+                if (queryWord) { 
+                    document.getElementById('searchInput').value = queryWord; 
+                    performSearch(); 
+                } else {
+                    // 如果没有任何搜索参数（比如你直接打开这个网页），默认弹出我的收藏
+                    openFavModal();
+                }
+            };
 
             if (Object.keys(memoryCorpus).length > 0) {
                 enableSearch();
