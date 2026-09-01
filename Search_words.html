@@ -9,15 +9,15 @@
     <style>
         :root { --bg-color: #f2f2f7; --card-bg: #ffffff; --text-main: #1c1c1e; --text-muted: #8e8e93; --primary: #007aff; --primary-light: #e5f1ff; --danger: #d32f2f; --success: #34c759; --radius-lg: 20px; --radius-md: 14px; --shadow-sm: 0 2px 10px rgba(0,0,0,0.03); --shadow-md: 0 8px 30px rgba(0,0,0,0.08); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
-        .navbar { position: sticky; top: 0; width: 100%; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; padding: env(safe-area-inset-top) 20px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; transition: background-color 0.3s; }
+        .navbar { position: sticky; top: 0; width: 100%; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; padding: env(safe-area-inset-top) 20px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); transition: opacity 0.3s; }
         .nav-title { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
         .sync-btn { background: var(--primary-light); color: var(--primary); border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         .sync-btn.syncing { background: #eee; color: #999; pointer-events: none; }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        .container { width: 100%; max-width: 600px; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        .status-card { background: var(--card-bg); border-radius: var(--radius-lg); padding: 15px; box-shadow: var(--shadow-sm); text-align: center; }
+        .container { width: 100%; max-width: 600px; padding: 20px; display: flex; flex-direction: column; gap: 20px; transition: padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .status-card { background: var(--card-bg); border-radius: var(--radius-lg); padding: 15px; box-shadow: var(--shadow-sm); text-align: center; transition: opacity 0.3s; }
         .status-number { font-size: 2rem; font-weight: 800; color: var(--primary); margin: 5px 0; }
         .status-label { font-size: 0.85rem; color: var(--text-muted); }
         .progress-box { display: none; margin-top: 15px; }
@@ -28,14 +28,25 @@
         .search-section.active { opacity: 1; pointer-events: auto; }
         .search-options { display: flex; gap: 18px; padding: 0 10px; }
         .custom-checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
-        .search-wrapper { position: relative; box-shadow: var(--shadow-md); border-radius: 25px; background: var(--card-bg); display: flex; align-items: center; padding: 5px 5px 5px 20px; }
-        .search-input { flex: 1; border: none; outline: none; padding: 10px; font-size: 1.05rem; background: transparent; }
-        .search-action-btn { background: var(--primary); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3); }
+        
+        .search-wrapper-classic { display: flex; align-items: center; width: 100%; background-color: var(--card-bg); border: 2px solid #e0e0e0; border-radius: 30px; padding: 4px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .search-wrapper-classic:focus-within { border-color: var(--primary); box-shadow: 0 4px 15px rgba(0, 122, 255, 0.15); }
+        .search-input-classic { flex: 1; border: none; outline: none; background: transparent; font-size: 1.05rem; color: var(--text-main); padding: 10px 0; }
+        .search-input-classic::placeholder { color: #b0b0b0; }
+        .search-btn-classic { background: transparent; border: none; color: #666; display: flex; justify-content: center; align-items: center; cursor: pointer; padding: 6px; margin-left: 8px; transition: color 0.2s ease, transform 0.1s ease; }
+        .search-btn-classic:hover, .search-wrapper-classic:focus-within .search-btn-classic { color: var(--primary); }
+        .search-btn-classic:active { transform: scale(0.85); }
+
+        .action-bars { display: flex; justify-content: center; gap: 15px; margin-top: 5px; }
+        .feature-btn { background: #fff; border: 1px solid #e0e0e0; color: var(--text-main); border-radius: 20px; padding: 8px 18px; font-size: 0.9rem; font-weight: 600; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .feature-btn:active { transform: scale(0.95); background: #f9f9f9; }
+        .feature-btn.highlight { color: var(--primary); border-color: var(--primary-light); background: var(--primary-light); }
+
         .results-area { display: none; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .result-header { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; padding-left: 5px; }
         .result-list { display: flex; flex-direction: column; gap: 15px; }
-        .context-card { background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); text-align: left; display: flex; flex-direction: column; }
+        .context-card { background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); text-align: left; display: flex; flex-direction: column; position: relative; }
         .context-title-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
         .context-title { font-size: 1.15rem; font-weight: 700; color: #111; }
         .context-source { font-size: 0.75rem; color: var(--primary); text-decoration: none; background: var(--primary-light); padding: 2px 8px; border-radius: 10px; font-weight: 500; }
@@ -44,71 +55,115 @@
         .context-zh { font-size: 0.95rem; line-height: 1.6; color: #555; font-family: "Noto Serif SC", "Songti SC", serif; }
         .word-highlight { color: var(--danger); font-weight: bold; background-color: rgba(211, 47, 47, 0.08); padding: 0 3px; border-radius: 4px; }
         .omitted-text { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 20px; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 20px; }
+
+        .carousel-area { display: none; width: 100%; animation: fadeIn 0.4s ease; margin-top: 10px; }
+        .carousel-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 15px; scrollbar-width: none; }
+        .carousel-track::-webkit-scrollbar { display: none; }
+        .carousel-slide { flex: 0 0 100%; scroll-snap-align: center; }
+        .carousel-indicators { display: flex; justify-content: center; gap: 6px; margin-top: 5px; }
+        .carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: #ccc; transition: background 0.3s, transform 0.3s; }
+        .carousel-dot.active { background: var(--primary); transform: scale(1.3); }
+
+        .fav-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0; outline: none; transition: transform 0.2s; filter: grayscale(1); opacity: 0.4; }
+        .fav-btn.active { filter: grayscale(0); opacity: 1; transform: scale(1.1); }
+        .fav-btn:active { transform: scale(0.8); }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); z-index: 999; display: none; justify-content: center; align-items: flex-end; opacity: 0; transition: opacity 0.3s; }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-content { width: 100%; max-width: 600px; height: 85vh; background: var(--bg-color); border-radius: 24px 24px 0 0; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -4px 20px rgba(0,0,0,0.1); }
+        .modal-overlay.show .modal-content { transform: translateY(0); }
+        .modal-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); background: var(--card-bg); border-radius: 24px 24px 0 0; }
+        .modal-header h3 { margin: 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .cloud-sync-btn { background: var(--primary-light); color: var(--primary); border: none; border-radius: 20px; padding: 5px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+        .cloud-sync-btn:active { transform: scale(0.9); }
+        .close-btn { background: #f0f0f0; border: none; width: 30px; height: 30px; border-radius: 15px; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #666; }
+        .modal-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+
+        /* 👇 沉浸模式样式 👇 */
+        body.immersive-mode .navbar,
+        body.immersive-mode .status-card,
+        body.immersive-mode .search-section,
+        body.immersive-mode .result-header {
+            display: none !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+        body.immersive-mode .container {
+            padding-top: 25vh; /* 黄金 1/4 位置 */
+        }
+        .immersive-tip { display: none; position: fixed; bottom: 25px; color: #999; font-size: 0.8rem; letter-spacing: 1px; }
+        body.immersive-mode .immersive-tip { display: block; animation: fadeIn 1s; }
     </style>
 </head>
 <body>
 <div class="navbar"><div class="nav-title">🧸 溯源双语</div><button class="sync-btn" id="syncBtn" onclick="checkUpdates(false)"><span id="syncIcon">🔄</span><span id="syncText">检测更新</span></button></div>
 <div class="container">
     <div class="status-card"><div class="status-label" id="cacheStatusLabel">共享数据库就绪</div><div class="status-number" id="articleCount">0</div><div class="status-label">篇已缓存双语文章</div><div class="progress-box" id="progressBox"><div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div><div class="progress-text" id="progressText">正在解析下载...</div></div></div>
+    
     <div class="search-section" id="searchBox">
         <div class="search-options"><label class="custom-checkbox"><input type="checkbox" id="randomToggle"> 随机打乱</label><label class="custom-checkbox"><input type="checkbox" id="exactToggle"> 精确匹配</label></div>
-        <div class="search-wrapper"><div class="search-icon">🔍</div><input type="text" id="searchInput" class="search-input" placeholder="输入单词..." autocomplete="off"><button class="search-action-btn" id="searchBtn">➔</button></div>
+        <div class="search-wrapper-classic" id="searchWrapper">
+            <input type="text" id="searchInput" class="search-input-classic" placeholder="请输入您要搜索的内容..." autocomplete="off">
+            <button class="search-btn-classic" id="searchBtn" title="搜索">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="action-bars">
+            <button class="feature-btn highlight" onclick="generateRandomCards()">🎲 随机漫游</button>
+            <button class="feature-btn" onclick="openFavModal()">❤️ 我的收藏</button>
+        </div>
     </div>
+
     <div class="results-area" id="resultsArea"><div class="result-header" id="resultHeader"></div><div class="result-list" id="resultList"></div><div id="omittedText"></div></div>
+    
+    <div class="carousel-area" id="carouselArea">
+        <div class="result-header" id="carouselHeader">🎲 随机截取 3 条语境：</div>
+        <div class="carousel-track" id="carouselTrack"></div>
+        <div class="carousel-indicators" id="carouselIndicators"></div>
+    </div>
+</div>
+
+<div class="immersive-tip">双击空白处退出沉浸模式</div>
+
+<!-- 收藏夹模态框 -->
+<div class="modal-overlay" id="favModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>❤️ 我的收藏 <button class="cloud-sync-btn" id="favSyncBtn" onclick="syncFavorites()">☁️ 云端同步</button></h3>
+            <button class="close-btn" onclick="closeFavModal()">×</button>
+        </div>
+        <div class="modal-body" id="favList"></div>
+    </div>
 </div>
 
 <script>
     const GITHUB_REPO = "moodHappy/MiyetsukoSeries"; const BRANCH = "main"; const DISPLAY_LIMIT = 5; let memoryCorpus = {}; 
-    // 👇 升级到 v3 数据库，强制清理之前的带有批注的脏数据 👇
+    const FAV_REPO = "moodHappy/moodHappy.gitHub.io-nce"; const FAV_PATH = "config/favorites.json";
+    
     localforage.config({ name: 'MiyetsukoSharedDB', storeName: 'articles_corpus_v3' });
+    
     const randomToggle = document.getElementById('randomToggle'); const exactToggle = document.getElementById('exactToggle');
     if(localStorage.getItem('setting_random') === 'true') randomToggle.checked = true;
     if(localStorage.getItem('setting_exact') === 'true') exactToggle.checked = true;
     randomToggle.addEventListener('change', e => localStorage.setItem('setting_random', e.target.checked));
     exactToggle.addEventListener('change', e => localStorage.setItem('setting_exact', e.target.checked));
 
-    // 👇 核心重写：结构化智能提取，彻底免疫批注干扰 👇
     function extractBilingualSegments(htmlString) {
-        let parser = new DOMParser(); 
-        let doc = parser.parseFromString(htmlString, 'text/html');
-        let container = doc.getElementById('content-container') || doc.body; 
-        let segments = []; 
-        let children = container.children;
-
+        let parser = new DOMParser(); let doc = parser.parseFromString(htmlString, 'text/html'); let container = doc.getElementById('content-container') || doc.body; let segments = []; let children = container.children;
         for (let i = 0; i < children.length; i++) {
-            let el = children[i];
-            let enNode = null;
-
-            // 情况1：纯净的普通段落
-            if (el.tagName && el.tagName.toLowerCase() === 'p' && !el.classList.contains('zh-para')) {
-                enNode = el;
-            } 
-            // 情况2：包裹了批注的 para-wrap 段落
-            else if (el.classList && el.classList.contains('para-wrap')) {
-                // 仅抓取包裹内的直接 P 标签，天生无视后面的 anno-box
-                enNode = el.querySelector('p');
-            }
-
+            let el = children[i]; let enNode = null;
+            if (el.tagName && el.tagName.toLowerCase() === 'p' && !el.classList.contains('zh-para')) { enNode = el; } 
+            else if (el.classList && el.classList.contains('para-wrap')) { enNode = el.querySelector('p'); }
             if (enNode) {
-                // 深度克隆以便操作
-                let clone = enNode.cloneNode(true);
-                // 剥离掉句子中可能带有的图标、按钮 (例如 .anno-toggle)
-                clone.querySelectorAll('.anno-toggle, .ai-toggle').forEach(n => n.remove());
-                
-                let enText = clone.textContent.replace(/\s+/g, ' ').trim();
-                if (!enText) continue;
-
-                let zhText = ""; 
-                // 往下找中文翻译段落
-                let nextEl = children[i + 1];
-                if (nextEl && nextEl.tagName && nextEl.tagName.toLowerCase() === 'p' && nextEl.classList.contains('zh-para')) { 
-                    zhText = nextEl.textContent.replace(/\s+/g, ' ').trim(); 
-                }
-
+                let clone = enNode.cloneNode(true); clone.querySelectorAll('.anno-toggle, .ai-toggle').forEach(n => n.remove());
+                let enText = clone.textContent.replace(/\s+/g, ' ').trim(); if (!enText) continue;
+                let zhText = ""; let nextEl = children[i + 1];
+                if (nextEl && nextEl.tagName && nextEl.tagName.toLowerCase() === 'p' && nextEl.classList.contains('zh-para')) { zhText = nextEl.textContent.replace(/\s+/g, ' ').trim(); }
                 segments.push({ en: enText, zh: zhText });
             }
-        }
-        return segments;
+        } return segments;
     }
 
     function getWordForms(word) {
@@ -129,19 +184,10 @@
             const treeRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/git/trees/${BRANCH}?recursive=1`);
             if (!treeRes.ok) throw new Error("网络受限");
             const treeData = await treeRes.json(); 
-            
-            // 保留你的过滤规则，排除 Books/Hundred
-            const remoteHtmlFiles = treeData.tree.filter(i => 
-                i.path.endsWith('.html') && 
-                !i.path.includes('index.html') &&
-                !i.path.includes('Books/Hundred') 
-            );
-            
+            const remoteHtmlFiles = treeData.tree.filter(i => i.path.endsWith('.html') && !i.path.includes('index.html') && !i.path.includes('Books/Hundred'));
             let toFetch = [], remotePathSet = new Set();
             for (let file of remoteHtmlFiles) { remotePathSet.add(file.path); const local = memoryCorpus[file.path]; if (!local || local.sha !== file.sha) toFetch.push(file); }
-            
             for (let path in memoryCorpus) { if (!remotePathSet.has(path)) { delete memoryCorpus[path]; await localforage.removeItem(path); } }
-            
             if (toFetch.length === 0) { if (!isAuto || !hasCache) { txt.innerText = "已是最新"; setTimeout(() => txt.innerText = "检测更新", 2000); } updateCountUI(); } 
             else {
                 btn.classList.add('syncing'); icon.classList.add('spin'); progBox.style.display = 'block'; txt.innerText = `需更新 ${toFetch.length} 篇`;
@@ -157,9 +203,176 @@
     }
 
     function updateCountUI() { document.getElementById('articleCount').innerText = Object.keys(memoryCorpus).length; }
-    function enableSearch() { if(Object.keys(memoryCorpus).length > 0) document.getElementById('searchBox').classList.add('active'); }
+    function enableSearch() { if(Object.keys(memoryCorpus).length > 0) { const sb = document.getElementById('searchBox'); sb.style.pointerEvents = 'auto'; sb.style.opacity = '1'; } }
 
+    // ==========================================
+    // 收藏夹管理 (升级至 IndexedDB)
+    // ==========================================
+    async function getFavorites() { return (await localforage.getItem('miyetsuko_favs_v3')) || []; }
+    async function saveFavorites(favs) { await localforage.setItem('miyetsuko_favs_v3', favs); }
+    
+    window.toggleFavorite = async function(btn, enEncoded, zhEncoded, pathEncoded) {
+        const en = decodeURIComponent(enEncoded); const zh = decodeURIComponent(zhEncoded); const path = decodeURIComponent(pathEncoded);
+        let favs = await getFavorites();
+        let idx = favs.findIndex(f => f.en === en);
+        if (idx > -1) { favs.splice(idx, 1); btn.classList.remove('active'); btn.innerHTML = '🤍'; } 
+        else { favs.push({en, zh, path, time: Date.now()}); btn.classList.add('active'); btn.innerHTML = '❤️'; }
+        await saveFavorites(favs);
+        if (document.getElementById('favModal').classList.contains('show')) renderFavoritesList();
+    }
+
+    window.openFavModal = function() { document.getElementById('favModal').classList.add('show'); renderFavoritesList(); }
+    window.closeFavModal = function() { document.getElementById('favModal').classList.remove('show'); }
+
+    async function renderFavoritesList() {
+        const list = document.getElementById('favList');
+        const favs = await getFavorites();
+        list.innerHTML = '';
+        if (favs.length === 0) { list.innerHTML = '<div class="omitted-text">暂无收藏内容，快去点亮爱心吧！</div>'; return; }
+        favs.slice().reverse().forEach(fav => {
+            const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(fav.path)}`;
+            const enSafe = encodeURIComponent(fav.en); const zhSafe = encodeURIComponent(fav.zh); const pathSafe = encodeURIComponent(fav.path);
+            const card = document.createElement('div'); card.className = 'context-card';
+            card.innerHTML = `
+                <div class="context-title-row"><a href="${targetUrl}" target="_blank" class="context-source">阅读全文 ➔</a><button class="fav-btn active" onclick="toggleFavorite(this, '${enSafe}', '${zhSafe}', '${pathSafe}')">❤️</button></div>
+                <hr class="context-divider"><div class="context-en">${fav.en}</div><div class="context-zh">${fav.zh}</div>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    // ==========================================
+    // 突破 1MB 限制的 GitHub 云端同步
+    // ==========================================
+    window.syncFavorites = async function() {
+        let token = localStorage.getItem('gh_token_fav');
+        if (!token) {
+            token = prompt("首次同步请输入您的 GitHub Token (需含 repo 权限)：\n此 Token 仅保存在本地设备中。");
+            if (!token) return;
+            localStorage.setItem('gh_token_fav', token);
+        }
+        
+        const syncBtn = document.getElementById('favSyncBtn');
+        syncBtn.innerText = "⏳ 同步中..."; syncBtn.disabled = true;
+
+        try {
+            let localFavs = await getFavorites();
+            let remoteSha = null; let remoteFavs = [];
+
+            // 1. 获取目录树寻找文件 SHA
+            let treeRes = await fetch(`https://api.github.com/repos/${FAV_REPO}/contents/config`, { headers: { 'Authorization': `token ${token}` } });
+            if (treeRes.ok) {
+                let tree = await treeRes.json();
+                let file = tree.find(f => f.name === 'favorites.json');
+                if (file) {
+                    remoteSha = file.sha;
+                    // 2. 绕过 API 的 1MB 限制，直接使用 raw URL 获取内容
+                    let rawRes = await fetch(`https://raw.githubusercontent.com/${FAV_REPO}/main/${FAV_PATH}?t=${Date.now()}`, { headers: { 'Authorization': `token ${token}` } });
+                    if (rawRes.ok) {
+                        let txt = await rawRes.text();
+                        if(txt) remoteFavs = JSON.parse(txt);
+                    }
+                }
+            } else if (treeRes.status !== 404) { throw new Error("API受限或Token无效"); }
+
+            // 3. 时间戳智能合并
+            let map = new Map();
+            remoteFavs.forEach(f => map.set(f.en, f));
+            localFavs.forEach(f => { if (!map.has(f.en) || f.time > map.get(f.en).time) map.set(f.en, f); });
+            let merged = Array.from(map.values()).sort((a,b) => a.time - b.time);
+            
+            // 4. Base64 编码并推送更新 (Contents API 上传上限为 50MB)
+            const utf8ToBase64 = (str) => btoa(unescape(encodeURIComponent(str)));
+            let putBody = { message: "Auto-sync favorites", content: utf8ToBase64(JSON.stringify(merged, null, 2)), branch: "main" };
+            if (remoteSha) putBody.sha = remoteSha;
+
+            let putRes = await fetch(`https://api.github.com/repos/${FAV_REPO}/contents/${FAV_PATH}`, {
+                method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(putBody)
+            });
+
+            if (putRes.ok) {
+                await saveFavorites(merged);
+                syncBtn.innerText = "✅ 同步成功"; renderFavoritesList();
+                setTimeout(() => syncBtn.innerText = "☁️ 云端同步", 2000);
+            } else { throw new Error((await putRes.json()).message); }
+        } catch(e) {
+            alert("同步失败: " + e.message); syncBtn.innerText = "❌ 同步失败";
+            if(e.message.includes('Bad credentials')) localStorage.removeItem('gh_token_fav');
+            setTimeout(() => syncBtn.innerText = "☁️ 云端同步", 2000);
+        } finally { syncBtn.disabled = false; }
+    }
+
+    // ==========================================
+    // 沉浸模式：双击退出
+    // ==========================================
+    document.addEventListener('dblclick', function(e) {
+        if (document.body.classList.contains('immersive-mode')) {
+            // 点击卡片内部不退出，点空白处才退出
+            if (!e.target.closest('.context-card')) {
+                document.body.classList.remove('immersive-mode');
+            }
+        }
+    });
+
+    // ==========================================
+    // 随机漫游卡片 (手势滑动)
+    // ==========================================
+    window.generateRandomCards = async function() {
+        document.getElementById('resultsArea').style.display = 'none'; 
+        
+        // 开启沉浸模式
+        document.body.classList.add('immersive-mode');
+
+        let allSegments = [];
+        for (const [path, data] of Object.entries(memoryCorpus)) {
+            if (!data.segments) continue;
+            for (let seg of data.segments) {
+                if (seg.en && seg.zh) allSegments.push({ path, en: seg.en, zh: seg.zh });
+            }
+        }
+        if (allSegments.length < 3) return alert("数据不足，请先同步完整数据库！");
+        
+        for (let i = allSegments.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [allSegments[i], allSegments[j]] = [allSegments[j], allSegments[i]]; }
+        const selected = allSegments.slice(0, 3);
+        
+        const track = document.getElementById('carouselTrack'); const indicators = document.getElementById('carouselIndicators');
+        track.innerHTML = ''; indicators.innerHTML = '';
+        const favs = await getFavorites();
+
+        selected.forEach((item, index) => {
+            const slide = document.createElement('div'); slide.className = 'carousel-slide';
+            const isFav = favs.some(f => f.en === item.en);
+            const enSafe = encodeURIComponent(item.en); const zhSafe = encodeURIComponent(item.zh); const pathSafe = encodeURIComponent(item.path);
+            
+            slide.innerHTML = `
+                <div class="context-card" style="height:100%;">
+                    <div class="context-title-row">
+                        <div class="context-title">Slide ${index+1}/3</div>
+                        <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(this, '${enSafe}', '${zhSafe}', '${pathSafe}')">${isFav ? '❤️' : '🤍'}</button>
+                    </div>
+                    <hr class="context-divider">
+                    <div class="context-en">${item.en}</div>
+                    <div class="context-zh">${item.zh}</div>
+                </div>`;
+            track.appendChild(slide);
+            const dot = document.createElement('div'); dot.className = `carousel-dot ${index === 0 ? 'active' : ''}`; indicators.appendChild(dot);
+        });
+
+        document.getElementById('carouselArea').style.display = 'block';
+
+        track.onscroll = () => {
+            const activeIndex = Math.round(track.scrollLeft / track.clientWidth);
+            document.querySelectorAll('.carousel-dot').forEach((dot, idx) => { dot.classList.toggle('active', idx === activeIndex); });
+        };
+    }
+
+    // ==========================================
+    // 基础搜索与 Anki 隐形 API 逻辑
+    // ==========================================
     function performSearch() {
+        document.body.classList.remove('immersive-mode');
+        document.getElementById('carouselArea').style.display = 'none'; 
+        
         const word = document.getElementById('searchInput').value.trim();
         if (!word) return;
         const isExact = exactToggle.checked, isRandom = randomToggle.checked;
@@ -177,7 +390,7 @@
                 if (match) {
                     const hlRegex = new RegExp('\\b(' + escapedForms.join('|') + ')\\b', 'gi');
                     let highlightedEn = seg.en.replace(hlRegex, '<span class="word-highlight">$1</span>');
-                    hitResults.push({ path: path, matchedWord: match[0], en: highlightedEn, zh: seg.zh });
+                    hitResults.push({ path: path, matchedWord: match[0], en: highlightedEn, zh: seg.zh, rawEn: seg.en });
                 }
             }
         }
@@ -196,13 +409,21 @@
         if (isRandom && hitResults.length > 0) { for (let i = hitResults.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [hitResults[i], hitResults[j]] = [hitResults[j], hitResults[i]]; } }
         header.innerText = `🎯 命中 ${hitResults.length} 个原文语境：`;
         const displayLimit = Math.min(hitResults.length, DISPLAY_LIMIT);
-        for (let i = 0; i < displayLimit; i++) {
-            const hit = hitResults[i];
-            const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(hit.path)}#:~:text=${encodeURIComponent(hit.matchedWord)}`;
-            const card = document.createElement('div'); card.className = 'context-card';
-            card.innerHTML = `<div class="context-title-row"><div class="context-title">Context ${i+1}</div><a href="${targetUrl}" target="_blank" class="context-source">阅读全文 ➔</a></div><hr class="context-divider"><div class="context-en">${hit.en}</div>${hit.zh ? `<div class="context-zh">${hit.zh}</div>` : ''}`;
-            list.appendChild(card);
-        }
+        
+        getFavorites().then(favs => {
+            for (let i = 0; i < displayLimit; i++) {
+                const hit = hitResults[i];
+                const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(hit.path)}#:~:text=${encodeURIComponent(hit.matchedWord)}`;
+                const isFav = favs.some(f => f.en === hit.rawEn);
+                const enSafe = encodeURIComponent(hit.rawEn); const zhSafe = encodeURIComponent(hit.zh); const pathSafe = encodeURIComponent(hit.path);
+
+                const card = document.createElement('div'); card.className = 'context-card';
+                card.innerHTML = `
+                    <div class="context-title-row"><a href="${targetUrl}" target="_blank" class="context-source">阅读全文 ➔</a><button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(this, '${enSafe}', '${zhSafe}', '${pathSafe}')">${isFav ? '❤️' : '🤍'}</button></div>
+                    <hr class="context-divider"><div class="context-en">${hit.en}</div>${hit.zh ? `<div class="context-zh">${hit.zh}</div>` : ''}`;
+                list.appendChild(card);
+            }
+        });
         if (hitResults.length > DISPLAY_LIMIT) { omitted.innerHTML = `还有 ${hitResults.length - DISPLAY_LIMIT} 个语境未展示，防眼花已折叠~`; omitted.style.display = 'block'; }
     }
 
