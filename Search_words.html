@@ -82,7 +82,18 @@
         .cloud-sync-btn:active { transform: scale(0.9); }
         .close-btn { background: #f0f0f0; border: none; width: 30px; height: 30px; border-radius: 15px; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #666; transition: background 0.2s; }
         .close-btn:active { background: #e0e0e0; }
-        .modal-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .modal-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+        /* 收藏夹月份文件夹折叠样式 */
+        .folder-section { background: var(--card-bg); border-radius: var(--radius-md); border: 1px solid #e5e5ea; overflow: hidden; box-shadow: var(--shadow-sm); transition: all 0.2s ease; }
+        .folder-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #fff; user-select: none; transition: background 0.2s; }
+        .folder-header:active { background: #f8f8fa; }
+        .folder-title { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 700; color: var(--text-main); }
+        .folder-badge { background: var(--primary-light); color: var(--primary); font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+        .folder-arrow { font-size: 0.75rem; color: var(--text-muted); transition: transform 0.3s ease; }
+        .folder-arrow.open { transform: rotate(180deg); }
+        .folder-content { display: none; padding: 12px; background: var(--bg-color); flex-direction: column; gap: 12px; border-top: 1px solid #f0f0f0; }
+        .folder-content.show { display: flex; }
 
         /* 沉浸模式置顶 */
         body.immersive-mode .navbar,
@@ -168,7 +179,7 @@
             <button class="close-btn" onclick="document.getElementById('tokenModal').classList.remove('show')">×</button>
         </div>
         <div class="modal-body" style="padding-bottom: 25px;">
-            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-top: 0;">为了实现跨设备同步，请提供您 GitHub 账号的 Personal Access Token (需勾选 repo 权限)。该 Token <strong style="color:var(--danger)">仅加密保存在当前设备本地</strong>，不经过任何第三方服务器。</p>
+            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-top: 0;">为了实现跨设备同步，请提供您 GitHub 账号的 Personal Access Token (需勾选 repo 权限)。该 Token <strong style="color:var(--danger)">仅保存在当前设备本地</strong>，不经过任何第三方服务器。</p>
             <input type="password" id="githubTokenInput" placeholder="输入 ghp_ 开头的 Token..." style="width: 100%; padding: 12px 15px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='#eee'">
             <button class="feature-btn highlight" style="width: 100%; justify-content: center; margin-top: 15px; padding: 12px; font-size: 1.05rem;" onclick="saveTokenAndSync()">保存并执行同步</button>
         </div>
@@ -178,6 +189,7 @@
 <script>
     const GITHUB_REPO = "moodHappy/MiyetsukoSeries"; const BRANCH = "main"; const DISPLAY_LIMIT = 5; let memoryCorpus = {}; 
     const FAV_REPO = "moodHappy/moodHappy.gitHub.io-nce"; const FAV_PATH = "config/favorites.json";
+    let openFolders = new Set(); // 记录展开的文件夹
     
     localforage.config({ name: 'MiyetsukoSharedDB', storeName: 'articles_corpus_v3' });
     
@@ -243,43 +255,149 @@
     function enableSearch() { if(Object.keys(memoryCorpus).length > 0) { const sb = document.getElementById('searchBox'); sb.style.pointerEvents = 'auto'; sb.style.opacity = '1'; } }
 
     // ==========================================
-    // 收藏夹管理 (升级至 IndexedDB)
+    // 收藏夹管理 (支持删除状态追踪)
     // ==========================================
     async function getFavorites() { return (await localforage.getItem('miyetsuko_favs_v3')) || []; }
+    async function getActiveFavorites() { 
+        const favs = await getFavorites(); 
+        return favs.filter(f => !f.deleted); 
+    }
     async function saveFavorites(favs) { await localforage.setItem('miyetsuko_favs_v3', favs); }
     
     window.toggleFavorite = async function(btn, enEncoded, zhEncoded, pathEncoded) {
         const en = decodeURIComponent(enEncoded); const zh = decodeURIComponent(zhEncoded); const path = decodeURIComponent(pathEncoded);
         let favs = await getFavorites();
-        let idx = favs.findIndex(f => f.en === en);
-        if (idx > -1) { favs.splice(idx, 1); btn.classList.remove('active'); btn.innerHTML = '🤍'; } 
-        else { favs.push({en, zh, path, time: Date.now()}); btn.classList.add('active'); btn.innerHTML = '❤️'; }
+        let item = favs.find(f => f.en === en);
+        let now = Date.now();
+
+        if (item) {
+            if (!item.deleted) {
+                // 取消收藏（标记软删除并记录更新时间，避免同步被复原）
+                item.deleted = true;
+                item.time = now;
+                if (btn) { btn.classList.remove('active'); btn.innerHTML = '🤍'; }
+            } else {
+                // 重新收藏
+                item.deleted = false;
+                item.time = now;
+                item.zh = zh;
+                item.path = path;
+                if (btn) { btn.classList.add('active'); btn.innerHTML = '❤️'; }
+            }
+        } else {
+            // 全新收藏
+            favs.push({ en, zh, path, time: now, deleted: false });
+            if (btn) { btn.classList.add('active'); btn.innerHTML = '❤️'; }
+        }
+        
         await saveFavorites(favs);
         if (document.getElementById('favModal').classList.contains('show')) renderFavoritesList();
-    }
+    };
 
-    window.openFavModal = function() { document.getElementById('favModal').classList.add('show'); renderFavoritesList(); }
-    window.closeFavModal = function() { document.getElementById('favModal').classList.remove('show'); }
+    window.openFavModal = function() { document.getElementById('favModal').classList.add('show'); renderFavoritesList(); };
+    window.closeFavModal = function() { document.getElementById('favModal').classList.remove('show'); };
 
+    window.toggleFolder = function(key) {
+        if (openFolders.has(key)) {
+            openFolders.delete(key);
+        } else {
+            openFolders.add(key);
+        }
+        const content = document.getElementById(`folder-${key}`);
+        const arrow = document.getElementById(`arrow-${key}`);
+        if (content && arrow) {
+            const isOpen = openFolders.has(key);
+            content.classList.toggle('show', isOpen);
+            arrow.classList.toggle('open', isOpen);
+        }
+    };
+
+    // 渲染按年月份分组的收藏夹
     async function renderFavoritesList() {
         const list = document.getElementById('favList');
-        const favs = await getFavorites();
+        const activeFavs = await getActiveFavorites();
         list.innerHTML = '';
-        if (favs.length === 0) { list.innerHTML = '<div class="omitted-text">暂无收藏内容，快去点亮爱心吧！</div>'; return; }
-        favs.slice().reverse().forEach(fav => {
-            const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(fav.path)}`;
-            const enSafe = encodeURIComponent(fav.en); const zhSafe = encodeURIComponent(fav.zh); const pathSafe = encodeURIComponent(fav.path);
-            const card = document.createElement('div'); card.className = 'context-card';
-            card.innerHTML = `
-                <div class="context-title-row"><a href="${targetUrl}" target="_blank" class="context-source">阅读全文 ➔</a><button class="fav-btn active" onclick="toggleFavorite(this, '${enSafe}', '${zhSafe}', '${pathSafe}')">❤️</button></div>
-                <hr class="context-divider"><div class="context-en">${fav.en}</div><div class="context-zh">${fav.zh}</div>
+
+        if (activeFavs.length === 0) { 
+            list.innerHTML = '<div class="omitted-text">暂无收藏内容，快去点亮爱心吧！</div>'; 
+            return; 
+        }
+
+        // 默认按最近收藏时间降序（最近收藏在最前面）
+        activeFavs.sort((a, b) => (b.time || 0) - (a.time || 0));
+
+        // 按年和月分组
+        const groups = {};
+        const now = new Date();
+        const currentFolderKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        activeFavs.forEach(fav => {
+            let d = fav.time ? new Date(fav.time) : new Date();
+            let key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            let title = `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, '0')}月`;
+            if (!groups[key]) {
+                groups[key] = { title, key, items: [] };
+            }
+            groups[key].items.push(fav);
+        });
+
+        // 获取排序后的年月份（最新的月份在最上面）
+        const sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+        // 初始打开规则：默认展开当前年月，若当前年月无数据则默认展开最新月份
+        if (openFolders.size === 0) {
+            if (groups[currentFolderKey]) {
+                openFolders.add(currentFolderKey);
+            } else if (sortedKeys.length > 0) {
+                openFolders.add(sortedKeys[0]);
+            }
+        }
+
+        sortedKeys.forEach(key => {
+            const group = groups[key];
+            const isOpen = openFolders.has(key);
+            const folderEl = document.createElement('div');
+            folderEl.className = 'folder-section';
+
+            let itemsHtml = '';
+            group.items.forEach(fav => {
+                const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(fav.path)}`;
+                const enSafe = encodeURIComponent(fav.en); 
+                const zhSafe = encodeURIComponent(fav.zh); 
+                const pathSafe = encodeURIComponent(fav.path);
+
+                itemsHtml += `
+                    <div class="context-card">
+                        <div class="context-title-row">
+                            <a href="${targetUrl}" target="_blank" class="context-source">阅读全文 ➔</a>
+                            <button class="fav-btn active" onclick="toggleFavorite(this, '${enSafe}', '${zhSafe}', '${pathSafe}')">❤️</button>
+                        </div>
+                        <hr class="context-divider">
+                        <div class="context-en">${fav.en}</div>
+                        <div class="context-zh">${fav.zh}</div>
+                    </div>
+                `;
+            });
+
+            folderEl.innerHTML = `
+                <div class="folder-header" onclick="toggleFolder('${key}')">
+                    <div class="folder-title">
+                        <span>📁</span>
+                        <span>${group.title}</span>
+                        <span class="folder-badge">${group.items.length} 篇</span>
+                    </div>
+                    <span class="folder-arrow ${isOpen ? 'open' : ''}" id="arrow-${key}">▼</span>
+                </div>
+                <div class="folder-content ${isOpen ? 'show' : ''}" id="folder-${key}">
+                    ${itemsHtml}
+                </div>
             `;
-            list.appendChild(card);
+            list.appendChild(folderEl);
         });
     }
 
     // ==========================================
-    // 突破 1MB 限制的 GitHub 云端同步 (修复 Failed to fetch 与自动重新弹窗)
+    // GitHub 云端双向同步 (准确同步删除状态)
     // ==========================================
     window.triggerCloudSync = function() {
         let token = localStorage.getItem('gh_token_fav');
@@ -288,7 +406,7 @@
         } else {
             performSync(token);
         }
-    }
+    };
 
     window.saveTokenAndSync = function() {
         const token = document.getElementById('githubTokenInput').value.trim();
@@ -297,7 +415,7 @@
             document.getElementById('tokenModal').classList.remove('show');
             performSync(token);
         }
-    }
+    };
 
     async function performSync(token) {
         const syncBtn = document.getElementById('favSyncBtn');
@@ -307,7 +425,6 @@
             let localFavs = await getFavorites();
             let remoteSha = null; let remoteFavs = [];
 
-            // 👇 优化：直接请求目标文件，而不是遍历整个 config 目录，避免索引延迟引起的 Failed to fetch 👇
             let fileRes = await fetch(`https://api.github.com/repos/${FAV_REPO}/contents/${FAV_PATH}`, { 
                 headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } 
             });
@@ -324,10 +441,21 @@
                 throw new Error(errJson.message || `API 错误状态码: ${fileRes.status}`);
             }
 
+            // 双端时间戳对齐合并 (以较晚时间的操作为准，确保删除能正确生效)
             let map = new Map();
-            remoteFavs.forEach(f => map.set(f.en, f));
-            localFavs.forEach(f => { if (!map.has(f.en) || f.time > map.get(f.en).time) map.set(f.en, f); });
-            let merged = Array.from(map.values()).sort((a,b) => a.time - b.time);
+            remoteFavs.forEach(f => {
+                if (!f.time) f.time = 0;
+                map.set(f.en, f);
+            });
+            localFavs.forEach(f => {
+                if (!f.time) f.time = Date.now();
+                const existing = map.get(f.en);
+                if (!existing || (f.time || 0) >= (existing.time || 0)) {
+                    map.set(f.en, f);
+                }
+            });
+
+            let merged = Array.from(map.values()).sort((a,b) => (b.time || 0) - (a.time || 0));
             
             const utf8ToBase64 = (str) => btoa(unescape(encodeURIComponent(str)));
             let putBody = { message: "Auto-sync favorites", content: utf8ToBase64(JSON.stringify(merged, null, 2)), branch: "main" };
@@ -348,19 +476,16 @@
         } catch(e) {
             console.error(e);
             syncBtn.innerText = "❌ 同步失败";
-            
-            // 👇 满足用户需求：失败时自动弹出 Token 输入框，提示可能被篡改或失效 👇
-            alert(`同步失败: ${e.message}\n请重新检查或输入您的 GitHub Token。`);
+            alert(`同步失败: ${e.message}\n请检查您的 GitHub Token 配置。`);
             localStorage.removeItem('gh_token_fav'); 
             document.getElementById('githubTokenInput').value = '';
             document.getElementById('tokenModal').classList.add('show');
-
             setTimeout(() => syncBtn.innerText = "☁️ 云端同步", 2000);
         } finally { syncBtn.disabled = false; }
     }
 
     // ==========================================
-    // 沉浸模式：双击退出
+    // 沉浸模式：双击空白处退出
     // ==========================================
     document.addEventListener('dblclick', function(e) {
         if (document.body.classList.contains('immersive-mode')) {
@@ -391,11 +516,11 @@
         
         const track = document.getElementById('carouselTrack'); const indicators = document.getElementById('carouselIndicators');
         track.innerHTML = ''; indicators.innerHTML = '';
-        const favs = await getFavorites();
+        const activeFavs = await getActiveFavorites();
 
         selected.forEach((item, index) => {
             const slide = document.createElement('div'); slide.className = 'carousel-slide';
-            const isFav = favs.some(f => f.en === item.en);
+            const isFav = activeFavs.some(f => f.en === item.en);
             const enSafe = encodeURIComponent(item.en); const zhSafe = encodeURIComponent(item.zh); const pathSafe = encodeURIComponent(item.path);
             
             const excerpt = item.en.split(' ').slice(0, 5).join(' '); 
@@ -422,10 +547,10 @@
             const activeIndex = Math.round(track.scrollLeft / track.clientWidth);
             document.querySelectorAll('.carousel-dot').forEach((dot, idx) => { dot.classList.toggle('active', idx === activeIndex); });
         };
-    }
+    };
 
     // ==========================================
-    // 基础搜索与 Anki 隐形 API 逻辑
+    // 基础搜索与 Anki 隐形 API 联动（保持完全兼容）
     // ==========================================
     function performSearch() {
         document.body.classList.remove('immersive-mode');
@@ -468,7 +593,7 @@
         header.innerText = `🎯 命中 ${hitResults.length} 个原文语境：`;
         const displayLimit = Math.min(hitResults.length, DISPLAY_LIMIT);
         
-        getFavorites().then(favs => {
+        getActiveFavorites().then(favs => {
             for (let i = 0; i < displayLimit; i++) {
                 const hit = hitResults[i];
                 const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(hit.path)}#:~:text=${encodeURIComponent(hit.matchedWord)}`;
@@ -507,7 +632,7 @@
                 document.getElementById('progressBox').style.display = 'none';
                 triggerAutoSearch(); 
             } else {
-                document.getElementById('cacheStatusLabel').innerText = "清理脏数据，建立v3纯净缓存...";
+                document.getElementById('cacheStatusLabel').innerText = "建立纯净缓存...";
                 await checkUpdates(true); triggerAutoSearch(); 
             }
         } catch(e) { console.error(e); }
