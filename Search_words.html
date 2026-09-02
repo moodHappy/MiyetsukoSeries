@@ -74,7 +74,8 @@
         .carousel-area { display: none; width: 100%; animation: fadeIn 0.4s ease; margin-top: 10px; }
         .carousel-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 15px; scrollbar-width: none; }
         .carousel-track::-webkit-scrollbar { display: none; }
-        .carousel-slide { flex: 0 0 100%; scroll-snap-align: center; }
+        /* 修复2: 增加 scroll-snap-stop: always; 强制在每个卡片刹车，防止一次滑动多张 */
+        .carousel-slide { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; }
         .carousel-indicators { display: flex; justify-content: center; gap: 6px; margin-top: 5px; }
         .carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: #ccc; transition: background 0.3s, transform 0.3s; }
         .carousel-dot.active { background: var(--primary); transform: scale(1.3); }
@@ -662,9 +663,10 @@
             if (curMonthItems.length > 0) {
                 curMonthItems.forEach(fav => {
                     const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(fav.path)}`;
-                    const enSafe = encodeURIComponent(fav.en); 
-                    const zhSafe = encodeURIComponent(fav.zh); 
-                    const pathSafe = encodeURIComponent(fav.path);
+                    // 修复1: encodeURIComponent 会漏掉单引号，手动将单引号替换为 %27，避免截断 HTML onclick 的字符串包裹
+                    const enSafe = encodeURIComponent(fav.en).replace(/'/g, "%27"); 
+                    const zhSafe = encodeURIComponent(fav.zh).replace(/'/g, "%27"); 
+                    const pathSafe = encodeURIComponent(fav.path).replace(/'/g, "%27");
 
                     itemsHtml += `
                         <div class="context-card">
@@ -824,7 +826,11 @@
         selected.forEach((item, index) => {
             const slide = document.createElement('div'); slide.className = 'carousel-slide';
             const isFav = activeFavs.some(f => f.en === item.en);
-            const enSafe = encodeURIComponent(item.en); const zhSafe = encodeURIComponent(item.zh); const pathSafe = encodeURIComponent(item.path);
+            
+            // 修复1: 手动转义单引号
+            const enSafe = encodeURIComponent(item.en).replace(/'/g, "%27"); 
+            const zhSafe = encodeURIComponent(item.zh).replace(/'/g, "%27"); 
+            const pathSafe = encodeURIComponent(item.path).replace(/'/g, "%27");
             
             const excerpt = item.en.split(' ').slice(0, 5).join(' '); 
             const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(item.path)}#:~:text=${encodeURIComponent(excerpt)}`;
@@ -902,7 +908,11 @@
                 const hit = hitResults[i];
                 const targetUrl = `https://moodhappy.github.io/MiyetsukoSeries/${encodeURIComponent(hit.path)}#:~:text=${encodeURIComponent(hit.matchedWord)}`;
                 const isFav = favs.some(f => f.en === hit.rawEn);
-                const enSafe = encodeURIComponent(hit.rawEn); const zhSafe = encodeURIComponent(hit.zh); const pathSafe = encodeURIComponent(hit.path);
+                
+                // 修复1: 手动转义单引号
+                const enSafe = encodeURIComponent(hit.rawEn).replace(/'/g, "%27"); 
+                const zhSafe = encodeURIComponent(hit.zh).replace(/'/g, "%27"); 
+                const pathSafe = encodeURIComponent(hit.path).replace(/'/g, "%27");
 
                 const card = document.createElement('div'); card.className = 'context-card';
                 card.innerHTML = `
