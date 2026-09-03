@@ -169,8 +169,8 @@
             <button class="menu-item highlight-green" onclick="handleMenuAction('cloudSync')">
                 <span>☁️</span><span>同步到 GitHub</span>
             </button>
-            <button class="menu-item" onclick="handleMenuAction('exportJs')">
-                <span>📦</span><span>导出离线 JS</span>
+            <button class="menu-item" onclick="handleMenuAction('exportJson')">
+                <span>📦</span><span>导出离线 JSON</span>
             </button>
         </div>
     </div>
@@ -255,7 +255,7 @@
 
     // 数据库同步目标仓库
     const DB_TARGET_REPO = "moodHappy/moodHappy.gitHub.io-nce";
-    const DB_TARGET_PATH = "config/_suyuan_db.js";
+    const DB_TARGET_PATH = "config/_suyuan_db.json";
     const DB_TARGET_BRANCH = "main";
 
     const FAV_REPO = "moodHappy/moodHappy.gitHub.io-nce"; 
@@ -295,7 +295,7 @@
         document.getElementById('settingsDropdown').classList.remove('show');
         if (action === 'checkUpdates') checkUpdates(false);
         else if (action === 'cloudSync') triggerDbCloudSync();
-        else if (action === 'exportJs') exportAnkiDatabase();
+        else if (action === 'exportJson') exportAnkiDatabase();
     };
 
     function extractBilingualSegments(htmlString) {
@@ -384,7 +384,7 @@
     function enableSearch() { if(Object.keys(memoryCorpus).length > 0) { const sb = document.getElementById('searchBox'); sb.style.pointerEvents = 'auto'; sb.style.opacity = '1'; } }
 
     // =========================================================================
-    // 💡 导出离线 JS 数据库供 Anki 本地放入 collection.media
+    // 💡 导出离线 JSON 数据库
     // =========================================================================
     window.exportAnkiDatabase = function() {
         const total = Object.keys(memoryCorpus).length;
@@ -403,12 +403,12 @@
             }
         }
 
-        const jsContent = `/* 溯源双语本地数据库 - 共 ${total} 篇 */\nwindow.__SUYUAN_CORPUS__ = ` + JSON.stringify(compactData) + `;`;
-        const blob = new Blob([jsContent], { type: "application/javascript;charset=utf-8" });
+        const jsonContent = JSON.stringify(compactData);
+        const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "_suyuan_db.js";
+        a.download = "_suyuan_db.json";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -450,7 +450,7 @@
                     });
                 }
             }
-            const jsContent = `/* 溯源双语云端实时数据库 - 共 ${compactData.length} 篇 - 生成于 ${new Date().toISOString()} */\nwindow.__SUYUAN_CORPUS__ = ` + JSON.stringify(compactData) + `;`;
+            const jsonContent = JSON.stringify(compactData);
             
             document.getElementById('progressText').innerText = "⏳ 正在上传大文件 Blob...";
             document.getElementById('progressFill').style.width = "70%";
@@ -465,7 +465,7 @@
             const blobRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/blobs`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
-                body: JSON.stringify({ content: utf8ToBase64(jsContent), encoding: 'base64' })
+                body: JSON.stringify({ content: utf8ToBase64(jsonContent), encoding: 'base64' })
             });
             if (!blobRes.ok) throw new Error((await blobRes.json()).message || "创建 Blob 失败");
             const blobData = await blobRes.json();
@@ -500,7 +500,7 @@
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
                 body: JSON.stringify({
-                    message: `Auto-sync _suyuan_db.js (${compactData.length} articles)`,
+                    message: `Auto-sync _suyuan_db.json (${compactData.length} articles)`,
                     tree: newTreeData.sha,
                     parents: [latestCommitSha]
                 })
