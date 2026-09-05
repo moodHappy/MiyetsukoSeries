@@ -255,6 +255,7 @@
     // 数据库同步目标仓库
     const DB_TARGET_REPO = "moodHappy/moodHappy.gitHub.io-nce";
     const DB_TARGET_PATH = "config/_suyuan_db.js";
+    const VER_TARGET_PATH = "config/_suyuan_version.json"; // 极简版本校验文件，供移动端秒速比对
     const DB_TARGET_BRANCH = "main";
 
     const FAV_REPO = "moodHappy/moodHappy.gitHub.io-nce"; 
@@ -418,7 +419,7 @@
     };
 
     // =========================================================================
-    // 🔥 突破 GitHub 1MB 上传限制：采用 Git Data API (Blob -> Tree -> Commit)
+    // 🔥 Git Data API 同步：同时推送 10MB 数据库与几十字节的版本描述文件
     // =========================================================================
     window.triggerDbCloudSync = function() {
         const total = Object.keys(memoryCorpus).length;
@@ -440,7 +441,7 @@
         const progBox = document.getElementById('progressBox');
         progBox.style.display = 'block';
         document.getElementById('progressText').innerText = "⏳ 正在突破 1MB 限制构建云端索引...";
-        document.getElementById('progressFill').style.width = "40%";
+        document.getElementById('progressFill').style.width = "30%";
 
         try {
             let compactData = [];
@@ -453,12 +454,19 @@
                 }
             }
             
-            // 🚀 核心优化：利用 JSON.parse 包裹字符串，云端直连下载执行同样获得极速启动
             const rawJson = JSON.stringify(compactData);
-            const jsContent = `/* 溯源双语云端实时数据库 (V8 极速优化版) - 共 ${compactData.length} 篇 - 生成于 ${new Date().toISOString()} */\nwindow.__SUYUAN_CORPUS__ = JSON.parse(${JSON.stringify(rawJson)});`;
+            const nowTime = Date.now();
+            const jsContent = `/* 溯源双语云端实时数据库 (V8 极速优化版) - 共 ${compactData.length} 篇 - 生成于 ${new Date(nowTime).toISOString()} */\nwindow.__SUYUAN_CORPUS__ = JSON.parse(${JSON.stringify(rawJson)});`;
             
-            document.getElementById('progressText').innerText = "⏳ 正在上传大文件 Blob...";
-            document.getElementById('progressFill').style.width = "70%";
+            // 生成轻量版本校验 JSON
+            const versionContent = JSON.stringify({
+                updatedAt: nowTime,
+                articlesCount: compactData.length,
+                totalSegments: compactData.reduce((acc, cur) => acc + (cur.s ? cur.s.length : 0), 0)
+            }, null, 2);
+
+            document.getElementById('progressText').innerText = "⏳ 正在上传大文件 Blob 与版本描述...";
+            document.getElementById('progressFill').style.width = "60%";
 
             const utf8ToBase64 = (str) => {
                 const bytes = new TextEncoder().encode(str);
@@ -467,15 +475,27 @@
                 return btoa(binary);
             };
 
+            // 1. 创建 JS 数据库 Blob
             const blobRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/blobs`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
                 body: JSON.stringify({ content: utf8ToBase64(jsContent), encoding: 'base64' })
             });
-            if (!blobRes.ok) throw new Error((await blobRes.json()).message || "创建 Blob 失败");
+            if (!blobRes.ok) throw new Error((await blobRes.json()).message || "创建 JS Blob 失败");
             const blobData = await blobRes.json();
             const blobSha = blobData.sha;
 
+            // 2. 创建 Version JSON Blob
+            const verBlobRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/blobs`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+                body: JSON.stringify({ content: utf8ToBase64(versionContent), encoding: 'base64' })
+            });
+            if (!verBlobRes.ok) throw new Error((await verBlobRes.json()).message || "创建 Version Blob 失败");
+            const verBlobData = await verBlobRes.json();
+            const verBlobSha = verBlobData.sha;
+
+            // 3. 获取最新分支引用
             const refRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/ref/heads/${DB_TARGET_BRANCH}`, {
                 headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
             });
@@ -483,6 +503,7 @@
             const refData = await refRes.json();
             const latestCommitSha = refData.object.sha;
 
+            // 4. 获取基础 Tree
             const commitRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/commits/${latestCommitSha}`, {
                 headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
             });
@@ -490,22 +511,27 @@
             const commitData = await commitRes.json();
             const baseTreeSha = commitData.tree.sha;
 
+            // 5. 组合 Tree（原子提交两个文件）
             const newTreeRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/trees`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
                 body: JSON.stringify({
                     base_tree: baseTreeSha,
-                    tree: [{ path: DB_TARGET_PATH, mode: "100644", type: "blob", sha: blobSha }]
+                    tree: [
+                        { path: DB_TARGET_PATH, mode: "100644", type: "blob", sha: blobSha },
+                        { path: VER_TARGET_PATH, mode: "100644", type: "blob", sha: verBlobSha }
+                    ]
                 })
             });
             if (!newTreeRes.ok) throw new Error((await newTreeRes.json()).message || "构建新 Tree 失败");
             const newTreeData = await newTreeRes.json();
 
+            // 6. 创建 Commit
             const newCommitRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/commits`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
                 body: JSON.stringify({
-                    message: `Auto-sync _suyuan_db.js (${compactData.length} articles)`,
+                    message: `Auto-sync database & version info (${compactData.length} articles)`,
                     tree: newTreeData.sha,
                     parents: [latestCommitSha]
                 })
@@ -513,6 +539,7 @@
             if (!newCommitRes.ok) throw new Error((await newCommitRes.json()).message || "创建提交失败");
             const newCommitData = await newCommitRes.json();
 
+            // 7. 更新分支指针
             const updateRefRes = await fetch(`https://api.github.com/repos/${DB_TARGET_REPO}/git/refs/heads/${DB_TARGET_BRANCH}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
@@ -522,7 +549,7 @@
 
             document.getElementById('progressFill').style.width = "100%";
             document.getElementById('progressText').innerText = "✅ 同步成功！";
-            alert(`🎉 成功将 ${compactData.length} 篇双语文章同步到 GitHub！\nAnki 即刻可无缝云端直连。`);
+            alert(`🎉 成功将 ${compactData.length} 篇双语文章及版本描述同步到 GitHub！\nAnki 移动端已支持秒级即开与静默更新。`);
 
         } catch (e) {
             console.error(e);
