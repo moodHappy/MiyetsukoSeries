@@ -7,7 +7,7 @@
     <script src="https://unpkg.com/compromise"></script>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <style>
-        :root { --bg-color: #f2f2f7; --card-bg: #ffffff; --text-main: #1c1c1e; --text-muted: #8e8e93; --primary: #007aff; --primary-light: #e5f1ff; --danger: #d32f2f; --success: #34c759; --radius-lg: 20px; --radius-md: 14px; --shadow-sm: 0 2px 10px rgba(0,0,0,0.03); --shadow-md: 0 8px 30px rgba(0,0,0,0.08); }
+        :root { --bg-color: #f2f2f7; --card-bg: #ffffff; --text-main: #1c1c1e; --text-muted: #8e8e93; --primary: #007aff; --primary-light: #e5f1ff; --danger: #d32f2f; --danger-light: #ffe5e5; --success: #34c759; --radius-lg: 20px; --radius-md: 14px; --shadow-sm: 0 2px 10px rgba(0,0,0,0.03); --shadow-md: 0 8px 30px rgba(0,0,0,0.08); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; transition: background-color 0.3s; }
         .navbar { position: sticky; top: 0; width: 100%; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; padding: env(safe-area-inset-top) 20px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); transition: opacity 0.3s; }
@@ -26,6 +26,7 @@
         .menu-item:hover, .menu-item:active { background: rgba(0,0,0,0.05); }
         .menu-item.highlight-green { color: #28a745; }
         .menu-item.highlight-blue { color: var(--primary); }
+        .menu-item.highlight-red { color: var(--danger); }
         .menu-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 2px 4px; }
 
         .spin { animation: spin 1s linear infinite; }
@@ -171,6 +172,11 @@
             <button class="menu-item" onclick="handleMenuAction('exportJs')">
                 <span>📦</span><span>导出离线 JS</span>
             </button>
+            <div class="menu-divider"></div>
+            <!-- 新增删除缓存入口 -->
+            <button class="menu-item highlight-red" onclick="handleMenuAction('clearCache')">
+                <span>🗑️</span><span>清空本地缓存</span>
+            </button>
         </div>
     </div>
 </div>
@@ -296,6 +302,43 @@
         if (action === 'checkUpdates') checkUpdates(false);
         else if (action === 'cloudSync') triggerDbCloudSync();
         else if (action === 'exportJs') exportAnkiDatabase();
+        else if (action === 'clearCache') clearLocalCorpusCache();
+    };
+
+    // ==========================================
+    // 🗑️ 清空本地语料缓存
+    // ==========================================
+    window.clearLocalCorpusCache = async function() {
+        const total = Object.keys(memoryCorpus).length;
+        if (total === 0) {
+            alert("本地暂无文章缓存，无需清理。");
+            return;
+        }
+
+        const confirmClear = confirm(`⚠️ 确定要清空本地已缓存的 ${total} 篇双语文章数据吗？\n\n提示：此操作仅清空本地文章语料缓存，不会影响您的「❤️ 我的收藏」和 GitHub Token 配置。清空后可通过【检测并更新】重新下载。`);
+        if (!confirmClear) return;
+
+        try {
+            // 清理 localforage 的 articles_corpus_v3 仓库
+            await localforage.clear();
+            // 重置内存与状态
+            memoryCorpus = {};
+            updateCountUI();
+
+            // 界面控件重置
+            const searchBox = document.getElementById('searchBox');
+            searchBox.style.pointerEvents = 'none';
+            searchBox.style.opacity = '0.5';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('resultsArea').style.display = 'none';
+            document.getElementById('carouselArea').style.display = 'none';
+            document.getElementById('cacheStatusLabel').innerText = "本地缓存已清空";
+
+            alert("✅ 本地文章缓存已成功清空！若需重新使用全文溯源，请点击齿轮菜单中的【检测并更新】。");
+        } catch (e) {
+            console.error("清空缓存失败:", e);
+            alert("❌ 清空缓存失败: " + e.message);
+        }
     };
 
     function extractBilingualSegments(htmlString) {
@@ -380,8 +423,18 @@
         }
     }
 
-    function updateCountUI() { document.getElementById('articleCount').innerText = Object.keys(memoryCorpus).length; }
-    function enableSearch() { if(Object.keys(memoryCorpus).length > 0) { const sb = document.getElementById('searchBox'); sb.style.pointerEvents = 'auto'; sb.style.opacity = '1'; } }
+    function updateCountUI() { 
+        document.getElementById('articleCount').innerText = Object.keys(memoryCorpus).length; 
+    }
+    
+    function enableSearch() { 
+        if(Object.keys(memoryCorpus).length > 0) { 
+            const sb = document.getElementById('searchBox'); 
+            sb.style.pointerEvents = 'auto'; 
+            sb.style.opacity = '1'; 
+            document.getElementById('cacheStatusLabel').innerText = "共享数据库 (支持离线)";
+        } 
+    }
 
     // =========================================================================
     // 💡 导出离线 JS 数据库供 Anki 本地放入 collection.media (V8 JSON.parse 极速优化)
@@ -955,7 +1008,12 @@
 
     window.onload = async () => {
         try {
-            await localforage.iterate((value, key) => { memoryCorpus[key] = value; });
+            await localforage.iterate((value, key) => { 
+                // 仅收集文章语料条目，排除收藏夹等其他配置
+                if (key !== 'miyetsuko_favs_v3') {
+                    memoryCorpus[key] = value; 
+                }
+            });
             updateCountUI();
             const urlParams = new URLSearchParams(window.location.search);
             const queryWord = urlParams.get('q');
@@ -972,8 +1030,8 @@
                 document.getElementById('cacheStatusLabel').innerText = "共享数据库 (支持离线)";
                 document.getElementById('progressBox').style.display = 'none';
             } else {
-                document.getElementById('cacheStatusLabel').innerText = "建立纯净缓存...";
-                await checkUpdates(true); 
+                document.getElementById('cacheStatusLabel').innerText = "暂无文章缓存，请检测更新";
+                document.getElementById('progressBox').style.display = 'none';
             }
         } catch(e) { console.error(e); }
     };
