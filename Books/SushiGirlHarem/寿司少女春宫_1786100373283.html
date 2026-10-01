@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>目录 - [模板]</title>
+    <style>
+        body { font-family: "Microsoft YaHei", "Arial Black", sans-serif; line-height: 1.5; background: #f0f8ff; color: #222; max-width: 1100px; margin: 0 auto; padding: 20px; border: 6px solid #4682b4; }
+        h1 { text-align: center; background: #1e90ff; color: #fff; padding: 15px; letter-spacing: 2px; transform: rotate(-1deg); box-shadow: 5px 5px 0px #00509e; }
+        .subtitle { text-align: center; font-weight: bold; color: #00509e; transform: rotate(1deg); margin-bottom: 30px; }
+        .season-divider { background: #222; color: #fff; padding: 15px; font-size: 1.3rem; font-weight: 900; text-align: center; letter-spacing: 1px; margin: 40px 0 20px 0; border: 3px dashed #1e90ff; transform: rotate(-1deg); box-shadow: -4px 4px 0px #4682b4; cursor: pointer; transition: all 0.2s; user-select: none; }
+        .season-divider:hover { background: #444; color: #e1f5fe; }
+        .season-divider:nth-of-type(even) { transform: rotate(1deg); box-shadow: 4px 4px 0px #4682b4; }
+        .container { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; transition: all 0.3s ease; }
+        .ep { position: relative; background: #fff; padding: 15px; border: 2px dashed #4682b4; border-radius: 3px 15px 5px 12px / 12px 4px 10px 5px; box-shadow: 4px 4px 0px #87ceeb; transition: all 0.1s; cursor: pointer; }
+        .ep:hover { background: #e1f5fe; box-shadow: 6px 6px 0px #1e90ff; z-index: 10; transform: scale(1.02) !important; }
+        .ep:nth-child(even) { transform: rotate(1.5deg); }
+        .ep:nth-child(odd) { transform: rotate(-1.5deg); }
+        .ep:nth-child(3n) { transform: rotate(0.5deg); }
+        .score { position: absolute; top: 10px; right: 10px; background: #222; color: #e1f5fe; font-size: 0.8rem; font-weight: 900; padding: 3px 6px; border-radius: 3px; border: 1px solid #1e90ff; transform: rotate(4deg); box-shadow: 2px 2px 0px #1e90ff; z-index: 2; }
+        .ep:hover .score { transform: rotate(-2deg) scale(1.1); background: #1e90ff; color: #fff; transition: all 0.2s; }
+        .title { font-weight: 900; color: #00509e; font-size: 1rem; margin-bottom: 8px; border-bottom: 2px solid #87ceeb; padding-bottom: 3px; padding-right: 45px; }
+        p { margin: 0; font-size: 0.95rem; color: #111; text-align: justify; }
+        #config-gear { display: none; position: fixed; top: 15px; right: 20px; font-size: 32px; cursor: pointer; z-index: 9999; transition: transform 0.3s; text-shadow: 2px 2px 0px #1e90ff; user-select: none; }
+        #config-gear:hover { transform: rotate(90deg) scale(1.1); }
+        .ui-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: 10000; display: none; backdrop-filter: blur(3px); }
+        #config-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f0f8ff; border: 4px solid #1e90ff; padding: 25px; z-index: 10001; width: 90%; max-width: 350px; box-shadow: 10px 10px 0px #222; display: none; box-sizing: border-box; }
+        #config-modal h2 { margin-top: 0; color: #1e90ff; border-bottom: 2px dashed #222; padding-bottom: 10px; font-size: 1.4rem; text-align: center; }
+        .cfg-group { margin-bottom: 12px; text-align: left; }
+        .cfg-group label { display: block; font-weight: bold; font-size: 0.9rem; color: #222; margin-bottom: 4px; }
+        .cfg-group input { width: 100%; box-sizing: border-box; padding: 8px; border: 2px solid #444; background: #fff; font-family: monospace; font-size: 14px; }
+        .cfg-group input:focus { outline: none; border-color: #1e90ff; background: #e1f5fe; }
+        .cfg-group input[readonly] { background: #e9ecef !important; color: #6c757d; border-color: #999; cursor: not-allowed; }
+        .cfg-group input[readonly]:focus { outline: none; border-color: #999; background: #e9ecef !important; }
+        #cfg-save-btn { margin-top: 15px; width: 100%; padding: 12px; background: #222; color: #fff; border: none; font-weight: 900; font-size: 1.1rem; cursor: pointer; border: 2px solid #1e90ff; box-shadow: 4px 4px 0px #1e90ff; transition: all 0.1s; }
+        #cfg-save-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #1e90ff; }
+        #custom-dialog-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f0f8ff; border: 4px solid #1e90ff; padding: 22px; z-index: 10005; width: 92%; max-width: 550px; box-shadow: 10px 10px 0px #222; display: none; box-sizing: border-box; flex-direction: column; max-height: 88vh; }
+        #custom-dialog-title { margin-top: 0; color: #00509e; border-bottom: 2px dashed #1e90ff; padding-bottom: 8px; font-size: 1.3rem; text-align: center; }
+        #custom-dialog-body { background: #fff; border: 2px dashed #4682b4; padding: 15px; margin: 12px 0 18px 0; border-radius: 4px; font-size: 0.92rem; line-height: 1.65; color: #111; max-height: 52vh; overflow-y: auto; white-space: pre-wrap; user-select: text !important; -webkit-user-select: text !important; font-family: Consolas, Monaco, "Microsoft YaHei", monospace; }
+        .dialog-btn-row { display: flex; gap: 10px; justify-content: flex-end; }
+        .dialog-btn { flex: 1; padding: 10px; font-weight: 900; font-size: 0.95rem; cursor: pointer; border: 2px solid #222; box-shadow: 3px 3px 0px #222; transition: all 0.1s; }
+        .dialog-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px #222; }
+        .btn-copy { background: #fff3cd; color: #856404; border-color: #ffeeba; box-shadow: 3px 3px 0px #ffeeba; }
+        .btn-action { background: #222; color: #fff; border-color: #1e90ff; box-shadow: 3px 3px 0px #1e90ff; }
+    </style>
+</head>
+<body>
+
+    <div id="config-gear" title="系统配置" style="display: none;">⚙️</div>
+    <div id="config-overlay" class="ui-overlay"></div>
+    <div id="dialog-overlay" class="ui-overlay" style="z-index: 10004;"></div>
+    <div id="config-modal">
+        <h2>🛠️ 核心引擎配置</h2>
+        <div class="cfg-group"><label>GitHub 拥有者 (Owner):</label><input type="text" id="cfg-owner" placeholder="例如: yourName"></div>
+        <div class="cfg-group"><label>GitHub 仓库名 (Repo):</label><input type="text" id="cfg-repo" placeholder="例如: yourRepo"></div>
+        <div class="cfg-group"><label>GitHub Token (PAT):</label><input type="password" id="cfg-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"></div>
+        <div class="cfg-group"><label>主目录绑定路径 (Path):</label><input type="text" id="cfg-path" placeholder="例如: book/index.html" readonly></div>
+        <button id="cfg-save-btn">💾 保存并应用</button>
+    </div>
+
+    <div id="custom-dialog-modal">
+        <h2 id="custom-dialog-title">📋 诊断报告</h2>
+        <div id="custom-dialog-body"></div>
+        <div class="dialog-btn-row">
+            <button id="dialog-copy-btn" class="dialog-btn btn-copy">📋 复制报告信息</button>
+            <button id="dialog-confirm-btn" class="dialog-btn btn-action">确定</button>
+        </div>
+    </div>
+
+    <h1 class="title-edit">寿司少女春宫</h1>
+    <p class="subtitle">—— 未定义 ——</p>
+
+    <!-- 第1季 -->
+    <div class="season-divider">第一季 (1-50章)</div>
+    <div class="container" style="display: none;">
+        <div class="ep"><div class="score">9.9</div><div class="title">第1章：完结感言</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第2章：开端</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第3章：家教姐姐与屁股</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第4章：继母凉子</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.2</div><div class="title">第5章：启程</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第6章：庆祝派对</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第7章：肌肤之亲</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.7</div><div class="title">第8章：浴室</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.6</div><div class="title">第9章：打飞机</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第10章：挑衅</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第11章：没有性爱</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.5</div><div class="title">第12章：吐口水</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.2</div><div class="title">第13章：用双手</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.1</div><div class="title">第14章：和叶的感受</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第15章：突然加速</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第16章：不同的感觉</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.4</div><div class="title">第17章：口交</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.1</div><div class="title">第18章：混乱</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.9</div><div class="title">第19章：姐姐的房间</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第20章：书</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.4</div><div class="title">第21章：咱们做吧，姐姐</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第22章：后庭与凡士林</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第23章：粉红后庭</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第24章：乳交</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.2</div><div class="title">第25章：偷听的女人</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第26章：动心</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.1</div><div class="title">第27章：在钢琴练习室里</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第28章：我什么都答应你</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.8</div><div class="title">第29章：我无论如何都讨厌安全套</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.9</div><div class="title">第30章：无套性爱</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第31章：妹妹登场</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.3</div><div class="title">第32章：让出房间</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.3</div><div class="title">第33章：清洁口交</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">7.8</div><div class="title">第34章：技巧传授</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.6</div><div class="title">第35章：粉红淑女</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.6</div><div class="title">第36章：阴谋</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.6</div><div class="title">第37章：粗鲁的臭丫头</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第38章：果然，上班前就得是后位……</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">9.1</div><div class="title">第39章：各自的心思</div><p>[内容摘要占位符]</p></div>
+        <div class="ep"><div class="score">8.6</div><div class="title">第40章：翘臀纱奈</div><p>[内容摘要占位符]</p></div>
+    </div>
+
+    <!-- 极简增删与同步控件 (编辑模式下显示) -->
+    <div id="simple-edit-controls" style="display: none; text-align: center; margin: 40px auto 120px auto;">
+        <button id="simple-add-btn" style="background: #228b22; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="新增一季">＋</button>
+        <button id="sync-titles-btn" style="background: #1e90ff; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="自动抓取文件标题">🔄</button>
+        <button id="simple-del-btn" style="background: #8b0000; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="删除末尾季">🗑️</button>
+    </div>
+
+    <!-- 悬浮的同步提交按钮 -->
+    <div id="github-save-btn" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 300px; background: #222; color: #fff; padding: 15px; border-radius: 12px; font-weight: 900; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 0px #1e90ff; transition: all 0.1s; text-align: center; border: 2px solid #1e90ff; z-index: 9998;">
+        🚀 同步提交到 GitHub
+    </div>
+
+    <!-- 全局交互与编辑引擎 -->
+    <script id="core-engine" data-file-path="Books/SushiGirlHarem/寿司少女春宫_1786100373283.html">
+
+        const controls = document.getElementById('simple-edit-controls');
+        const saveBtn = document.getElementById('github-save-btn');
+        const engineScript = document.getElementById('core-engine');
+
+        // ==========================================
+        // 0. 通用高颜值自定义弹窗调度器
+        // ==========================================
+        const dialogModal = document.getElementById('custom-dialog-modal');
+        const dialogOverlay = document.getElementById('dialog-overlay');
+        const dialogTitle = document.getElementById('custom-dialog-title');
+        const dialogBody = document.getElementById('custom-dialog-body');
+        const dialogCopyBtn = document.getElementById('dialog-copy-btn');
+        const dialogConfirmBtn = document.getElementById('dialog-confirm-btn');
+
+        let currentDialogCallback = null;
+
+        function showAppDialog(options) {
+            const { title = '提示', text = '', confirmText = '确定', showCopy = true, onConfirm = null } = options;
+            dialogTitle.innerText = title;
+            dialogBody.innerText = text;
+            dialogConfirmBtn.innerText = confirmText;
+            dialogCopyBtn.style.display = showCopy ? 'inline-block' : 'none';
+            dialogCopyBtn.innerText = '📋 复制报告信息';
+            dialogCopyBtn.style.color = '';
+
+            currentDialogCallback = onConfirm;
+
+            dialogModal.style.display = 'flex';
+            dialogOverlay.style.display = 'block';
+        }
+
+        dialogConfirmBtn.addEventListener('click', () => {
+            dialogModal.style.display = 'none';
+            dialogOverlay.style.display = 'none';
+            if (typeof currentDialogCallback === 'function') {
+                const cb = currentDialogCallback;
+                currentDialogCallback = null;
+                cb();
+            }
+        });
+
+        dialogOverlay.addEventListener('click', () => {
+            dialogModal.style.display = 'none';
+            dialogOverlay.style.display = 'none';
+            currentDialogCallback = null;
+        });
+
+        dialogCopyBtn.addEventListener('click', async () => {
+            const textToCopy = dialogBody.innerText;
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(textToCopy);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = textToCopy;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+                dialogCopyBtn.innerText = '✅ 已成功复制到剪贴板！';
+                dialogCopyBtn.style.color = '#28a745';
+                setTimeout(() => {
+                    dialogCopyBtn.innerText = '📋 复制报告信息';
+                    dialogCopyBtn.style.color = '';
+                }, 2000);
+            } catch (e) {
+                dialogCopyBtn.innerText = '❌ 复制失败，请直接划选文本';
+            }
+        });
+
+        // ==========================================
+        // 1. 深度汉字与数字互转解析器（支持“两”、“佰”、“仟”与数千章）
+        // ==========================================
+        function numberToChinese(num) {
+            const chnNumChar = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+            if (num <= 10) return num === 10 ? "十" : chnNumChar[num];
+            if (num < 20) return "十" + (num % 10 === 0 ? "" : chnNumChar[num % 10]);
+            if (num < 100) return chnNumChar[Math.floor(num / 10)] + "十" + (num % 10 === 0 ? "" : chnNumChar[num % 10]);
+            return num.toString(); 
+        }
+
+        function chnToNumber(str) {
+            if (!str) return 0;
+            str = String(str).trim();
+            if (/^\d+$/.test(str)) return parseInt(str, 10);
+
+            const chnMap = {
+                '零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4,
+                '五': 5, '六': 6, '七': 7, '八': 8, '九': 9,
+                '壹': 1, '贰': 2, '叁': 3, '肆': 4, '伍': 5, '陆': 6, '柒': 7, '捌': 8, '玖': 9
+            };
+
+            let total = 0, temp = 0, val = 0;
+            const s = str.replace(/零/g, '');
+
+            for (let i = 0; i < s.length; i++) {
+                const char = s[i];
+                if (chnMap[char] !== undefined) {
+                    val = chnMap[char];
+                } else if (char === '十' || char === '拾') {
+                    if (val === 0) val = 1;
+                    temp += val * 10;
+                    val = 0;
+                } else if (char === '百' || char === '佰') {
+                    if (val === 0) val = 1;
+                    temp += val * 100;
+                    val = 0;
+                } else if (char === '千' || char === '仟') {
+                    if (val === 0) val = 1;
+                    temp += val * 1000;
+                    val = 0;
+                } else if (char === '万') {
+                    temp += val;
+                    total += (temp === 0 ? 1 : temp) * 10000;
+                    temp = 0;
+                    val = 0;
+                } else if (/\d/.test(char)) {
+                    let numStr = '';
+                    while (i < s.length && /\d/.test(s[i])) {
+                        numStr += s[i];
+                        i++;
+                    }
+                    i--;
+                    val = parseInt(numStr, 10);
+                }
+            }
+            temp += val;
+            total += temp;
+            return total || parseInt(str.replace(/[^\d]/g, ''), 10) || 0;
+        }
+
+        function getCardChapterNumber(card) {
+            const titleEl = card.querySelector('.title');
+            if (!titleEl) return 0;
+            const match = titleEl.innerText.match(/第(.+?)章/);
+            if (!match) return 0;
+            return chnToNumber(match[1]);
+        }
+
+        function sortAllContainers() {
+            document.querySelectorAll('.container').forEach(container => {
+                const eps = Array.from(container.querySelectorAll('.ep'));
+                eps.sort((a, b) => getCardChapterNumber(a) - getCardChapterNumber(b));
+                eps.forEach(ep => container.appendChild(ep));
+            });
+        }
+
+        // ==========================================
+        // 2. 配置中心逻辑
+        // ==========================================
+        const gearBtn = document.getElementById('config-gear');
+        const cfgModal = document.getElementById('config-modal');
+        const cfgOverlay = document.getElementById('config-overlay');
+        const cfgSaveBtn = document.getElementById('cfg-save-btn');
+
+        const getSysConfig = () => {
+            return {
+                owner: localStorage.getItem('github_owner') || '',
+                repo: localStorage.getItem('github_repo') || '',
+                token: localStorage.getItem('github_pat') || '',
+                path: engineScript.getAttribute('data-file-path') || ''
+            };
+        };
+
+        gearBtn.addEventListener('click', () => {
+            const cfg = getSysConfig();
+            document.getElementById('cfg-owner').value = cfg.owner;
+            document.getElementById('cfg-repo').value = cfg.repo;
+            document.getElementById('cfg-token').value = cfg.token;
+            document.getElementById('cfg-path').value = cfg.path;
+            cfgModal.style.display = 'block';
+            cfgOverlay.style.display = 'block';
+        });
+
+        cfgOverlay.addEventListener('click', () => {
+            cfgModal.style.display = 'none';
+            cfgOverlay.style.display = 'none';
+        });
+
+        cfgSaveBtn.addEventListener('click', () => {
+            localStorage.setItem('github_owner', document.getElementById('cfg-owner').value.trim());
+            localStorage.setItem('github_repo', document.getElementById('cfg-repo').value.trim());
+            localStorage.setItem('github_pat', document.getElementById('cfg-token').value.trim());
+
+            const newPath = document.getElementById('cfg-path').value.trim();
+            engineScript.setAttribute('data-file-path', newPath);
+
+            cfgModal.style.display = 'none';
+            cfgOverlay.style.display = 'none';
+
+            gearBtn.style.color = '#34C759';
+            setTimeout(() => gearBtn.style.color = '', 1000);
+        });
+
+        function ensureConfig() {
+            const cfg = getSysConfig();
+            if (!cfg.token || !cfg.path || !cfg.owner || !cfg.repo) {
+                showAppDialog({
+                    title: '⚠️ 配置未完成',
+                    text: '缺少必要配置参数！\n请在右上角 ⚙️ 配置中心填写 Token、仓库名等信息。',
+                    confirmText: '去配置',
+                    showCopy: false,
+                    onConfirm: () => gearBtn.click()
+                });
+                return false;
+            }
+            return cfg;
+        }
+
+        let directoryCache = null;
+        let isFetchingDir = false;
+
+        async function getDirectoryFiles() {
+            if (directoryCache) return directoryCache;
+            if (isFetchingDir) {
+                while(isFetchingDir) { await new Promise(r => setTimeout(r, 100)); }
+                return directoryCache;
+            }
+            isFetchingDir = true;
+            try {
+                const cfg = getSysConfig();
+                if (!cfg.path || !cfg.token) throw new Error("缺少配置");
+
+                const dirPath = cfg.path.substring(0, cfg.path.lastIndexOf('/'));
+                const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${dirPath}`;
+
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${cfg.token}` } });
+                if (res.ok) {
+                    const files = await res.json();
+                    directoryCache = files.map(f => f.name);
+                } else {
+                    directoryCache = []; 
+                }
+            } catch (e) {
+                console.error(e);
+                directoryCache = [];
+            }
+            isFetchingDir = false;
+            return directoryCache;
+        }
+
+        // ==========================================
+        // 3. 界面交互与模式切换 (折叠展开逻辑)
+        // ==========================================
+        function bindCollapseEvent(dividers) {
+            dividers.forEach(button => {
+                if (button.dataset.collapseBound) return;
+                button.dataset.collapseBound = "true";
+                button.addEventListener('click', () => {
+                    const content = button.nextElementSibling;
+                    if (content && content.classList.contains('container')) {
+                        if (content.style.display === "none" || content.style.display === "") {
+                            content.style.display = "grid";
+                        } else {
+                            content.style.display = "none";
+                        }
+                    }
+                });
+            });
+        }
+        bindCollapseEvent(document.querySelectorAll('.season-divider'));
+
+        const getEditableElements = () => document.querySelectorAll('.title, .ep p, .score, .title-edit, .subtitle, .season-divider');
+
+        function bindEditEffects(elements) {
+            elements.forEach(el => {
+                if(el.dataset.bound) return; el.dataset.bound = "true";
+                el.addEventListener('focus', () => {
+                    el.style.backgroundColor = '#fffacd';
+                    el.style.outline = '2px dashed #1e90ff';
+                    if (el.classList.contains('score') || el.classList.contains('season-divider')) el.style.color = '#1e90ff';
+                });
+                el.addEventListener('blur', () => {
+                    el.style.backgroundColor = '';
+                    el.style.outline = '';
+                    if (el.classList.contains('score')) el.style.color = '';
+                    if (el.classList.contains('season-divider')) el.style.color = '#fff';
+                });
+            });
+        }
+        bindEditEffects(getEditableElements());
+
+        function toggleEditMode() {
+            const isEditing = controls.style.display === 'block';
+            if (!isEditing) {
+                controls.style.display = 'block';
+                saveBtn.style.display = 'block';
+                gearBtn.style.display = 'block';
+                document.body.style.border = '6px solid #228b22'; 
+                getEditableElements().forEach(el => el.setAttribute('contenteditable', 'true'));
+            } else {
+                controls.style.display = 'none';
+                saveBtn.style.display = 'none';
+                gearBtn.style.display = 'none';
+                document.body.style.border = '6px solid #4682b4';
+                getEditableElements().forEach(el => { el.blur(); el.removeAttribute('contenteditable'); });
+            }
+        }
+
+        document.addEventListener('touchstart', (e) => { 
+            if (e.touches.length === 2 && !cfgOverlay.style.display.includes('block') && !dialogOverlay.style.display.includes('block')) { e.preventDefault(); toggleEditMode(); } 
+        }, { passive: false });
+        document.addEventListener('dblclick', (e) => { 
+            if (e.altKey && !cfgOverlay.style.display.includes('block') && !dialogOverlay.style.display.includes('block')) { window.getSelection().removeAllRanges(); toggleEditMode(); } 
+        });
+
+        // ==========================================
+        // 4. 弹性点击跳转引擎（兼容任意命名和前缀下划线）
+        // ==========================================
+        document.addEventListener('click', async (e) => {
+            const isEditing = controls.style.display === 'block';
+            if (isEditing || e.altKey) return; 
+
+            const epCard = e.target.closest('.ep');
+            if (epCard) {
+                const cfg = ensureConfig();
+                if (!cfg) return;
+
+                const titleEl = epCard.querySelector('.title');
+                if (titleEl) {
+                    const titleText = titleEl.innerText.trim();
+                    if (titleText.includes('占位符')) {
+                        return showAppDialog({ title: '🚧 尚未更新', text: '该章节暂未更新或未抓取到内容！', showCopy: false });
+                    }
+
+                    const match = titleText.match(/第(.+?)章/);
+                    if (!match) {
+                        return showAppDialog({ title: '⚠️ 解析失败', text: `无法从卡片标题 "${titleText}" 中解析出章节序号！` });
+                    }
+
+                    const chapterNum = chnToNumber(match[1]);
+                    if (!chapterNum) {
+                        return showAppDialog({ title: '⚠️ 序号无效', text: `解析出的章节序号无效：${match[1]}` });
+                    }
+
+                    const originalBg = epCard.style.backgroundColor;
+                    epCard.style.backgroundColor = '#e1f5fe';
+                    epCard.style.cursor = 'wait';
+
+                    const files = await getDirectoryFiles();
+
+                    epCard.style.backgroundColor = originalBg;
+                    epCard.style.cursor = 'pointer';
+
+                    if (files.length === 0) {
+                        return showAppDialog({ title: '❌ 错误', text: '未能获取到目录文件列表，请检查网络或配置。' });
+                    }
+
+                    // 弹性匹配：兼容 Chapter_1_、Chapter_001__、Chapter_01- 等格式
+                    const targetFile = files.find(f => {
+                        const m = f.match(/^Chapter_0*(\d+)[^0-9]/i) || f.match(/^Chapter_0*(\d+)\.html$/i);
+                        return m && parseInt(m[1], 10) === chapterNum;
+                    });
+
+                    if (targetFile) {
+                        window.location.href = targetFile;
+                    } else { 
+                        showAppDialog({ 
+                            title: '🔍 找不到章节文件', 
+                            text: `未在仓库目录中找到第 ${chapterNum} 章对应的文件！\n\n匹配规则：以 Chapter_ 开头且章节为 ${chapterNum}\n（请检查仓库中该章节文件名是否拼写有误）` 
+                        });
+                    }
+                }
+            }
+        });
+
+        function generateRandomScore() { return (Math.random() * (9.9 - 7.5) + 7.5).toFixed(1); }
+
+        // ==========================================
+        // 5. ✨增量智能扫描：定点抓取、跨季迁移与网络隔离✨
+        // ==========================================
+        document.getElementById('sync-titles-btn').addEventListener('click', async () => {
+            const cfg = ensureConfig();
+            if (!cfg) return;
+
+            const dirPath = cfg.path.substring(0, cfg.path.lastIndexOf('/'));
+            const btn = document.getElementById('sync-titles-btn');
+            const originalText = btn.innerText;
+            btn.innerText = '⏳ 拼命扫描中...';
+            btn.style.pointerEvents = 'none';
+
+            try {
+                directoryCache = null; // 强制刷新缓存
+                const allDirFiles = await getDirectoryFiles();
+                
+                // 筛选出符合规则的章节文件
+                const chapterFiles = allDirFiles.filter(f => /^Chapter_\d+/i.test(f) && f.endsWith('.html'));
+                if (chapterFiles.length === 0) throw new Error("目录下没有找到 Chapter_ 开头的 .html 文件，请确认文件路径是否正确。");
+
+                // 按章节数字初始排序
+                chapterFiles.sort((a, b) => {
+                    const numA = parseInt(a.match(/^Chapter_0*(\d+)/i)[1], 10);
+                    const numB = parseInt(b.match(/^Chapter_0*(\d+)/i)[1], 10);
+                    return numA - numB;
+                });
+
+                // ==============================
+                // 新增：自动计算增量抓取起点
+                // ==============================
+                let maxDomChapter = 0;
+                document.querySelectorAll('.ep').forEach(card => {
+                    const num = getCardChapterNumber(card);
+                    if (num > maxDomChapter) maxDomChapter = num;
+                });
+                
+                // 需求：从已有最大章节的前 30 章开始扫描
+                const scanStartNum = Math.max(1, maxDomChapter - 30);
+
+                // ==============================
+                // 预先建立全局文件映射表 (用于完整诊断报告)
+                // ==============================
+                const numFileMap = new Map();
+                chapterFiles.forEach(filename => {
+                    const match = filename.match(/^Chapter_0*(\d+)/i);
+                    if (!match) return;
+                    const num = parseInt(match[1], 10);
+                    if (!numFileMap.has(num)) numFileMap.set(num, []);
+                    numFileMap.get(num).push(filename);
+                });
+
+                // ==============================
+                // 仅筛选需要发起网络请求的文件 (增量扫描)
+                // ==============================
+                const filesToFetch = chapterFiles.filter(f => {
+                    const match = f.match(/^Chapter_0*(\d+)/i);
+                    if (!match) return false;
+                    const num = parseInt(match[1], 10);
+                    return num >= scanStartNum;
+                });
+
+                const results = [];
+                const networkFailedFiles = [];
+
+                // 批量抓取（仅限 filesToFetch 中的增量文件）
+                for (let i = 0; i < filesToFetch.length; i += 10) {
+                    btn.innerText = `⏳ 抓取中 (${i}/${filesToFetch.length})...`;
+                    const batch = filesToFetch.slice(i, i + 10);
+                    const batchPromises = batch.map(async (filename) => {
+                        try {
+                            const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${dirPath}/${filename}`;
+                            const res = await fetch(url, {
+                                headers: { 'Authorization': `Bearer ${cfg.token}`, 'Accept': 'application/vnd.github.v3.raw' }
+                            });
+                            if (!res.ok) {
+                                networkFailedFiles.push({ filename, status: res.status });
+                                return null;
+                            }
+                            return { filename, html: await res.text() };
+                        } catch (err) {
+                            networkFailedFiles.push({ filename, status: err.message });
+                            return null;
+                        }
+                    });
+                    const batchRes = await Promise.all(batchPromises);
+                    results.push(...batchRes.filter(r => r));
+                }
+
+                // 确保结果严格按章节序号升序排列
+                results.sort((a, b) => {
+                    const numA = parseInt(a.filename.match(/^Chapter_0*(\d+)/i)[1], 10);
+                    const numB = parseInt(b.filename.match(/^Chapter_0*(\d+)/i)[1], 10);
+                    return numA - numB;
+                });
+
+                let updatedCount = 0;
+                let addedCount = 0;
+                let migratedCount = 0;
+
+                // 仅基于已获取的 HTML 数据进行页面内容的更新
+                results.forEach(item => {
+                    const match = item.filename.match(/^Chapter_0*(\d+)/i);
+                    if (!match) return;
+                    const chapterNum = parseInt(match[1], 10);
+
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(item.html, 'text/html');
+
+                    const h1Text = doc.querySelector('h1')?.textContent || '';
+                    const enTitle = h1Text.includes(':') ? h1Text.substring(h1Text.indexOf(':') + 1).trim() : h1Text;
+                    const zhText = doc.querySelector('.zh-para')?.textContent || '';
+                    const zhTitle = zhText.includes('：') ? zhText.substring(zhText.indexOf('：') + 1).trim() : zhText;
+
+                    if (!enTitle && !zhTitle) return;
+
+                    const newTitleStr = `第${chapterNum}章：${zhTitle || enTitle}`;
+                    const targetSeasonIndex = Math.floor((chapterNum - 1) / 50);
+
+                    // 确保季容器数量充足
+                    let containers = document.querySelectorAll('.container');
+                    while (containers.length <= targetSeasonIndex) {
+                        const sNum = containers.length + 1;
+                        const sStart = (sNum - 1) * 50 + 1;
+                        const sEnd = sNum * 50;
+                        const sName = `第${numberToChinese(sNum)}季`;
+                        const newSeasonHtml = `<div class="season-divider">${sName} (${sStart}-${sEnd}章)</div><div class="container" style="display: none;"></div>`;
+                        controls.insertAdjacentHTML('beforebegin', newSeasonHtml);
+
+                        containers = document.querySelectorAll('.container');
+                        const dividers = document.querySelectorAll('.season-divider');
+                        bindCollapseEvent([dividers[dividers.length - 1]]);
+                        bindEditEffects([dividers[dividers.length - 1]]);
+                    }
+
+                    const targetContainer = containers[targetSeasonIndex];
+
+                    // 全局寻找是否已存在此章节的卡片
+                    let existingCard = null;
+                    document.querySelectorAll('.ep').forEach(card => {
+                        const titleEl = card.querySelector('.title');
+                        if (!titleEl) return;
+                        const titleMatch = titleEl.innerText.match(/第(.+?)章/);
+                        if (titleMatch && chnToNumber(titleMatch[1]) === chapterNum) {
+                            existingCard = card;
+                        }
+                    });
+
+                    if (existingCard) {
+                        const titleEl = existingCard.querySelector('.title');
+                        if (titleEl.innerText !== newTitleStr) {
+                            titleEl.innerText = newTitleStr;
+                            updatedCount++;
+                        }
+                        // 跨季迁移保护：如果卡片在错误的季容器里，移到正确的容器
+                        if (existingCard.parentElement !== targetContainer) {
+                            targetContainer.appendChild(existingCard);
+                            migratedCount++;
+                        }
+                    } else {
+                        const newEpHtml = `<div class="ep"><div class="score">${generateRandomScore()}</div><div class="title">${newTitleStr}</div><p>[内容摘要占位符]</p></div>`;
+                        targetContainer.insertAdjacentHTML('beforeend', newEpHtml);
+
+                        const newlyAdded = targetContainer.lastElementChild;
+                        bindEditEffects(newlyAdded.querySelectorAll('.title, p, .score'));
+                        if (controls.style.display === 'block') {
+                            newlyAdded.querySelectorAll('.title, p, .score').forEach(el => el.setAttribute('contenteditable', 'true'));
+                        }
+                        addedCount++;
+                    }
+                });
+
+                // 重排所有容器内的卡片
+                sortAllContainers();
+
+                // 🔍 幽灵卡片与占位符检测（存在于 DOM 但无 GitHub 对应文件）
+                const ghostCards = [];
+                document.querySelectorAll('.ep').forEach(card => {
+                    const num = getCardChapterNumber(card);
+                    const titleText = card.querySelector('.title')?.innerText || '';
+                    if (titleText.includes('占位符') || !numFileMap.has(num)) {
+                        ghostCards.push(`第${num || '?'}章 (${titleText})`);
+                    }
+                });
+
+                // 🔍 重复章节检测
+                const duplicateReports = [];
+                numFileMap.forEach((fileList, num) => {
+                    if (fileList.length > 1) {
+                        duplicateReports.push(`第${num}章 (${fileList.length}份文件):\n     ${fileList.join('\n     ')}`);
+                    }
+                });
+
+                // 🔍 缺号/跳号检测
+                let maxChapter = 0;
+                numFileMap.forEach((_, num) => { if (num > maxChapter) maxChapter = num; });
+
+                const missingChapters = [];
+                for (let i = 1; i <= maxChapter; i++) {
+                    if (!numFileMap.has(i)) {
+                        missingChapters.push(i);
+                    }
+                }
+
+                // 构造多维诊断报告
+                let alertDetails = [];
+
+                if (networkFailedFiles.length > 0) {
+                    const failList = networkFailedFiles.map(f => `• ${f.filename} (状态: ${f.status})`).join('\n   ');
+                    alertDetails.push(`📡【网络读取失败 (${networkFailedFiles.length}个)】\n   ${failList}\n   (注意：这些文件未成功读取，请重试或检查网络)`);
+                }
+
+                if (duplicateReports.length > 0) {
+                    const dupLimit = 10;
+                    const dupStr = duplicateReports.slice(0, dupLimit).join('\n  • ');
+                    const dupMore = duplicateReports.length > dupLimit ? `\n  ...等共 ${duplicateReports.length} 处重复` : '';
+                    alertDetails.push(`🚨【发现重复章节 (同序号存在多个文件)】\n  • ${dupStr}${dupMore}`);
+                }
+
+                if (missingChapters.length > 0) {
+                    const missLimit = 25;
+                    const missStr = missingChapters.slice(0, missLimit).map(n => `第${n}章`).join('、');
+                    const missMore = missingChapters.length > missLimit ? ` 等共 ${missingChapters.length} 章` : '';
+                    alertDetails.push(`⚠️【发现跳号/缺号】\n  似乎跳过了：${missStr}${missMore}`);
+                }
+
+                if (ghostCards.length > 0) {
+                    const ghostLimit = 10;
+                    const ghostStr = ghostCards.slice(0, ghostLimit).join('、');
+                    const ghostMore = ghostCards.length > ghostLimit ? ` 等共 ${ghostCards.length} 张` : '';
+                    alertDetails.push(`👻【未匹配/占位多余卡片 (${ghostCards.length}张)】\n  ${ghostStr}${ghostMore}\n  (提示：这些卡片在仓库中无对应文件)`);
+                }
+
+                if (migratedCount > 0) {
+                    alertDetails.push(`📦【跨季自动纠偏】已自动将 ${migratedCount} 张位置错乱的卡片迁移至正确的分季容器。`);
+                }
+
+                if (alertDetails.length === 0 && maxChapter > 0) {
+                    alertDetails.push(`✨【序号完美】第1章 至 第${maxChapter}章 全部连续无重无漏，与仓库文件 100% 吻合！`);
+                }
+
+                const domTotalCards = document.querySelectorAll('.ep').length;
+                const reportMsg = `【扫描统计汇总】\n• 页面当前最大章节: 第 ${maxDomChapter} 章\n• 增量智能抓取起点: 第 ${scanStartNum} 章\n• 仓库章节文件总数: ${chapterFiles.length} 个\n• 实际发起抓取解析: ${results.length} 篇\n• 页面当前总卡片数: ${domTotalCards} 张\n• 更新已有卡片标题: ${updatedCount} 处\n• 自动补齐缺失卡片: ${addedCount} 处\n\n` + alertDetails.join('\n\n') + '\n\n-------------------------\n点击下方按钮，将自动同步提交到 GitHub！';
+
+                showAppDialog({
+                    title: '🚀 增量扫描与诊断报告',
+                    text: reportMsg,
+                    confirmText: '确定并同步 GitHub',
+                    showCopy: true,
+                    onConfirm: () => {
+                        if (updatedCount > 0 || addedCount > 0 || migratedCount > 0) saveBtn.click();
+                    }
+                });
+
+            } catch (e) {
+                console.error(e);
+                showAppDialog({ title: '❌ 抓取失败', text: '抓取过程中出错:\n' + e.message, showCopy: true });
+            } finally {
+                btn.innerText = originalText;
+                btn.style.pointerEvents = 'auto';
+            }
+        });
+
+        // 极简添加逻辑遵循 50章一季 (默认折叠)
+        document.getElementById('simple-add-btn').addEventListener('click', () => {
+            let maxChapter = 0;
+            document.querySelectorAll('.title').forEach(el => {
+                const match = el.innerText.match(/第(\d+)章/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxChapter) maxChapter = num;
+                }
+            });
+
+            const startChapter = maxChapter + 1;
+            const targetSeason = Math.ceil(startChapter / 50) || 1; 
+            const endChapter = targetSeason * 50;
+
+            const sName = prompt('请输入添加的季名：', `第${numberToChinese(targetSeason)}季`);
+            if (!sName) return; 
+
+            let epTemplate = '';
+            for (let i = startChapter; i <= endChapter; i++) {
+                epTemplate += `<div class="ep"><div class="score">${generateRandomScore()}</div><div class="title">第${i}章：[标题占位符]</div><p>[内容摘要占位符]</p></div>`;
+            }
+            const newSeasonHtml = `<div class="season-divider">${sName} (${startChapter}-${endChapter}章)</div><div class="container" style="display: none;">${epTemplate}</div>`;
+
+            controls.insertAdjacentHTML('beforebegin', newSeasonHtml);
+
+            const newDivider = controls.previousElementSibling.previousElementSibling;
+            bindCollapseEvent([newDivider]);
+            bindEditEffects([newDivider]);
+
+            const newEdits = newDivider.nextElementSibling.querySelectorAll('.title, p, .score');
+            bindEditEffects(newEdits);
+            newEdits.forEach(el => el.setAttribute('contenteditable', 'true'));
+
+            sortAllContainers();
+            showAppDialog({
+                title: '✨ 季生成完毕',
+                text: `【${sName}】的大标题和 50 个坑位已生成完毕！\n接下来直接点击中间的 🔄 同步按钮，引擎会自动填坑。`,
+                confirmText: '好的',
+                showCopy: false
+            });
+        });
+
+        document.getElementById('simple-del-btn').addEventListener('click', () => {
+            const dividers = document.querySelectorAll('.season-divider');
+            if (dividers.length === 0) return showAppDialog({ title: '提示', text: '已经删光了！', showCopy: false });
+            const lastDivider = dividers[dividers.length - 1];
+            const lastContainer = lastDivider.nextElementSibling;
+            if (confirm(`⚠️ 确定要整个删除【${lastDivider.innerText}】以及里面所有的卡片吗？`)) {
+                lastDivider.remove();
+                if (lastContainer && lastContainer.classList.contains('container')) lastContainer.remove();
+            }
+        });
+
+        // ==========================================
+        // 6. 白名单重建引擎与 GitHub 同步 (强制折叠 & 保序)
+        // ==========================================
+        function getPurifiedHTML() {
+            sortAllContainers();
+            const mainTitle = document.querySelector('.title-edit').innerText.trim() || '[书名占位符]';
+            const subTitle = document.querySelector('.subtitle').innerText.trim() || '—— [副标题/寄语占位符] ——';
+
+            const seasonsData = [];
+            document.querySelectorAll('.season-divider').forEach(divider => {
+                const container = divider.nextElementSibling;
+                const epsData = [];
+                if(container && container.classList.contains('container')) {
+                    container.querySelectorAll('.ep').forEach(ep => {
+                        const getSafeText = (selector) => {
+                            const el = ep.querySelector(selector);
+                            if (!el) return "";
+                            const clone = el.cloneNode(true);
+                            clone.querySelectorAll('.para-read-btn, .x-tts-header-btn, svg, img, button, a').forEach(n => n.remove());
+                            return clone.innerText.trim().replace(/\n/g, '<br>');
+                        };
+                        epsData.push({ score: getSafeText('.score'), title: getSafeText('.title'), content: getSafeText('p') });
+                    });
+                }
+                const divClone = divider.cloneNode(true);
+                divClone.querySelectorAll('*').forEach(n => n.remove());
+                seasonsData.push({ title: divClone.innerText.trim(), eps: epsData });
+            });
+
+            let htmlBlocks = [];
+            htmlBlocks.push('<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>目录 - [模板]</title>\n    <style>');
+            htmlBlocks.push('        body { font-family: "Microsoft YaHei", "Arial Black", sans-serif; line-height: 1.5; background: #f0f8ff; color: #222; max-width: 1100px; margin: 0 auto; padding: 20px; border: 6px solid #4682b4; }');
+            htmlBlocks.push('        h1 { text-align: center; background: #1e90ff; color: #fff; padding: 15px; letter-spacing: 2px; transform: rotate(-1deg); box-shadow: 5px 5px 0px #00509e; }');
+            htmlBlocks.push('        .subtitle { text-align: center; font-weight: bold; color: #00509e; transform: rotate(1deg); margin-bottom: 30px; }');
+            htmlBlocks.push('        .season-divider { background: #222; color: #fff; padding: 15px; font-size: 1.3rem; font-weight: 900; text-align: center; letter-spacing: 1px; margin: 40px 0 20px 0; border: 3px dashed #1e90ff; transform: rotate(-1deg); box-shadow: -4px 4px 0px #4682b4; cursor: pointer; transition: all 0.2s; user-select: none; }');
+            htmlBlocks.push('        .season-divider:hover { background: #444; color: #e1f5fe; }');
+            htmlBlocks.push('        .season-divider:nth-of-type(even) { transform: rotate(1deg); box-shadow: 4px 4px 0px #4682b4; }');
+            htmlBlocks.push('        .container { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; transition: all 0.3s ease; }');
+            htmlBlocks.push('        .ep { position: relative; background: #fff; padding: 15px; border: 2px dashed #4682b4; border-radius: 3px 15px 5px 12px / 12px 4px 10px 5px; box-shadow: 4px 4px 0px #87ceeb; transition: all 0.1s; cursor: pointer; }');
+            htmlBlocks.push('        .ep:hover { background: #e1f5fe; box-shadow: 6px 6px 0px #1e90ff; z-index: 10; transform: scale(1.02) !important; }');
+            htmlBlocks.push('        .ep:nth-child(even) { transform: rotate(1.5deg); }');
+            htmlBlocks.push('        .ep:nth-child(odd) { transform: rotate(-1.5deg); }');
+            htmlBlocks.push('        .ep:nth-child(3n) { transform: rotate(0.5deg); }');
+            htmlBlocks.push('        .score { position: absolute; top: 10px; right: 10px; background: #222; color: #e1f5fe; font-size: 0.8rem; font-weight: 900; padding: 3px 6px; border-radius: 3px; border: 1px solid #1e90ff; transform: rotate(4deg); box-shadow: 2px 2px 0px #1e90ff; z-index: 2; }');
+            htmlBlocks.push('        .ep:hover .score { transform: rotate(-2deg) scale(1.1); background: #1e90ff; color: #fff; transition: all 0.2s; }');
+            htmlBlocks.push('        .title { font-weight: 900; color: #00509e; font-size: 1rem; margin-bottom: 8px; border-bottom: 2px solid #87ceeb; padding-bottom: 3px; padding-right: 45px; }');
+            htmlBlocks.push('        p { margin: 0; font-size: 0.95rem; color: #111; text-align: justify; }');
+            htmlBlocks.push('        #config-gear { display: none; position: fixed; top: 15px; right: 20px; font-size: 32px; cursor: pointer; z-index: 9999; transition: transform 0.3s; text-shadow: 2px 2px 0px #1e90ff; user-select: none; }');
+            htmlBlocks.push('        #config-gear:hover { transform: rotate(90deg) scale(1.1); }');
+            htmlBlocks.push('        .ui-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: 10000; display: none; backdrop-filter: blur(3px); }');
+            htmlBlocks.push('        #config-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f0f8ff; border: 4px solid #1e90ff; padding: 25px; z-index: 10001; width: 90%; max-width: 350px; box-shadow: 10px 10px 0px #222; display: none; box-sizing: border-box; }');
+            htmlBlocks.push('        #config-modal h2 { margin-top: 0; color: #1e90ff; border-bottom: 2px dashed #222; padding-bottom: 10px; font-size: 1.4rem; text-align: center; }');
+            htmlBlocks.push('        .cfg-group { margin-bottom: 12px; text-align: left; }');
+            htmlBlocks.push('        .cfg-group label { display: block; font-weight: bold; font-size: 0.9rem; color: #222; margin-bottom: 4px; }');
+            htmlBlocks.push('        .cfg-group input { width: 100%; box-sizing: border-box; padding: 8px; border: 2px solid #444; background: #fff; font-family: monospace; font-size: 14px; }');
+            htmlBlocks.push('        .cfg-group input:focus { outline: none; border-color: #1e90ff; background: #e1f5fe; }');
+            htmlBlocks.push('        .cfg-group input[readonly] { background: #e9ecef !important; color: #6c757d; border-color: #999; cursor: not-allowed; }');
+            htmlBlocks.push('        .cfg-group input[readonly]:focus { outline: none; border-color: #999; background: #e9ecef !important; }');
+            htmlBlocks.push('        #cfg-save-btn { margin-top: 15px; width: 100%; padding: 12px; background: #222; color: #fff; border: none; font-weight: 900; font-size: 1.1rem; cursor: pointer; border: 2px solid #1e90ff; box-shadow: 4px 4px 0px #1e90ff; transition: all 0.1s; }');
+            htmlBlocks.push('        #cfg-save-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #1e90ff; }');
+            htmlBlocks.push('        #custom-dialog-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f0f8ff; border: 4px solid #1e90ff; padding: 22px; z-index: 10005; width: 92%; max-width: 550px; box-shadow: 10px 10px 0px #222; display: none; box-sizing: border-box; flex-direction: column; max-height: 88vh; }');
+            htmlBlocks.push('        #custom-dialog-title { margin-top: 0; color: #00509e; border-bottom: 2px dashed #1e90ff; padding-bottom: 8px; font-size: 1.3rem; text-align: center; }');
+            htmlBlocks.push('        #custom-dialog-body { background: #fff; border: 2px dashed #4682b4; padding: 15px; margin: 12px 0 18px 0; border-radius: 4px; font-size: 0.92rem; line-height: 1.65; color: #111; max-height: 52vh; overflow-y: auto; white-space: pre-wrap; user-select: text !important; -webkit-user-select: text !important; font-family: Consolas, Monaco, "Microsoft YaHei", monospace; }');
+            htmlBlocks.push('        .dialog-btn-row { display: flex; gap: 10px; justify-content: flex-end; }');
+            htmlBlocks.push('        .dialog-btn { flex: 1; padding: 10px; font-weight: 900; font-size: 0.95rem; cursor: pointer; border: 2px solid #222; box-shadow: 3px 3px 0px #222; transition: all 0.1s; }');
+            htmlBlocks.push('        .dialog-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px #222; }');
+            htmlBlocks.push('        .btn-copy { background: #fff3cd; color: #856404; border-color: #ffeeba; box-shadow: 3px 3px 0px #ffeeba; }');
+            htmlBlocks.push('        .btn-action { background: #222; color: #fff; border-color: #1e90ff; box-shadow: 3px 3px 0px #1e90ff; }');
+            htmlBlocks.push('    </style>\n</head>\n<body>\n');
+
+            htmlBlocks.push('    <div id="config-gear" title="系统配置" style="display: none;">⚙️</div>');
+            htmlBlocks.push('    <div id="config-overlay" class="ui-overlay"></div>');
+            htmlBlocks.push('    <div id="dialog-overlay" class="ui-overlay" style="z-index: 10004;"></div>');
+            htmlBlocks.push('    <div id="config-modal">');
+            htmlBlocks.push('        <h2>🛠️ 核心引擎配置</h2>');
+            htmlBlocks.push('        <div class="cfg-group"><label>GitHub 拥有者 (Owner):</label><input type="text" id="cfg-owner" placeholder="例如: yourName"></div>');
+            htmlBlocks.push('        <div class="cfg-group"><label>GitHub 仓库名 (Repo):</label><input type="text" id="cfg-repo" placeholder="例如: yourRepo"></div>');
+            htmlBlocks.push('        <div class="cfg-group"><label>GitHub Token (PAT):</label><input type="password" id="cfg-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"></div>');
+            htmlBlocks.push('        <div class="cfg-group"><label>主目录绑定路径 (Path):</label><input type="text" id="cfg-path" placeholder="例如: book/index.html" readonly></div>');
+            htmlBlocks.push('        <button id="cfg-save-btn">💾 保存并应用</button>');
+            htmlBlocks.push('    </div>\n');
+
+            htmlBlocks.push('    <div id="custom-dialog-modal">');
+            htmlBlocks.push('        <h2 id="custom-dialog-title">📋 诊断报告</h2>');
+            htmlBlocks.push('        <div id="custom-dialog-body"></div>');
+            htmlBlocks.push('        <div class="dialog-btn-row">');
+            htmlBlocks.push('            <button id="dialog-copy-btn" class="dialog-btn btn-copy">📋 复制报告信息</button>');
+            htmlBlocks.push('            <button id="dialog-confirm-btn" class="dialog-btn btn-action">确定</button>');
+            htmlBlocks.push('        </div>');
+            htmlBlocks.push('    </div>\n');
+
+            htmlBlocks.push(`    <h1 class="title-edit">${mainTitle}</h1>`);
+            htmlBlocks.push(`    <p class="subtitle">${subTitle}</p>\n`);
+
+            seasonsData.forEach((s, idx) => {
+                htmlBlocks.push(`    <!-- 第${idx + 1}季 -->`);
+                htmlBlocks.push(`    <div class="season-divider">${s.title}</div>`);
+                htmlBlocks.push(`    <div class="container" style="display: none;">`);
+                s.eps.forEach(ep => {
+                    htmlBlocks.push(`        <div class="ep"><div class="score">${ep.score}</div><div class="title">${ep.title}</div><p>${ep.content}</p></div>`);
+                });
+                htmlBlocks.push('    </div>\n');
+            });
+
+            htmlBlocks.push('    <!-- 极简增删与同步控件 (编辑模式下显示) -->');
+            htmlBlocks.push('    <div id="simple-edit-controls" style="display: none; text-align: center; margin: 40px auto 120px auto;">');
+            htmlBlocks.push('        <button id="simple-add-btn" style="background: #228b22; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="新增一季">＋</button>');
+            htmlBlocks.push('        <button id="sync-titles-btn" style="background: #1e90ff; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="自动抓取文件标题">🔄</button>');
+            htmlBlocks.push('        <button id="simple-del-btn" style="background: #8b0000; color: #fff; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 0 15px; cursor: pointer; line-height: 65px; padding: 0;" title="删除末尾季">🗑️</button>');
+            htmlBlocks.push('    </div>\n');
+            htmlBlocks.push('    <!-- 悬浮的同步提交按钮 -->');
+            htmlBlocks.push('    <div id="github-save-btn" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 300px; background: #222; color: #fff; padding: 15px; border-radius: 12px; font-weight: 900; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 0px #1e90ff; transition: all 0.1s; text-align: center; border: 2px solid #1e90ff; z-index: 9998;">');
+            htmlBlocks.push('        🚀 同步提交到 GitHub\n    </div>\n');
+
+            let currentSavedPath = engineScript.getAttribute('data-file-path');
+            if (!currentSavedPath && typeof FILE_PATH !== 'undefined') currentSavedPath = FILE_PATH;
+
+            const scriptContent = document.getElementById('core-engine').innerHTML;
+            htmlBlocks.push('    <!-- 全局交互与编辑引擎 -->');
+            htmlBlocks.push(`    <script id="core-engine" data-file-path="${currentSavedPath}">\n` + scriptContent + '\n    <' + '/script>');
+            htmlBlocks.push('</body>\n</html>');
+
+            return htmlBlocks.join('\n');
+        }
+
+        saveBtn.addEventListener('mousedown', () => { saveBtn.style.boxShadow = '0 0px 0px #1e90ff'; saveBtn.style.transform = 'translateX(-50%) translateY(4px)'; });
+        saveBtn.addEventListener('mouseup', () => { saveBtn.style.boxShadow = '0 4px 0px #1e90ff'; saveBtn.style.transform = 'translateX(-50%) translateY(0)'; });
+        saveBtn.addEventListener('touchstart', () => { saveBtn.style.boxShadow = '0 0px 0px #1e90ff'; saveBtn.style.transform = 'translateX(-50%) translateY(4px)'; });
+        saveBtn.addEventListener('touchend', () => { saveBtn.style.boxShadow = '0 4px 0px #1e90ff'; saveBtn.style.transform = 'translateX(-50%) translateY(0)'; });
+
+        saveBtn.addEventListener('click', async () => {
+            const cfg = ensureConfig();
+            if (!cfg) return;
+
+            saveBtn.innerText = '⏳ 白名单重建并同步中...';
+            saveBtn.style.pointerEvents = 'none';
+            try {
+                const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+                let fileSha = undefined;
+                try {
+                    const getRes = await fetch(apiUrl, { headers: { 'Authorization': `Bearer ${cfg.token}` } });
+                    if (getRes.status === 401) {
+                        localStorage.removeItem('github_pat');
+                        throw new Error('Token 已过期或无效，请重新输入。');
+                    }
+                    if (getRes.ok) fileSha = (await getRes.json()).sha;
+                } catch (e) {
+                    if(e.message.includes('Token')) throw e;
+                }
+
+                const cleanHTML = getPurifiedHTML(); 
+                const bodyData = {
+                    message: '📝 更新宇宙档案 (全景防御保序版)',
+                    content: btoa(unescape(encodeURIComponent(cleanHTML)))
+                };
+                if (fileSha) bodyData.sha = fileSha;
+
+                const putRes = await fetch(apiUrl, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bodyData)
+                });
+
+                if (putRes.ok) {
+                    showAppDialog({
+                        title: '🎉 完美同步成功！',
+                        text: '数据已纯净白名单重建，并成功推送到 GitHub 云端！',
+                        confirmText: '太棒了',
+                        showCopy: false,
+                        onConfirm: () => {
+                            if (controls.style.display === 'block') toggleEditMode();
+                        }
+                    });
+                } else {
+                    const err = await putRes.json();
+                    throw new Error(err.message || '保存失败');
+                }
+            } catch (e) { 
+                showAppDialog({
+                    title: '❌ 同步失败',
+                    text: '网络或配置错误:\n' + e.message,
+                    showCopy: true
+                });
+                controls.style.display = 'block'; 
+            } finally { 
+                saveBtn.innerText = '🚀 同步提交到 GitHub'; 
+                saveBtn.style.pointerEvents = 'auto'; 
+            }
+        });
+    
+    </script>
+</body>
+</html>
