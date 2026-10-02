@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>A Fleeting Dream</title>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <style>
+        body { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; max-width: 800px; margin: 0 auto; padding: 50px 24px; font-size: 20px; line-height: 1.8; letter-spacing: 0.05em; background-color: #F8F4E6; color: #4A3F35; } h1 { text-align: left !important; font-size: 28px; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #D5CBBB; padding-bottom: 20px; color: #2C241B; } p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
+        body { padding-top: 70px !important; transition: padding-top 0.3s cubic-bezier(0.4,0,0.2,1); }
+        body.bar-hidden { padding-top: 20px !important; }
+        .reader-bar { position: fixed; top: 0; left: 0; right: 0; min-height: 50px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 1px 8px rgba(0,0,0,0.08); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 5px; }
+        .reader-bar.hidden { transform: translateY(-100%); }
+        .reader-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .reader-btn { background: #E5E5EA; color: #1C1C1E; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+        .reader-btn:active { transform: scale(0.95); }
+        #content-container { transition: font-size 0.2s; }
+        .zh-para { transition: filter 0.3s ease, opacity 0.3s ease; }
+        .global-blur-enabled .zh-para { cursor: pointer; }
+        .global-blur-enabled .zh-para.blurred { filter: blur(0.35em); opacity: 0.5; user-select: none; }
+        .global-blur-enabled .zh-para.blurred:hover { filter: blur(0.2em); opacity: 0.7; }
+        body.highlights-enabled .tm-word.is-highlight { color: #FF3B30 !important; font-weight: 700; background-color: rgba(255, 59, 48, 0.05); border-radius: 3px; padding: 0 2px; }
+        .dict-enabled .tm-word { cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 3px; }
+        .dict-enabled .tm-word:hover, .dict-enabled .tm-word[aria-expanded="true"] { background-color: #E3F2FD; color: #1565C0 !important; }
+        .tippy-box[data-theme~='light-border'] { background-color: #fff; color: #333; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+        .tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before { border-top-color: #ccc; }
+        .tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: #ccc; }
+        .tippy-content { padding: 8px; }
+        .dict-popup { text-align: left; font-size: 14px; line-height: 1.4; max-width: 280px; min-width: 200px; color: #333; font-family: -apple-system, sans-serif; }
+        .dict-header-row { border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
+        .dict-word-line { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .dict-head-word { font-weight: bold; color: #D32F2F; font-size: 18px; }
+        .dict-ipa { font-family: sans-serif; color: #666; font-size: 13px; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
+        .dict-speaker-btn { display: inline-flex; cursor: pointer; color: #1976D2; padding: 2px; border-radius: 50%; transition: background 0.2s; }
+        .dict-speaker-btn:hover { background-color: rgba(25, 118, 210, 0.1); }
+        .dict-speaker-btn svg { width: 18px; height: 18px; pointer-events: none; }
+        .dict-speaker-btn.playing { color: #E91E63; animation: tm-pulse 1s infinite; }
+        .dict-tags-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;}
+        .dict-tag { background: #F0F4F8; color: #476582; font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #D9E2EC; font-weight: 500; }
+        .dict-tag.star-tag { color: #F59E0B; background: #FEF3C7; border-color: #FDE68A; letter-spacing: 1px; padding: 2px 4px; }
+        .dict-tag.cefr-A1 { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+        .dict-tag.cefr-A2 { background: #E0F2F1; color: #00695C; border-color: #B2DFDB; }
+        .dict-tag.cefr-B1 { background: #FFF8E1; color: #F57F17; border-color: #FFECB3; }
+        .dict-tag.cefr-B2 { background: #FFF3E0; color: #E65100; border-color: #FFE0B2; }
+        .dict-tag.cefr-C1 { background: #FCE4EC; color: #C2185B; border-color: #F8BBD0; }
+        .dict-tag.cefr-C2 { background: #F3E5F5; color: #7B1FA2; border-color: #E1BEE7; }
+        .dict-basic-trans { font-size: 14px; color: #444; margin-top: 4px; }
+        .dict-pos-block { margin-bottom: 4px; }
+        .dict-pos-tag { font-style: italic; color: #1976D2; font-weight: bold; font-size: 12px; margin-right: 4px; }
+        .dict-def-list { margin: 0; padding: 0; list-style: none; display: inline; }
+        .dict-def-item { display: inline; }
+        .dict-def-item::after { content: "; "; color: #999; }
+        .dict-def-item:last-child::after { content: ""; }
+        .dict-loading { color: #666; font-style: italic; font-size: 13px; padding: 5px; text-align: center; }
+        @keyframes tm-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body class="bar-hidden global-blur-enabled dict-enabled highlights-enabled">
+    <div class="reader-bar hidden" id="top-bar">
+        <div class="reader-controls">
+            <button class="reader-btn" onclick="adjustFont(-0.1)">A-</button>
+            <button class="reader-btn" onclick="adjustFont(0.1)">A+</button>
+            <button id="blur-btn" class="reader-btn" style="background:#AF52DE; color:white;" onclick="toggleBlur()">模糊: 开</button>
+            <button id="hl-btn" class="reader-btn" style="background:#FF3B30; color:white;" onclick="toggleHighlight()">高亮: 开</button>
+            <button id="dict-btn" class="reader-btn" style="background:#34C759; color:white;" onclick="toggleDict()">查词: 开</button>
+        </div>
+    </div>
+    <div id="content-container">
+    <h1 style="text-align: left !important;">A Fleeting Dream</h1>
+    <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">发布时间：2026/10/2 10:42:52</div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">南柯一梦</p>
+    <p>Breakfast at the mansion without Sana was like a quiet library; I had become accustomed to her chatter without realizing it.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">没有了纱夏的大宅早餐，安静得就像一座图书馆。不知不觉间，我竟然已经习惯了那个叽叽喳喳的小丫头在耳边吵闹的日子。</p>
+    <p>"Sana... is today the final?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“纱夏……今天是决赛日吧？”</p>
+    <p>I believed Sana was scheduled to perform her short program and free skate in the morning.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我记得赛程表上写着，纱夏的短节目和自由滑全都在今天上午进行。</p>
+    <p>"Yes, Daejun-kun, the rankings will be out this afternoon~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“是的，大俊君，下午就能出最终的比赛排名了~”</p>
+    <p>I was relieved that I could leave after Sana's competition was over; I only hoped she could finish her performance safely, regardless of the rankings.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">只要等纱夏比完赛我就可以抽身离开了，这反倒让我心里踏实了不少。至于名次什么的已经不重要了，我只希望她能平平安安、毫无遗憾地完成最后一套动作。</p>
+    <p>"Excuse me... Kuroki Ryoko-san? And Kuroki Kazuha-san...?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“那个……黑木凉子女士？还有黑木一叶小姐……？”</p>
+    <p>It was the first time since coming to Japan that I had called Ajumma and Kazuha Nuna by their full names, and they both stared at me with surprised expressions.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这是我自打来日本之后，第一次连名带姓地称呼凉子大婶和一叶姐姐。她们俩同时一愣，齐刷刷地转过头，用震惊错愕的眼神死死盯着我。</p>
+    <p>"I'm going back to Korea now. Thank you for taking care of me all this time."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我打算回韩国了。这段日子承蒙二位照顾，非常感谢。”</p>
+    <p>""!!!!!!""</p>
+    <p>“”“！！！！””</p>
+    <p>Daejun?! Son! Wait, son!</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“大俊？！儿子！等等，儿子你别冲动！”</p>
+    <p>Ryoko Ajumma ran down the parking lot stairs without even putting on her shoes and grabbed me in the back seat of the car.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">凉子大婶连鞋都顾不上穿，光着脚丫踩在水泥地上，疯了似地顺着停车场楼梯狂奔下来，一把拽住了已经坐进车后座的我。</p>
+    <p>"Why are you doing this all of a sudden? You're going back to Korea?! If it's because of the military, it's okay, Daejun. If you just apply for naturalization right away, you can sort out the nationality issue...."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“怎么突然就要走？你回韩国干什么？！如果是为了兵役问题，没关系的啊大俊。只要你现在马上申请加入日本国籍，国籍的事情妈妈完全可以帮你搞定……”</p>
+    <p>"No, it's not that!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“不，不是因为这个！”</p>
+    <p>I cut off Ajumma, who was trying to persuade me with tearful eyes, and said calmly again.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我打断了泪眼婆娑、苦苦哀求我的大婶，用一种前所未有的平静语气再次开口：</p>
+    <p>"Ryoko... I miss my hometown. I think I'm getting homesick, just like my father did...."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“凉子……我想家了。我大概也开始得‘思乡病’了吧，就像当年我父亲一样……”</p>
+    <p>"!!!!"</p>
+    <p>“！！！！？”</p>
+    <p>Ajumma's face turned pale as if she had turned to ice on the spot, and at my request to leave, the driver slowly drove the car out of the parking lot.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">大婶的脸色瞬间褪得没有一丝血色，整个人僵在原地仿佛化成了一座冰雕。随着我吐出那个字，司机缓缓踩下油门，载着我驶离了停车场。</p>
+    <p>"Thank you, Daejun...."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“谢谢你，大俊……”</p>
+    <p>I told Saika Nuna that I would just bury my father's case.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我给彩华姐姐留了话，说我决定把父亲当年的那桩旧案永远埋进土里，不再追究了。</p>
+    <p>First of all, Sana's influence was the biggest, and it wouldn't bring my father back to life to dig up something that had already passed. I just thought it was right to quietly return to my original place.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一方面，纱夏占据了我大部分的心思；另一方面，死者已矣，就算把尘封多年的真相掘地三尺，父亲也活不过来了。与其卷入这些豪门恩怨里，倒不如安安静静地回到我原本该呆的地方去。</p>
+    <p>If the investigation into my father's case were to be reopened, Saika Nuna, the department store's representative, would also be mentioned in the media, which could damage her image. Saika Nuna respected my decision.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">如果真要重新翻案调查，身为百货公司代表的彩华姐姐必然会被媒体推上风口浪尖，甚至对她的声誉造成毁灭性的打击。所幸，彩华姐姐最终尊重了我的决定。</p>
+    <p>"Oh... and what I asked you to do back then..."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“对了……还有我之前拜托你的那件事……”</p>
+    <p>"Ah! Nanako, the new employee from Troyan, has already been converted to a full-time employee."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“啊！那个叫奈奈子的Troyan新员工呀，人事部那边已经特批给她转成正式员工啦。”</p>
+    <p>As expected, Nuna was quick to get things done, and her eyes were getting moist as if she was feeling regretful.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">不愧是女老板，办事效率雷厉风行。看着她那双渐渐泛红、充满不舍的水灵眼眸，我心里也不是滋味。</p>
+    <p>"When are you leaving?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“你打算什么时候走？”</p>
+    <p>"My flight is tomorrow at 5 PM..."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“明天的航班，下午五点起飞……”</p>
+    <p>"I'll take you to the airport, Daejun...."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我去机场送你吧，大俊……”</p>
+    <p>"No, no, not at all, I just want to go alone..."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“不用了，真的不用麻烦了，我想一个人安安静静地走……”</p>
+    <p>I owed her a lot in many ways. Saika Nuna tried to give me quite a bit of money as a bonus, but I couldn't even accept that money, considering I had been receiving the team leader's salary without doing anything all this time.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">从各方面来讲，我欠她的实在太多了。临走前，彩华姐姐甚至想甩给我一大笔丰厚的遣散奖金。可这段时间我顶着组长的头衔却什么正经事都没干，白白拿了那么多薪水，这笔钱我是无论如何也拿不出手去接受的。</p>
+    <p>"Thank you so much for everything, and... when I held Nuna... my feelings were genuine at that time, well then..."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“这段时间真的非常感谢你……还有，当时抱住姐姐的时候……我的感情绝对是真的。那么，保重……”</p>
+    <p>"Dae... Daejun...."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“大……大俊……”</p>
+    <p>I bowed politely at a 90-degree angle in the Japanese style, and left the president's office without looking at her face because I felt like I was going to cry.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我冲她深深地鞠了个标准的九十度日本躬。为了不让她看到我夺眶而出的眼泪，我甚至没敢再抬头看一眼她的脸，头也不回地逃出了社长办公室。</p>
+    <p>"Ah! Team Leader Daejun, what brings you here?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“呀！大俊组长，什么风把你吹来啦？”</p>
+    <p>Still, I should say goodbye to my first job mentor and kind Kasumi Manager. I checked from afar that Nanako-chan wasn't there and entered the store.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">不管怎样，总得跟我在职场上的第一位领路人、那位温柔的霞经理好好道个别。我远远确认过奈奈子不在附近后，这才迈步走进店里。</p>
+    <p>"No, why! Why are you suddenly leaving??"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“不是，为什么呀！怎么突然就要辞职回国了？！”</p>
+    <p>As expected, the manager-nim was very surprised. I was sad too, I had grown fond of her all this time...</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">不出所料，霞经理惊得眼珠子都快瞪出来了。其实我也挺舍不得她的，毕竟在一线并肩作战了这么久，早就处出感情了……</p>
+    <p>"This... this is a farewell gift for the manager-nim~ I'm sorry it's so sudden~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“这……这是给经理的临别小礼物~ 这么突然就要走，真是不好意思啦~”</p>
+    <p>"Dae... Daejun..."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“大……大俊……”</p>
+    <p>I bought a necklace from the most popular brand in the accessories store. Seeing the manager-nim's face, which was filled with sadness and gratitude as she accepted the small shopping bag, made my heart feel strange.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我特意在饰品专柜挑了一条当前最火爆的大牌项链当做谢礼。看着霞经理双手接过那个精致的小购物袋、脸上交织着不舍与感激的复杂神情，我的心里也五味杂陈。</p>
+    <p>"Thank you so much for everything... Ah! And Nanako-ssi here has been appointed as a full-time employee...."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“这段时间真的谢谢你照顾……对了！还有之前提过的奈奈子小姐，她现在也顺利转正成正式员工了哦……”</p>
+    <p>"Sniff... Ah, yes, I received official notification this morning. Thank you, Team Leader-nim..."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“（抽鼻子）……啊，是的，今天一早刚下发了正式人事通知。谢谢组长大人提拔……”</p>
+    <p>"Ah, no, it has nothing to do with me, haha~ It seems Nanako-ssi hasn't come to work yet?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“啊，哪里哪里，这跟我可没半点关系，哈哈~ 不过话说回来，奈奈子小姐今天还没来上班吗？”</p>
+    <p>"Ah! It's almost time for her shift change, meet her before you go, Team Leader-nim!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“呀！快到她交接班的时间了呢，组长走之前不去跟人家见个面道个别吗！”</p>
+    <p>"Ugh~ No, Manager-nim, I'll be going now, well then..."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“呃~ 算了算了，经理，我得赶时间先撤了，那就这样啦……”</p>
+    <p>I hurriedly left the store in case I ran into her, but I desperately wanted to see her face up close. But what would be the point now? But I wanted to tell her that it was never a one-night stand for me, and I hoped for her happiness in the future....</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">为了防止跟奈奈子正面撞上，我慌不择路地逃出了卖场。其实我内心深处何尝不想再好好看一眼她的脸呢。可事到如今，见一面又能改变什么呢？我只是想亲口告诉她，当初跟她在一起时，对我而言绝不仅仅是一场逢场作戏的露水情缘，我是真心希望她以后能过得幸福……</p>
+    <p>It seemed like I had roughly finished tidying up my affairs. Feeling hungry, I was thinking of grabbing a bowl of udon at the food court for the last time.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">琐碎的事情总算七七八八处理得差不多了。折腾了一大圈，肚子也饿了，我寻思着去地下美食广场再吃最后一次乌冬面。</p>
+    <p>Ttiring~</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">叮咚~</p>
+    <p>My smartphone rang for the first time in a while, and the caller was 'Kazuha'.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">手机屏幕破天荒地响了一声，打破了这几天的死寂。来电显示赫然是——【一叶】。</p>
+    <p>Ttiring~~~</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">叮咚咚~~~</p>
+    <p>What should I say, I felt disgusted, scared, anyway, I was going to ignore the call, but I released the call icon.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">说实话，我现在对她既觉得生理性反胃，又带着点隐隐的恐惧。本来打算直接挂断拉黑的，可大拇指鬼使神差地还是按下了接听键。</p>
+    <p>[Hello]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[喂。]</p>
+    <p>[Daejun? Mom wants you to come home right now]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[大俊？妈妈让你现在马上回一趟家。]</p>
+    <p>[I told you in the morning, I'm leaving tomorrow]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[我早上就已经说得很清楚了，我明天就飞回国。]</p>
+    <p>[How can you do this all of a sudden? This is an absurd thing to do right now!]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[你怎么能这么自作主张、说走就走？！你知不知道你现在这种行为有多荒唐胡闹！]</p>
+    <p>[Hmm... let's just say goodbye with a smile, okay?]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[行啦……咱们好聚好散，笑着道个别不好吗？]</p>
+    <p>[Daejun...? I know it's because of your father's case, I think there's some misunderstanding... can't we talk face to face?]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[大俊……？我知道你是为了你父亲当年的事在赌气。这里面肯定有什么误会，我们坐下来面对面坦诚谈一次，不行吗？]</p>
+    <p>[No, I don't want to, I'm going back to my place]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[免了，我没兴趣。我只是回我原本该回的地方去。]</p>
+    <p>[You... you... Sana... Sana will be here tomorrow, won't you even see her face?]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[你……你真的连纱夏……纱夏明天就要从名古屋赶回来了，你连她最后一面都不打算见了？！]</p>
+    <p>I wavered a little at this point, but I felt like if I saw Sana's face, I really wouldn't be able to leave.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">听到这话，我的心弦确实狠狠颤抖了一下。可理智告诉我，要是真让我见了纱夏那张脸，我绝对会当场反悔，再也迈不开腿离开日本了。</p>
+    <p>[I won't see her, if I see Sana, I don't think I'll be able to leave, I'm hanging up now, and don't contact me]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[不看了。要是再见她一面，我怕自己就真的走不掉了。挂了，以后别再联系我。]</p>
+    <p>[Daejun...! Daejun! Don't hang up!]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[大俊……！大俊！你别挂电话！]</p>
+    <p>Kazuha's cold voice was really cold, as if she was a different person.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">电话那头的一叶声音冷得刺骨，仿佛变了个人似的。</p>
+    <p>[If you leave like this, you won't be able to receive Daejun-kun's trust fund that you'll receive when you turn 25...]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[你要是真敢这么一走了之，你25岁生日时能继承的那笔巨额信托基金，你可就一分钱也别想拿到了……]</p>
+    <p>You fucking bitch, are you threatening me with money in the end...</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">操你妈的，兜兜转转到头来还是想拿钱砸我、威胁我吗……</p>
+    <p>[I don't care, I don't need that kind of money, and Kazuha... don't live too greedily, take care and stay healthy]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[稀罕妳那破钱。老子不缺这几个臭子儿。还有，一叶……别把贪婪当饭吃，照顾好自己，保重吧。]</p>
+    <p>'Hoo.....'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“呼……”</p>
+    <p>I turned off the phone and sighed deeply, it felt like I had a variety of dreams.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我直接按掉电源强行关机，长长地叹了一口气。这短短一年在异国他乡的经历，简直就像是一场光怪陆离的南柯大梦。</p>
+    <p>As I was going down the stairs to take the escalator, Sana's figure, wearing a figure skating outfit and performing like an angel, began to appear on the large screen in the front of the department store lobby.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">正当我顺着楼梯准备去搭乘电梯时，百货公司一楼大厅正前方的那块巨型LED户外大屏幕上，突然闪过了纱夏穿着花滑比赛服、宛如冰上精灵般翩翩起舞的身影。</p>
+    <p>《Challenge! Victory! Kuroki Sana Finally Takes the Top!》</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">——《巅峰挑战！黑木纱夏加冕桂冠问鼎冠军！》</p>
+    <p>Loud music and subtitles appeared, filling the large screen with Sana's performance scenes, and many customers in the department store stopped walking and began to look at the screen.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">激昂的交响乐伴随着醒目的标题瞬间炸响，大屏幕上开始滚动播放纱夏在赛场上惊艳全场的夺冠高光集锦。路过大厅的顾客们纷纷停下脚步，仰起头驻足观看。</p>
+    <p>'Sana... won first place...'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（纱夏……她真的拿了第一名……）</p>
+    <p>Sana's figure, smiling brightly on the highest place on the podium, was visible on the screen, and I felt something hot rising from deep inside my chest.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">屏幕上，纱夏站在颁奖台的最中央，笑得绚烂夺目，宛如一颗耀眼的钻石。那一瞬间，我只觉得胸口深处有什么滚烫的东西直往上涌。</p>
+    <p>[Sana-yang, congratulations on your gold medal~ Who do you want to see the most right now?"]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“纱夏酱，恭喜你斩获金牌~ 那么，现在你最想见到的人是谁呢？”]</p>
+    <p>[Ahaha~ I'm a little sorry to my mom and sister, but I want to see Oppa the most right now~]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“哈哈~ 虽然对妈妈和姐姐有点不好意思，不过……我现在最想见到的人，当然是我的俊欧巴啦~”]</p>
+    <p>[Yes~ Sana-yang, is there a particular reason why you want to see Oppa more than your mom or sister?]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“哦？能具体说说为什么比起妈妈和姐姐，你更想见到欧巴吗，纱夏酱？”]</p>
+    <p>[Hmm... Jjoon Oppa was the one who motivated me to skate again~ Are you watching, Oppa? Kya~~ I got first place~~]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“唔……因为当初是俊欧巴一巴掌（划掉）一句话把我重新劝回冰场上去的呀~ 欧巴，你现在在看电视直播对不对？呀~~ 人家拿冠军啦~~”]</p>
+    <p>[Sana-yang, you finally won the gold medal by beating Honda Suzu by a large margin in the short program, I'm curious about your future plans, are you going to prepare for the Winter Olympics?]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“纱夏酱，这次你在短节目和自由滑中以断层式的高分击败了本田铃香选手夺冠，大家都很关心你之后的职业规划，接下来是准备备战冬奥会吗？”]</p>
+    <p>[No, I'm going to retire~]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“不哦，我打算直接退役啦~”]</p>
+    <p>[.....?! Haha... it's embarrassing, but Sana-yang? Why are you suddenly announcing your retirement....]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“（震惊）……？！哈哈……这个玩笑挺别致的，纱夏酱？怎么突然在赛后采访里宣布退役呢……惊掉大牙了呢……”]</p>
+    <p>[I have no regrets about figure skating, I kept my promise with Oppa, and now I'm going to live happily with Jjoon Oppa~ I'm thinking of learning Korean cuisine for Oppa~ Dehet~]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“我对花样滑冰已经没有任何遗憾啦。我已经兑现了跟欧巴的约定，接下来呢，我要开开心心地跟俊欧巴长相厮守啦~ 以后还打算为了欧巴专门去学做正宗的韩餐呢~ 诶嘿~”]</p>
+    <p>The reporter's bewildered expression, and Sana in the screen, who honestly expressed her feelings without thinking about the consequences, shone like a jewel.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">记者握着话筒当场石化、风中凌乱的表情，与屏幕里那个毫无心机、当着全国观众的面毫无顾忌宣泄爱意的纱夏交织在一起，璀璨得如同宝石。</p>
+    <p>'Sob....'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“（呜……）”</p>
+    <p>I just sat down on the spot and burst into tears, one side of my heart was being torn apart by the fact that I had to leave Sana secretly.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我再也克制不住，双腿一软直接瘫坐在冰凉的大理石地面上，放声大哭。不得不选择背着纱夏悄悄逃离，这种活生生将心头肉割下一块的痛楚，几乎将我整个人撕裂。</p>
+    <p>[Did you buy a box of Umaibong?]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“买好一整箱美味棒（Umaibong）了吗？”]</p>
+    <p>[Yeah, you crazy bastard Hyungjoon, I got a box]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“买尼玛个头啊，亨俊你个死变态，老子带了一整箱总行了吧。”]</p>
+    <p>[Daejun-ah?]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“大俊呐？”]</p>
+    <p>[Why? I said I got a box~]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“干嘛？都说了买齐了~”]</p>
+    <p>[Won't you regret it...? Sana, she... she was on Korean TV too... really pretty...]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“你小子……真就一点都不后悔？纱夏这丫头刚才连韩国新闻台都播了……长得是真他妈漂亮啊……”]</p>
+    <p>[Hyungjoon-ah~ I'm just going back to the way I was, just back to my place...]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“行了亨俊呐~ 我只是……回我原本该回的地方去罢了……”]</p>
+    <p>[Okay, I understand, come carefully, see you at the airport later]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“好吧，既然你决定了……路上注意安全，一会儿机场见。”]</p>
+    <p>[Okay]</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">[“嗯。”]</p>
+    <p>I spent the night at a 20,000 won book cafe in Ikebukuro Station, and now I had to take the comfortable and relaxed luxurious mansion life out of my memory.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我在池袋车站附近一家两万韩元通宵包夜的漫画网吧里熬过了最后一晚。从今天起，田园调布大宅里那种奢华悠闲、衣来伸手饭来张口的少爷生活，必须彻底从我的脑海里连根拔起、清空干净。</p>
+    <p>'Yeah, this was originally my place...'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（对啊，这穷汤漏瓦的鬼地方，本来才是我的归宿……）</p>
+    <p>It had been exactly a year since I had been living in Japan. All I had in my hands was a backpack with a few clothes, and an account with about 5,000 saved from my allowance and salary.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">算算日子，我在日本刚好待了整整一年。如今我手里攥着的，除了一个塞了几件破衣服的双肩背包，就只剩下靠着打工薪水和零花钱勉强攒下的五千块积蓄。</p>
+    <p>'Tch! It's simple... Keukeuke~'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“切！光棍一条，光荣返贫……咯咯~”</p>
+    <p>It was snowing heavily outside, and I buttoned up my coat in the increasingly cold weather.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">窗外不知何时飘起了鹅毛大雪。随着寒风刺骨，我紧了紧大衣的扣子，推门走了出去。</p>
+    <p>Taxi! Taxi!</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“出租车！师傅，去机场！”</p>
+    <p>Looking at the scenery of Tokyo from the back seat of the taxi, I suddenly remembered the first time I entered the country with Ryoko Ajumma like a movie.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">坐在出租车的后座上，看着窗外飞速倒退的东京街景，我的脑海里突然走马灯般闪过当初刚下飞机时，被凉子大婶带回大宅的那个大雪纷飞的画面。</p>
+    <p>(I was looking at the scenery from the back seat like this back then too...)</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（当时……我也是这样坐在后座上看着这座城市的啊……）</p>
+    <p>Entry and exit, meeting and parting... Memories of Ryoko, Kazuha, Sana, Nanako, Saika... and many other women flashed through my head like a dream.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">入境与出境、相遇与离别……凉子、一叶、纱夏、奈奈子、彩华……以及那些在生命里留下过痕迹的女人们的面孔，此刻像走马灯一样在脑海里清晰闪过。</p>
+    <p>(It was a fleeting dream... a fleeting dream... a harem genre dream as Hyungjoon said...)</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（南柯一梦……这真的只是一场转瞬即逝的南柯一梦……正如亨俊这小子当初笑谈的一样，纯粹是一场不切实际的后宫爽文梦啊……）</p>
+    <p>In the end, the afterimage of Sana beautifully performing on the ice rink was what came to my mind, and I covered my mouth and swallowed the sobs that were coming out.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">最终，脑海里定格的画面，依然是纱夏在冰面上迎风旋转的绝美倩影。我死死捂住嘴，硬生生将喉咙里翻涌出来的恸哭咽回了肚子里。</p>
+    <p>"Ano.... Customer? It's warm black tea, it will help you to calm your mind."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“那个……客人？后座备有热乎的罐装红茶，您要是心里难受，喝一口暖暖身子吧。”</p>
+    <p>The taxi driver, who was neatly dressed in uniform, handed me a warm canned black tea because he felt sorry for me crying.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">开车的司机大叔穿着一丝不苟的制服。大概是从后视镜里看到了我这副涕泗横流的狼狈样，心生怜悯，默默递过来一罐刚捂热的黑茶。</p>
+    <p>"Thank you... Driver-nim..."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“谢谢你……司机师傅……”</p>
+    <p>After wiping away my tears and opening the can, I was overcome with extreme drowsiness.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我胡乱抹了把眼泪，拉开易拉罐的拉环。伴随着清脆的响声，一股难以抗拒的极度困意，铺天盖地朝我席卷而来。</p>    </div>
+    <script>
+        var STORAGE_KEY = 'bio_reader_prefs_' + location.pathname.replace(/[^a-zA-Z0-9]/g, '');
+        var prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { font: 1.0, dictEnabled: true, barHidden: true, highlightEnabled: true, blurEnabled: true };
+        var bar = document.getElementById('top-bar');
+        var content = document.getElementById('content-container');
+        var dictBtn = document.getElementById('dict-btn');
+        var hlBtn = document.getElementById('hl-btn');
+        var blurBtn = document.getElementById('blur-btn');
+        function applyPrefs() {
+            content.style.fontSize = prefs.font + 'em';
+            if (prefs.barHidden) { bar.classList.add('hidden'); document.body.classList.add('bar-hidden'); } else { bar.classList.remove('hidden'); document.body.classList.remove('bar-hidden'); }
+            if (prefs.dictEnabled) { document.body.classList.add('dict-enabled'); dictBtn.innerText = "查词: 开"; dictBtn.style.background = "#34C759"; dictBtn.style.color = "#fff"; } else { document.body.classList.remove('dict-enabled'); dictBtn.innerText = "查词: 关"; dictBtn.style.background = "#E5E5EA"; dictBtn.style.color = "#1C1C1E"; }
+            if (prefs.highlightEnabled) { document.body.classList.add('highlights-enabled'); hlBtn.innerText = "高亮: 开"; hlBtn.style.background = "#FF3B30"; hlBtn.style.color = "#fff"; } else { document.body.classList.remove('highlights-enabled'); hlBtn.innerText = "高亮: 关"; hlBtn.style.background = "#E5E5EA"; hlBtn.style.color = "#1C1C1E"; }
+            if (prefs.blurEnabled) { document.body.classList.add('global-blur-enabled'); blurBtn.innerText = "模糊: 开"; blurBtn.style.background = "#AF52DE"; blurBtn.style.color = "#fff"; document.querySelectorAll('.zh-para').forEach(function(el){el.classList.add('blurred');}); } else { document.body.classList.remove('global-blur-enabled'); blurBtn.innerText = "模糊: 关"; blurBtn.style.background = "#E5E5EA"; blurBtn.style.color = "#1C1C1E"; }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        }
+        document.addEventListener('dblclick', function(e) {
+            if(e.target.closest('#top-bar') || e.target.classList.contains('zh-para')) return;
+            prefs.barHidden = !prefs.barHidden; applyPrefs();
+        });
+        function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); }
+        function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); }
+        function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); }
+        function toggleBlur() { prefs.blurEnabled = !prefs.blurEnabled; applyPrefs(); }
+        window.addEventListener('DOMContentLoaded', function() {
+            applyPrefs(); var savedScroll = localStorage.getItem(STORAGE_KEY + '_scroll');
+            if (savedScroll) { setTimeout(function(){ window.scrollTo(0, parseFloat(savedScroll)); }, 150); }
+        });
+        var scrollTimer;
+        window.addEventListener('scroll', function() {
+            if (scrollTimer) clearTimeout(scrollTimer); scrollTimer = setTimeout(function(){ localStorage.setItem(STORAGE_KEY + '_scroll', window.scrollY); }, 300);
+        });
+        var highlightWords = new Set();
+        async function initCloudHighlights() {
+            var cacheKey = 'bio_remote_hl_words_v2'; var cached = localStorage.getItem(cacheKey); var now = Date.now();
+            if (cached) { try { var parsed = JSON.parse(cached); if (now - parsed.time < 24 * 60 * 60 * 1000 && Array.isArray(parsed.data)) { highlightWords = new Set(parsed.data); applyHighlightsToDOM(); return; } } catch(e){} }
+            try {
+                var urls = ['https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://ghproxy.net/https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://fastly.jsdelivr.net/gh/moodHappy/HelloWorld@master/Notes/one.txt'];
+                var text = ''; for (var i=0; i<urls.length; i++) { try { var res = await fetch(urls[i]); if (res.ok) { text = await res.text(); if (text && !text.includes('<html') && !text.includes('Cloudflare')) break; } } catch(err){} }
+                if (!text) throw new Error(); var arr = text.split('\n').map(function(w){return w.trim().toLowerCase();}).filter(function(w){return w;});
+                if (arr.length > 0) { highlightWords = new Set(arr); localStorage.setItem(cacheKey, JSON.stringify({data: arr, time: now})); applyHighlightsToDOM(); }
+            } catch(e){}
+        }
+        function applyHighlightsToDOM() {
+            if(highlightWords.size === 0) return;
+            document.querySelectorAll('.tm-word').forEach(function(span){ if(highlightWords.has(span.textContent.trim().toLowerCase())) span.classList.add('is-highlight'); });
+        }
+        var GM_getValue = function(key, def) { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; };
+        var GM_setValue = function(key, val) { localStorage.setItem(key, JSON.stringify(val)); };
+        (function() {
+            function fetchWithTimeout(url, options = {}, timeout = 3000) { const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeout); return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer)); }
+            var ttsConfig = { voices: ["en-US-AdamNeural", "en-US-AriaNeural", "en-US-AnaNeural", "en-US-JennyNeural", "en-US-GuyNeural"], apis: [ { url: "https://read-aloud-bay.vercel.app/api/synthesis", type: "read-aloud" }, { url: "https://libre-tts-nu.vercel.app/api/tts", type: "libre" } ] };
+            var globalResultCache = GM_getValue('tm_dict_cache', {}); var saveTimeout = null;
+            function saveToGlobalCache(wordKey, resultData) { globalResultCache[wordKey] = resultData; var keys = Object.keys(globalResultCache); if (keys.length > 2000) delete globalResultCache[keys[0]]; clearTimeout(saveTimeout); saveTimeout = setTimeout(function(){ GM_setValue('tm_dict_cache', globalResultCache); }, 1500); }
+            var cefrStaticCache = {};
+            function initCEFRStaticDict() {
+                var staticUrls = ["https://fastly.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json","https://cdn.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json"];
+                var idx = 0; var tryFetch = function() { if (idx >= staticUrls.length) return; fetch(staticUrls[idx++]).then(function(r){return r.json();}).then(function(data){ if (Array.isArray(data)) data.forEach(function(item){ if (item.word && item.cefr) cefrStaticCache[item.word.toLowerCase()] = item.cefr.toUpperCase(); }); }).catch(tryFetch); };
+                tryFetch();
+            }
+            async function fetchCEFR(word) {
+                var w = word.toLowerCase(); if (cefrStaticCache[w]) return cefrStaticCache[w];
+                const targetUrl = 'https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(w);
+                const proxies = [ targetUrl, 'https://corsproxy.io/?' + encodeURIComponent(targetUrl), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl) ];
+                const tryProxy = async (proxy) => { const res = await fetchWithTimeout(proxy, {}, 2500); if (!res.ok) throw new Error(); const text = await res.text(); var match = text.match(/(?:epp-xref|dxref)[^>]*>\s*([A-C][1-2])\s*<\/span>/i) || text.match(/title="CEFR[^>]*>\s*([A-C][1-2])\s*<\/span>/i); if (match && match[1]) { cefrStaticCache[w] = match[1].toUpperCase(); return cefrStaticCache[w]; } return null; };
+                try { return await Promise.any(proxies.map(p => tryProxy(p))); } catch(e) { return null; }
+            }
+            async function fetchTranslation(text) { try { const res = await fetchWithTimeout('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&q=' + encodeURIComponent(text), {}, 3500); if (!res.ok) throw new Error(); return await res.json(); } catch(e) { return [[['查询超时或网络错误']]]; } }
+            async function fetchPhonetics(text) { try { const res = await fetchWithTimeout('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(text), {}, 2500); if (!res.ok) return null; const data = await res.json(); if (data && data.length > 0) { const pObj = data[0].phonetics.find(p => p.text) || data[0]; return pObj.text || null; } return null; } catch(e) { return null; } }
+            async function fetchWordLevel(text) {
+                const targetUrl = 'https://dict.youdao.com/jsonapi?q=' + encodeURIComponent(text);
+                const proxies = [ 'https://corsproxy.io/?' + encodeURIComponent(targetUrl), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl), 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl) ];
+                const tryProxy = async (proxy) => { const res = await fetchWithTimeout(proxy, {}, 2000); if (!res.ok) throw new Error(); const data = await res.json(); var result = { stars: 0, tags: [] }; if (data.ec && data.ec.exam_type) result.tags = data.ec.exam_type; if (data.collins && data.collins.collins_entries && data.collins.collins_entries.length > 0) { var starStr = data.collins.collins_entries[0].star; if (starStr) { var parsedNum = parseInt(String(starStr).replace(/[^0-9]/g, ''), 10); result.stars = isNaN(parsedNum) ? 0 : parsedNum; } } return result; };
+                try { return await Promise.any(proxies.map(p => tryProxy(p))); } catch (e) { return { stars: 0, tags: [] }; }
+            }
+            var globalAudioPlayer = null; var currentPlayingBtn = null;
+            function initAudioPlayer() { if (!globalAudioPlayer) { globalAudioPlayer = document.createElement('audio'); globalAudioPlayer.style.display = 'none'; document.body.appendChild(globalAudioPlayer); } }
+            function playTTS(apiIndex, text, voice, btn) {
+                if (apiIndex >= ttsConfig.apis.length) { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); return; }
+                if (currentPlayingBtn && currentPlayingBtn !== btn) currentPlayingBtn.classList.remove('playing');
+                currentPlayingBtn = btn; btn.classList.add('playing'); var api = ttsConfig.apis[apiIndex]; var params = new URLSearchParams();
+                if (api.type === "read-aloud") { params.append("text", text); params.append("voiceName", voice); } else { params.append("t", text); params.append("v", voice); params.append("r", "0"); params.append("p", "0"); }
+                globalAudioPlayer.src = api.url + '?' + params.toString(); globalAudioPlayer.onended = function() { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); };
+                globalAudioPlayer.onerror = function() { playTTS(apiIndex + 1, text, voice, btn); }; var p = globalAudioPlayer.play(); if (p !== undefined) p.catch(function(){ playTTS(apiIndex + 1, text, voice, btn); });
+                }
+            function wrapTextNodesToWord(rootNode) {
+                var ignoreTags = new Set(['SCRIPT', 'STYLE', 'BUTTON', 'A']);
+                var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, { acceptNode: function(currentNode) { var parent = currentNode.parentNode; if (!parent || ignoreTags.has(parent.nodeName.toUpperCase()) || parent.closest('.tm-word') || parent.closest('.zh-para')) return NodeFilter.FILTER_REJECT; if (!currentNode.nodeValue.trim() || !/\b[a-zA-Z'-]+\b/.test(currentNode.nodeValue)) return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; } });
+                var nodesToWrap = []; let currNode; while ((currNode = walker.nextNode())) { nodesToWrap.push(currNode); }
+                nodesToWrap.forEach(function(textNode) {
+                    var text = textNode.nodeValue; var fragment = document.createDocumentFragment(); var lastIndex = 0;
+                    text.replace(/\b([a-zA-Z'-]+)\b/g, function(match, p1, offset) { if (offset > lastIndex) fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset))); var span = document.createElement('span'); span.className = 'tm-word'; span.textContent = match; fragment.appendChild(span); lastIndex = offset + match.length; return match; });
+                    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.substring(lastIndex))); if (fragment.childNodes.length > 0) textNode.parentNode.replaceChild(fragment, textNode);
+                });
+            }
+            function formatDictData(originalWord, data) {
+                var transData = data.transData; var ipaText = data.ipaText; var levelData = data.levelData; var cefrLevel = data.cefrLevel; var tagsHtml = '';
+                if (cefrLevel || (levelData && (levelData.stars > 0 || (levelData.tags && levelData.tags.length > 0)))) {
+                    tagsHtml += '<div class="dict-tags-row">'; if (levelData && levelData.stars > 0) tagsHtml += '<span class="dict-tag star-tag">' + '★'.repeat(levelData.stars) + '☆'.repeat(5 - levelData.stars) + '</span>'; if (cefrLevel) tagsHtml += '<span class="dict-tag cefr-' + cefrLevel + '">CEFR ' + cefrLevel + '</span>'; if (levelData && levelData.tags) levelData.tags.forEach(function(tag){ tagsHtml += '<span class="dict-tag">' + tag + '</span>'; }); tagsHtml += '</div>';
+                }
+                var basicTrans = (transData && transData[0] && transData[0][0]) ? transData[0][0][0] : '';
+                var html = '<div class="dict-header-row"><div class="dict-word-line"><span class="dict-head-word Casting">' + originalWord + '</span>' + (ipaText ? '<span class="dict-ipa">' + ipaText + '</span>' : '') + '<span class="dict-speaker-btn" data-word="' + originalWord.replace(/"/g, '&quot;') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span></div>' + tagsHtml + '<div class="dict-basic-trans">' + basicTrans + '</div></div>';
+                var dictEntries = transData ? transData[1] : null;
+                if (dictEntries && dictEntries.length > 0) {
+                    html += '<div class="dict-details">'; dictEntries.forEach(function(entry){ var pos = entry[0]; var displayDefs = entry[1].slice(0, 3); html += '<div class="dict-pos-block"><span class="dict-pos-tag">' + pos + '.</span><ul class="dict-def-list">'; displayDefs.forEach(function(def){ html += '<li class="dict-def-item">' + def + '</li>'; }); html += '</ul></div>'; }); html += '</div>';
+                } else if (!basicTrans) { html += '<div style="padding:5px; color:#666; font-size:13px;">无释义结果...</div>'; }
+                return html;
+            }
+            function setupTippyDelegate() {
+                tippy.delegate(document.body, { 
+                    target: '.tm-word', trigger: 'click', interactive: true, theme: 'light-border', placement: 'bottom', appendTo: function(){return document.body;}, maxWidth: 320,
+                    onShow: function(instance) {
+                        if (!document.body.classList.contains('dict-enabled')) return false;
+                        var word = instance.reference.innerText.trim(); var wordKey = word.toLowerCase();
+                        var renderContent = function(data) { if (instance.reference.innerText.trim() !== word) return; var contentDiv = document.createElement('div'); contentDiv.className = 'dict-popup'; contentDiv.innerHTML = formatDictData(word, data); ['mousedown', 'touchstart', 'click'].forEach(function(evt){ contentDiv.addEventListener(evt, function(e){e.stopPropagation();}, { capture: true }); }); var btn = contentDiv.querySelector('.dict-speaker-btn'); if (btn) { btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var text = btn.getAttribute('data-word'); if (!text || btn.classList.contains('playing')) return; playTTS(0, text.trim(), ttsConfig.voices[Math.floor(Math.random() * ttsConfig.voices.length)], btn); }); } instance.setContent(contentDiv); };
+                        if (globalResultCache[wordKey]) { renderContent(globalResultCache[wordKey]); } else {
+                            var loadingDiv = document.createElement('div'); loadingDiv.className = 'dict-popup'; loadingDiv.innerHTML = '<div class="dict-loading">极速查询中...</div>'; instance.setContent(loadingDiv);
+                            Promise.all([fetchTranslation(word), fetchPhonetics(word), fetchWordLevel(word), fetchCEFR(word)]).then(function(arr){ var resultData = { transData: arr[0], ipaText: arr[1], levelData: arr[2], cefrLevel: arr[3] }; saveToGlobalCache(wordKey, resultData); if (instance.state.isVisible) renderContent(resultData); });
+                        }
+                    }
+                });
+            }
+            setTimeout(function() { initAudioPlayer(); initCEFRStaticDict(); var container = document.getElementById('content-container'); if(container) wrapTextNodesToWord(container); setupTippyDelegate(); initCloudHighlights(); }, 500);
+        })();
+    </script>
+</body>
+</html>
