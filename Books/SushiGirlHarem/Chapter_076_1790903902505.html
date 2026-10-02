@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>What's Flowing Out of Mom's Pussy</title>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <style>
+        body { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; max-width: 800px; margin: 0 auto; padding: 50px 24px; font-size: 20px; line-height: 1.8; letter-spacing: 0.05em; background-color: #FAFAFA; color: #2C2C2C; } h1 { text-align: left !important; font-size: 28px; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #EEEEEE; padding-bottom: 20px; color: #111111; } p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
+        body { padding-top: 70px !important; transition: padding-top 0.3s cubic-bezier(0.4,0,0.2,1); }
+        body.bar-hidden { padding-top: 20px !important; }
+        .reader-bar { position: fixed; top: 0; left: 0; right: 0; min-height: 50px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 1px 8px rgba(0,0,0,0.08); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 5px; }
+        .reader-bar.hidden { transform: translateY(-100%); }
+        .reader-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .reader-btn { background: #E5E5EA; color: #1C1C1E; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+        .reader-btn:active { transform: scale(0.95); }
+        #content-container { transition: font-size 0.2s; }
+        .zh-para { transition: filter 0.3s ease, opacity 0.3s ease; }
+        .global-blur-enabled .zh-para { cursor: pointer; }
+        .global-blur-enabled .zh-para.blurred { filter: blur(0.35em); opacity: 0.5; user-select: none; }
+        .global-blur-enabled .zh-para.blurred:hover { filter: blur(0.2em); opacity: 0.7; }
+        body.highlights-enabled .tm-word.is-highlight { color: #FF3B30 !important; font-weight: 700; background-color: rgba(255, 59, 48, 0.05); border-radius: 3px; padding: 0 2px; }
+        .dict-enabled .tm-word { cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 3px; }
+        .dict-enabled .tm-word:hover, .dict-enabled .tm-word[aria-expanded="true"] { background-color: #E3F2FD; color: #1565C0 !important; }
+        .tippy-box[data-theme~='light-border'] { background-color: #fff; color: #333; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+        .tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before { border-top-color: #ccc; }
+        .tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: #ccc; }
+        .tippy-content { padding: 8px; }
+        .dict-popup { text-align: left; font-size: 14px; line-height: 1.4; max-width: 280px; min-width: 200px; color: #333; font-family: -apple-system, sans-serif; }
+        .dict-header-row { border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
+        .dict-word-line { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .dict-head-word { font-weight: bold; color: #D32F2F; font-size: 18px; }
+        .dict-ipa { font-family: sans-serif; color: #666; font-size: 13px; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
+        .dict-speaker-btn { display: inline-flex; cursor: pointer; color: #1976D2; padding: 2px; border-radius: 50%; transition: background 0.2s; }
+        .dict-speaker-btn:hover { background-color: rgba(25, 118, 210, 0.1); }
+        .dict-speaker-btn svg { width: 18px; height: 18px; pointer-events: none; }
+        .dict-speaker-btn.playing { color: #E91E63; animation: tm-pulse 1s infinite; }
+        .dict-tags-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;}
+        .dict-tag { background: #F0F4F8; color: #476582; font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #D9E2EC; font-weight: 500; }
+        .dict-tag.star-tag { color: #F59E0B; background: #FEF3C7; border-color: #FDE68A; letter-spacing: 1px; padding: 2px 4px; }
+        .dict-tag.cefr-A1 { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+        .dict-tag.cefr-A2 { background: #E0F2F1; color: #00695C; border-color: #B2DFDB; }
+        .dict-tag.cefr-B1 { background: #FFF8E1; color: #F57F17; border-color: #FFECB3; }
+        .dict-tag.cefr-B2 { background: #FFF3E0; color: #E65100; border-color: #FFE0B2; }
+        .dict-tag.cefr-C1 { background: #FCE4EC; color: #C2185B; border-color: #F8BBD0; }
+        .dict-tag.cefr-C2 { background: #F3E5F5; color: #7B1FA2; border-color: #E1BEE7; }
+        .dict-basic-trans { font-size: 14px; color: #444; margin-top: 4px; }
+        .dict-pos-block { margin-bottom: 4px; }
+        .dict-pos-tag { font-style: italic; color: #1976D2; font-weight: bold; font-size: 12px; margin-right: 4px; }
+        .dict-def-list { margin: 0; padding: 0; list-style: none; display: inline; }
+        .dict-def-item { display: inline; }
+        .dict-def-item::after { content: "; "; color: #999; }
+        .dict-def-item:last-child::after { content: ""; }
+        .dict-loading { color: #666; font-style: italic; font-size: 13px; padding: 5px; text-align: center; }
+        @keyframes tm-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body class="bar-hidden global-blur-enabled dict-enabled highlights-enabled">
+    <div class="reader-bar hidden" id="top-bar">
+        <div class="reader-controls">
+            <button class="reader-btn" onclick="adjustFont(-0.1)">A-</button>
+            <button class="reader-btn" onclick="adjustFont(0.1)">A+</button>
+            <button id="blur-btn" class="reader-btn" style="background:#AF52DE; color:white;" onclick="toggleBlur()">模糊: 开</button>
+            <button id="hl-btn" class="reader-btn" style="background:#FF3B30; color:white;" onclick="toggleHighlight()">高亮: 开</button>
+            <button id="dict-btn" class="reader-btn" style="background:#34C759; color:white;" onclick="toggleDict()">查词: 开</button>
+        </div>
+    </div>
+    <div id="content-container">
+    <h1 style="text-align: left !important;">What's Flowing Out of Mom's Pussy</h1>
+    <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">发布时间：2026/10/2 09:18:10</div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">妈妈的逼里到底流出了什么</p>
+    <p>Dozens of flowering plants in a glass indoor garden, a pleasant temperature and fragrant smell, and this scene of a fully made-up, veteran announcer taking her stepson's dick with her ass while pulling down her panties and hiking up her skirt felt more like an AV than any actual AV.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">四面由玻璃打造的温室里，几十种盛开的奇花异草散发出阵阵怡人的芬芳，室温恰到好处。眼前这幅画面——一位精心化着全妆、经验丰富的资深女主播，正褪下内裤、撩起裙摆，用丰满的臀部迎合并吞吃着继子的肉棒——比起市面上任何正规的AV，看起来都要更加色情刺激。</p>
+    <p>"Kheuheueuk~~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“克呼呼呃~~”</p>
+    <p>Daejun-kun seemed to have come with a refreshing burst, pressing his pubic bone against Ryoko Ajumma's ass and shuddering all over.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">大俊君似乎迎来了一次酣畅淋漓的喷发，他将耻骨死死压在凉子阿姨的屁股上，整个人浑身剧烈颤抖着。</p>
+    <p>"Aaaang! Daejun-kun's baby seed...semen...is coming in so deep!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“啊啊嗯！大俊君的生命种子……精液……好深，全部射进来了！”</p>
+    <p>"Keuhat~ Yeah, deeper! Deeper! I have to shoot it all the way in~ That way it won't leak out, right?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“可哈特~ 没错，再深点！更深点！老子得把它们全打进子宫最里面~ 这样才不会漏出来嘛，对吧？”</p>
+    <p>Daejun-kun's dick was still throbbing until the very end, as if trying to pour out every last drop of semen from his balls.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">直到最后一刻，大俊君的肉棒依然在强力跳动着，仿佛要把蛋蛋里的最后一滴存货全数榨干喷射出来。</p>
+    <p>"Ryoko-sang...? I think I'm done~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“凉子阿姨……？我这回算是彻底交代啦~”</p>
+    <p>"Eueung~ Then hurry....I'm late, Daejun-kun~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“嗯呃~ 那你快点……我快要迟到了啦，大俊君~”</p>
+    <p>"Alright, alright~ Don't rush me, I'm pulling my dick out now, so put your panties on right away~ Got it?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“好啦好啦~ 别催嘛，我这就把鸡巴拔出来，你赶紧把内裤穿好~ 听见没？”</p>
+    <p>"Eung?!?!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“嗯？！！”</p>
+    <p>The pervert Daejun-kun was probably planning to send Ryoko Ajumma to the broadcasting station with his semen held deep inside her Boji.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">变态的大俊君，分明是打算让凉子阿姨带着满满一肚子他的精液，挺着个大浓逼去电视台上班。</p>
+    <p>"Don't change your panties on the way! Promise! Even if the semen leaks out, just wipe it off roughly with a tissue~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“半路上绝对不许换内裤！跟老子拉钩保证！就算精液顺着流出来，也只能拿纸巾在外面胡乱擦擦~”</p>
+    <p>What on earth was he saying? Ryoko Ajumma figured this must be the condition Daejun-kun was talking about for cumming quickly, and before she knows it, she was blushing and nodding her head.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这都说的什么荒唐话啊？凉子阿姨寻思着，这大概就是大俊君刚才答应要“快点射出来”的附加条件吧，鬼使神差地红着脸点下了头。</p>
+    <p>"UueueuPull...pulling it out~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“呜呃呃 拔……拔出来了~”</p>
+    <p>Daejun-kun slowly pulled out his limp dick that had been buried in Ryoko Ajumma's Boji, and because he had shot so deeply, his semen didn't gush out. As promised, Ryoko Ajumma quickly blocked her Boji hole with her hand and hurriedly pulled up her son's thong panties.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">大俊君慢条斯理地将埋在凉子阿姨体内那根疲软下来的肉棒抽了出来。由于射得足够深，浓稠的精液并没有立刻涌出来。按照约定，凉子阿姨急忙用手捂住大开的穴口，手忙脚乱地把那条宝贝儿子的丁字裤提了上去。</p>
+    <p>"EuheRyoko-sang...Mom~ You look so fucking hot right now~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“唔嘿 凉子阿姨……妈妈~ 你现在这副样子真是骚到骨子里了~”</p>
+    <p>"Pe...Pervert! Daejun-kun is such an incorrigible pervert!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“变……变态！大俊君你简直是个无可救药的大变态！”</p>
+    <p>Daejun-kun gazed intently at Ryoko Ajumma, who was putting on her panties and tidying up her clothes with her Boji full of her stepson's semen, with a very satisfied expression, and said again.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">大俊君带着一脸心满意足的淫笑，死死盯着正穿着内裤、整理着裙装的凉子阿姨——她那逼里可正满满当当兜着继子的浓精呢。</p>
+    <p>"Don't change your panties~ I'm going to check when you get off work today~ Got it, Mom?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“不准换内裤哦~ 等你今天下班回家，我可是要亲自检查的~ 听清楚了吗，妈妈？”</p>
+    <p>"Pe...Pervert! I'm late, I've got to go!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“变……变态！我要迟到了，得赶紧走了！”</p>
+    <p>Ryoko Ajumma looked in the hand mirror one last time to fix her makeup and then quickly ran out of the garden. She would probably be carrying her son's semen inside her throughout the entire broadcast recording today.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">凉子阿姨最后用随身携带的小化妆镜照了照、整理好仪容，慌里慌张地逃出了温室花园。接下来的整个节目录制期间，她恐怕都得怀揣着儿子的浓精在演播室里强撑了。</p>
+    <p>"Congratulations on your graduation, Daejun-ssi. You passed the final completion exam with an average score of 96 points~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“恭喜你顺利毕业，大俊先生。你以平均96分的优异成绩通过了最终结业考试~”</p>
+    <p>Daejun-kun's regrettable language school life came to an end with the graduation exam.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">伴随着这场结业考试，大俊君充满遗憾（与艳遇）的语言学校生涯总算告一段落。</p>
+    <p>"Thank you for everything, teacher. It's all thanks to you~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“谢谢老师这段时间的照顾，全凭您教导有方~”</p>
+    <p>"You're welcome. So, what are you going to do in Japan now, Daejun-ssi? Further education? Employment?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“不用客气。那么，大俊君接下来打算在日本做点什么呢？继续深造，还是找工作就业？”</p>
+    <p>"I don't think studying suits me, so I'm thinking of getting a job."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我觉得自己不是读书的料，所以打算先找个工作上班。”</p>
+    <p>"Hehe~ Excellent, Daejun-ssi. If you have any linguistic questions while living here, please feel free to contact me anytime~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“呵呵~ 很好，很有魄力。今后在日本生活要是遇到什么语言上的难处，随时欢迎来找老师咨询哦~”</p>
+    <p>"Yes, thank you."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“好的，谢谢老师。”</p>
+    <p>"Ah! And you're dressed very nicely today. Are you going somewhere special?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“啊！对了，你今天穿得这么帅气正式，是要去什么特殊的地方吗？”</p>
+    <p>"Ah! Yes, I have a job interview today~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“啊！对的，我今天要去参加一场工作面试~”</p>
+    <p>Daejun-kun had been diligently looking for a job in secret. Like in Korea, there were several major job placement sites in Japan, and the system was well-established, but it wasn't easy for Daejun-kun, who only had a high school diploma and no experience or skills, to find a job in Japan.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">大俊君其实一直在暗地里勤勤恳恳地物色工作。跟韩国一样，日本也有好几家大型招聘求职网站，职场体系相当成熟；不过对于只有高中学历、既无工作经验又没一技之长的大俊君来说，想在日本正经找个好工作可没那么容易。</p>
+    <p>'Ah, fuck, I don't want to work in a factory...'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">‘靠，真他妈不想去流水线工厂打螺丝……’</p>
+    <p>Usually, simple production jobs, sales jobs, or jobs in sales or public relations were the spectrum of jobs that Daejun-kun could consider in his situation, much like in Korea.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">通常情况下，像他这种条件，无非也就是去干点基础组装、实体店销售或者客服公关之类的底层活儿，两国国情都差不多。</p>
+    <p>'Huh? What's this? Kuroki Department Store? Sales position, huh....'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">‘咦？这是什么？黑木百货？服装导购销售岗位……嗯？’</p>
+    <p>Whether it was a trick of fate or an inevitable conclusion, a job advertisement banner for the familiar Kuroki Department Store on a job search site caught Daejun-kun.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">不知是命运的戏弄还是命中注定，招聘网站首页上挂着的那块熟悉的黑木百货招聘横幅，一下子抓住了大俊君的眼球。</p>
+    <p>Daejun-kun had been to the Kuroki Department Store in Shinjuku with Kazuha Nuna in early summer. He had also met Kazuha Nuna's aunt, Kuroki Saika Daepyo, at the Sky Lounge there.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">初夏时节，大俊君曾跟着一叶姐姐去过新宿的黑木百货，甚至还在那里的空中酒廊偶遇过一叶姐姐的姑姑、黑木家掌权人黑木彩香代表。</p>
+    <p>'Oho~ The atmosphere of the Kuroki Department Store in Ginza is a bit different...'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">‘哦吼~ 银座这家黑木百货的格调好像不太一样啊……’</p>
+    <p>But the place where Daejun-kun was scheduled to have an interview today was the Kuroki Department Store in Ginza, specifically for the assistant sales staff position at the Italian luxury women's shoe brand 'Ulysses Trojan,' which had recently signed a new store agreement.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">不过，大俊君今天预约面试的地方，是位于银座的黑木百货总店——具体岗位是刚进驻不久的意大利奢华女鞋品牌“尤利西斯特洛赞（Ulysses Trojan）”的销售助理。</p>
+    <p>'Wow~ They say it's a department store specializing in female customers, and it's a bit different~'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">‘哇塞~ 听说这种地方专走高端女性客户路线，氛围就是不一样~’</p>
+    <p>Daejun-kun, who arrived about twenty minutes early, looked around the Ginza branch, where he might be working, and was intrigued by the fact that many of the female employees and most of the customers walking through the department store were women.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">提前二十分钟到达的大俊君在未来可能工作的银座店里四处闲逛，看着店里琳琅满目的女性顾客以及清一色貌美的女导购，心里直犯嘀咕。</p>
+    <p>(Uooo~ So, is my first job going to be a harem too?)</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（呜噢噢~ 难道我的第一份工作，也要掉进女人堆里开启后宫模式吗？）</p>
+    <p>Daejun-kun, already drinking kimchi soup as if he had secured the job, didn't seem to realize that the eyes of the female employees and female customers were on him every time he walked around the department store lounge.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">还没拿到offer呢，这小子就已经美滋滋地开始自作多情了。他压根没注意到，当他在百货商场的休息大厅溜达时，周围不少女员工和女顾客的目光其实正偷偷落在他身上。</p>
+    <p>"E...So, you have no sales experience at all?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“额……这么说，你完全没有任何销售经验喽？”</p>
+    <p>"That's right."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“对啊，零经验。”</p>
+    <p>Three interviewers, one woman and two men, were looking at Daejun-kun with slightly dumbfounded expressions.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一女二男三位面试官，此刻正用一种大跌眼镜、像看外星人一样的表情盯着大俊君。</p>
+    <p>"Is there no problem with Japanese communication at all?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“那日常日语交流沟通方面完全没问题吗？”</p>
+    <p>"Yes, well, I completed the language school course this time, and I understand most things."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“对，怎么说呢，我刚从语言学校结业嘛，大部分日常对话都能听懂。”</p>
+    <p>"A...Language school...Excuse me, Daejun-kun? Our Ginza branch is the best department store in Japan, and our customers have a very high income level...."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“语言……学校……请问一下，大俊君？我们银座店可是全日本首屈一指的高端百货，光顾这里的客户全都是社会各界的高收入精英阶层……”</p>
+    <p>Cutting off the male interviewer on the left who looked dumbfounded, the female interviewer, who seemed to have some experience, asked Daejun-kun again.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">左边那个目瞪口呆的男面试官话还没说完，旁边那位资历颇深的女面试官便皱着眉打断了他，再次向大俊君发问。</p>
+    <p>"Leaving the language school aside...how long have you been in Japan?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“抛开语言学校不谈……你来日本到底多久了？”</p>
+    <p>"EueumLet's see...It hasn't been a year yet~ Haha~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“唔姆 让我想想……好像还不到一年吧~ 哈哈~”</p>
+    <p>Whether he was stupid or his brain was transparent, Daejun-kun, who looked like he had come to hang out rather than attend an interview, did just smile brightly, and the interviewers' bewildered expressions continued.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">这小子到底是缺心眼还是脑子缺根弦？他那副轻松自在的架势，压根不像来面试，倒像是来百货店溜达串门的。一抹灿烂的傻笑挂在脸上一问三不知，三位面试官脸上的表情已经彻底裂开、进入呆滞状态了。</p>
+    <p>"A foreigner who has been in Japan for less than a year...wants to work as a salesperson in a luxury women's brand store in a department store in Tokyo, specifically Ginza??"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“一个来日本还不到一年的外国人……居然敢跑来东京银座、顶奢百货的奢侈品女鞋专柜应聘销售导购？！”</p>
+    <p>"Yes."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“对啊，不行吗。”</p>
+    <p>The interviewers were in an uproar at Daejun-kun's attitude, which seemed to be saying, "Yeah, so what, you fucker?" with a bright expression.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">大俊君那副“老子就是来应聘的，有意见憋着”的理直气壮样，气得面试官们差点当场掀桌子。</p>
+    <p>"Okay, then. Do you know anything about shoes? You're wearing sneakers right now..."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“行，算你狠。那总该对鞋类产品有所了解吧？你脚上现在穿的还是运动板鞋……”</p>
+    <p>"I don't know anything about shoes, but I wore these sneakers because they're pretty~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我对鞋子一窍不通啊，不过这双运动鞋挺好看的，所以我才穿来~”</p>
+    <p>"Ah....Yes, I see. Thank you for your time."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“啊……好，了解了。感谢您百忙之中抽空来面试。”</p>
+    <p>The woman ended the interview as if there was nothing more to ask, and Daejun-kun asked back brightly again.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">女面试官摆出一副无话可说、直接判了死刑的表情结束了面试；而大俊君却依旧厚着脸皮、笑逐颜开地反问了一句。</p>
+    <p>"So, when can I start working?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“那请问，我什么时候可以正式来上班？”</p>
+    <p>(Ah...Oh no, I can feel it leaking out....)</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（啊……糟糕，感觉好像要涌出来了……）</p>
+    <p>Ryoko Ajumma, the main host of Fuji TV's flagship arts program 'Musical Cake,' was currently conducting an interview recording with Aoyama Yuuki, Japan's top up-and-coming musical director.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">与此同时，富士电视台王牌艺术访谈节目《音乐蛋糕》的金牌主持人凉子阿姨，正在演播厅内对日本当红新锐音乐剧导演青山裕树进行专访录制。</p>
+    <p>"Yes, so...Yuuki-sang? There are many cases where overseas works are brought to the domestic stage...What points do you pay attention to...when you do...?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“好的，那么……青山导演？许多海外经典剧目引进国内本土化时，往往会面临诸多挑战……请问您在进行改编时，最看重……或者说最关注的的核心要素是……”</p>
+    <p>The director, conscious of Ryoko Ajumma, who seemed a little strange, replied.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">察觉到凉子阿姨今天状态似乎有点不对劲、神色略显古怪，导演一边回答，一边暗自犯嘀咕。</p>
+    <p>"Yes, first of all, it shouldn't be too far removed from Japanese sentiments, but it shouldn't lose the original artistry either....Excuse me, Ryoko-sang??"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“是的，首先必须要契合本土观众的审美情趣与情感共鸣，同时又不能丢失原作本身的艺术精髓……等等，凉子女士，您没事吧？？”</p>
+    <p>Cut! Cut!</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“卡！卡停一下！”</p>
+    <p>Hey, Ryoko! Why is your face so pale? Are you sick?</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“喂，凉子！你脸色怎么惨白成这样？哪里不舒服吗？”</p>
+    <p>The camera director, who noticed something strange, called cut.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">敏锐捕捉到异样的摄像师连忙喊停。</p>
+    <p>The program PD decided to take an unexpected ten-minute break, and Ryoko Ajumma was running to the waiting room for the performers.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">节目导播当即决定临时中断录制，宣布休息十分钟。而凉子阿姨则拎着裙摆，跌跌撞撞地朝嘉宾休息室狂奔而去。</p>
+    <p>(Uaaa~ What to doIt feels like it's gushing out even now...)</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（呜哇啊~ 怎么办才好 感觉现在正一博一博地往外涌呢……）</p>
+    <p>The semen that Daejun-kun had shot in the morning was leaking out throughout the broadcast, trickling between the thong panties that barely covered her Boji hole.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">大俊君早晨射进她体内的浓精，在整场节目录制期间一直在不断往外渗漏，顺着那条堪堪遮住私处的丁字裤边缘蜿蜒下流。</p>
+    <p>Click</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">咔哒。</p>
+    <p>As soon as Ryoko Ajumma entered the waiting room, she locked the door and pulled up her dress skirt.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">一进休息室，凉子阿姨反手“咔哒”一声把门反锁死，迫不及待地一把撩起了连衣裙的裙摆。</p>
+    <p>'Oh...My goodness~ What should I do...'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">‘天呐……我的老天爷呀~ 这可怎么是好……’</p>
+    <p>The tiny front part of the thong panties was already soaked with Daejun-kun's semen, and the inside of her thighs was covered with a sticky mess like whitish snot.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">丁字裤前面那巴掌大的一小片布料早就被大俊君的精液彻底浸透了，大腿内侧更是沾满了像乳白色鼻涕一样的黏稠液体，一片狼藉。</p>
+    <p>Ryoko Ajumma instinctively tried to take off her panties but stopped for a moment.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">凉子阿姨本能地想把这条湿哒哒的内裤直接脱掉，可手刚伸到腰间却突然僵住了。</p>
+    <p>(Ah! That's right, Daejun-kun told me never to take them off...)</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（啊！对了……大俊君临走前千叮咛万嘱咐，绝对不准我脱下来的……）</p>
+    <p>Recalling her stepson's excited and gasping appearance, Ryoko Ajumma found herself amused rather than angry.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">回想起继子当时那副兴奋得面红耳赤、霸道又孩子气的模样，凉子阿姨不仅没有生气，心底反而涌起一股荒诞的哭笑不得。</p>
+    <p>(Pervert! Daejun-kun is such an incorrigible pervert...)</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（真是个坏透了的小冤家！大俊君这小子绝对无可救药了……）</p>
+    <p>Remembering her son's words not to take off her panties, Ryoko Ajumma pulled out a few wet wipes and began to wipe her thighs, and then slightly pushed aside the front part of the thong panties that were touching her Boji.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">遵照儿子的死命令，她忍住了换内裤的冲动，抽了几张湿纸巾先把大腿内侧的黏液擦干净，接着用手指小心翼翼地拨开了贴在阴户前方的丁字裤布料。</p>
+    <p>Drip~</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">答……</p>
+    <p>When she pushed the panties aside, a drop of semen oozed out from the front of her Boji hole, and Ryoko Ajumma put her finger on her Boji flesh, which was soaked with her son's semen.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">布料刚被掀开，一滴饱含着雄性荷尔蒙的浓稠精液便顺着合不拢的穴口溢了出来。凉子阿姨鬼使神差地伸出纤细的手指，轻轻抹在了那片被继子的精液彻底泡软的红肿肉穴上。</p>
+    <p>Drip~ Slurp...</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">拉丝……啧……</p>
+    <p>(Aaa....It's slippery...Daejun-kun's semen...He shot so much...)</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（啊……滑溜溜的……全是大俊君的精液……居然射了这么多……）</p>
+    <p>Ryoko Ajumma didn't seem to dislike the stickiness of her son's semen.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">此刻的凉子阿姨，脸上竟然找不出一丝嫌弃，反倒透着一股沉沦其中、隐秘的快感。</p>
+    <p>"I'm home~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“我回来啦~”</p>
+    <p>In the early evening, when I returned to the mansion, Fumiko Halmeoni was still busy preparing dinner, and Sana Chongjang, who had finished exercising and returned, seemed to be chattering next to Halmeoni and helping with the meal preparation.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">傍晚时分，大俊君晃晃悠悠回到了田园调布的大宅。文子奶奶一如既往地在厨房里忙活着张罗晚饭；刚结束冰场训练赶回家的纱奈则像个小麻雀一样叽叽喳喳地围在奶奶身边打下手。</p>
+    <p>"Daejun-nim~ Welcome home. You worked hard today, didn't you?"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“大俊少爷~ 您回来啦。今天到处奔波面试，辛苦了吧？”</p>
+    <p>Fumiko Halmeoni still greeted me as if I were a young master, and Sana Chongjang, who was next to her, ran out and jumped into my arms.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">文子奶奶依旧像对待真正的贵公子般慈爱地迎上前；而旁边的纱奈更是欢呼一声，直接乳燕投林般扑进了我的怀里。</p>
+    <p>"Jjoon Oppa~~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“俊欧巴~~”</p>
+    <p>"Keuheok~ Sa...Sana Chongjang...? Let go a little, I can't breathe~ Kehek!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“咳呼~ 纱……纱奈？你这丫头松开点，勒得我喘不过气了~ 咳咳！”</p>
+    <p>"Stay still~ I'm just greeting you~ What, what are you looking around for? Kazuha Onee-chan? Onee-chan is in her room, she'll be down soon~"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“别动嘛~ 人家这是在表达欢迎呢~ 怎么，东张西望的在找谁呀？找一叶姐姐？姐姐在楼上房间里呢，待会儿就下来啦~”</p>
+    <p>As expected, Sana Chongjang was quick-witted.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">纱奈这小机灵鬼，心思敏锐得跟什么似的。</p>
+    <p>I ran up to my room on the third floor, washed my hands and feet, changed into my workout clothes, and came back down the stairs. Just then, I made eye contact with Ryoko Ajumma, who was entering the hallway on the first floor.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我三步并作两步窜上三楼卧室，洗了把脸换了身家居服，又溜溜达达下了楼。正巧这时，刚结束节目录制赶回家的凉子阿姨也迈步走进了玄关走廊。</p>
+    <p>(Eung?)</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">（嗯？）</p>
+    <p>When she made eye contact with me, Ryoko-sang blushed like a high school girl who had run into her favorite student teacher and quickly ran into her room at the end of the hallway.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">四目相对的瞬间，凉子阿姨的脸颊“刷”地一下红透了，活像个在走廊里撞见暗恋男老师的高中女生，慌里慌张地扭头钻进了走廊尽头的自己房间里。</p>
+    <p>'Keukeukeu~ Why is that Ajumma acting like that...'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">‘咯咯咯~ 这阿姨怎么还是这么不禁逗……’</p>
+    <p>Of course, I knew the reason, and imagining it made my dick swell up in my pants.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">原因我当然心知肚明。只要一脑补她这一整天顶着满肚子我的精液在电视台录节目的场景，我裤裆里的肉棒就忍不住硬得发胀。</p>
+    <p>'EuheShall I go check her homework?'</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">‘嘿嘿 要不去视察一下阿姨今天的“课后作业”完成得怎么样？’</p>
+    <p>I put on a lecherous face, fondled my dick, and headed to Mom's room at the end of the hallway.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">我挂起一张标准的大尾巴狼淫笑，隔着裤子撸了撸精神抖擞的二弟，大步朝走廊尽头的妈妈房间走去。</p>    </div>
+    <script>
+        var STORAGE_KEY = 'bio_reader_prefs_' + location.pathname.replace(/[^a-zA-Z0-9]/g, '');
+        var prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { font: 1.0, dictEnabled: true, barHidden: true, highlightEnabled: true, blurEnabled: true };
+        var bar = document.getElementById('top-bar');
+        var content = document.getElementById('content-container');
+        var dictBtn = document.getElementById('dict-btn');
+        var hlBtn = document.getElementById('hl-btn');
+        var blurBtn = document.getElementById('blur-btn');
+        function applyPrefs() {
+            content.style.fontSize = prefs.font + 'em';
+            if (prefs.barHidden) { bar.classList.add('hidden'); document.body.classList.add('bar-hidden'); } else { bar.classList.remove('hidden'); document.body.classList.remove('bar-hidden'); }
+            if (prefs.dictEnabled) { document.body.classList.add('dict-enabled'); dictBtn.innerText = "查词: 开"; dictBtn.style.background = "#34C759"; dictBtn.style.color = "#fff"; } else { document.body.classList.remove('dict-enabled'); dictBtn.innerText = "查词: 关"; dictBtn.style.background = "#E5E5EA"; dictBtn.style.color = "#1C1C1E"; }
+            if (prefs.highlightEnabled) { document.body.classList.add('highlights-enabled'); hlBtn.innerText = "高亮: 开"; hlBtn.style.background = "#FF3B30"; hlBtn.style.color = "#fff"; } else { document.body.classList.remove('highlights-enabled'); hlBtn.innerText = "高亮: 关"; hlBtn.style.background = "#E5E5EA"; hlBtn.style.color = "#1C1C1E"; }
+            if (prefs.blurEnabled) { document.body.classList.add('global-blur-enabled'); blurBtn.innerText = "模糊: 开"; blurBtn.style.background = "#AF52DE"; blurBtn.style.color = "#fff"; document.querySelectorAll('.zh-para').forEach(function(el){el.classList.add('blurred');}); } else { document.body.classList.remove('global-blur-enabled'); blurBtn.innerText = "模糊: 关"; blurBtn.style.background = "#E5E5EA"; blurBtn.style.color = "#1C1C1E"; }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        }
+        document.addEventListener('dblclick', function(e) {
+            if(e.target.closest('#top-bar') || e.target.classList.contains('zh-para')) return;
+            prefs.barHidden = !prefs.barHidden; applyPrefs();
+        });
+        function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); }
+        function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); }
+        function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); }
+        function toggleBlur() { prefs.blurEnabled = !prefs.blurEnabled; applyPrefs(); }
+        window.addEventListener('DOMContentLoaded', function() {
+            applyPrefs(); var savedScroll = localStorage.getItem(STORAGE_KEY + '_scroll');
+            if (savedScroll) { setTimeout(function(){ window.scrollTo(0, parseFloat(savedScroll)); }, 150); }
+        });
+        var scrollTimer;
+        window.addEventListener('scroll', function() {
+            if (scrollTimer) clearTimeout(scrollTimer); scrollTimer = setTimeout(function(){ localStorage.setItem(STORAGE_KEY + '_scroll', window.scrollY); }, 300);
+        });
+        var highlightWords = new Set();
+        async function initCloudHighlights() {
+            var cacheKey = 'bio_remote_hl_words_v2'; var cached = localStorage.getItem(cacheKey); var now = Date.now();
+            if (cached) { try { var parsed = JSON.parse(cached); if (now - parsed.time < 24 * 60 * 60 * 1000 && Array.isArray(parsed.data)) { highlightWords = new Set(parsed.data); applyHighlightsToDOM(); return; } } catch(e){} }
+            try {
+                var urls = ['https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://ghproxy.net/https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://fastly.jsdelivr.net/gh/moodHappy/HelloWorld@master/Notes/one.txt'];
+                var text = ''; for (var i=0; i<urls.length; i++) { try { var res = await fetch(urls[i]); if (res.ok) { text = await res.text(); if (text && !text.includes('<html') && !text.includes('Cloudflare')) break; } } catch(err){} }
+                if (!text) throw new Error(); var arr = text.split('\n').map(function(w){return w.trim().toLowerCase();}).filter(function(w){return w;});
+                if (arr.length > 0) { highlightWords = new Set(arr); localStorage.setItem(cacheKey, JSON.stringify({data: arr, time: now})); applyHighlightsToDOM(); }
+            } catch(e){}
+        }
+        function applyHighlightsToDOM() {
+            if(highlightWords.size === 0) return;
+            document.querySelectorAll('.tm-word').forEach(function(span){ if(highlightWords.has(span.textContent.trim().toLowerCase())) span.classList.add('is-highlight'); });
+        }
+        var GM_getValue = function(key, def) { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; };
+        var GM_setValue = function(key, val) { localStorage.setItem(key, JSON.stringify(val)); };
+        (function() {
+            function fetchWithTimeout(url, options = {}, timeout = 3000) { const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeout); return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer)); }
+            var ttsConfig = { voices: ["en-US-AdamNeural", "en-US-AriaNeural", "en-US-AnaNeural", "en-US-JennyNeural", "en-US-GuyNeural"], apis: [ { url: "https://read-aloud-bay.vercel.app/api/synthesis", type: "read-aloud" }, { url: "https://libre-tts-nu.vercel.app/api/tts", type: "libre" } ] };
+            var globalResultCache = GM_getValue('tm_dict_cache', {}); var saveTimeout = null;
+            function saveToGlobalCache(wordKey, resultData) { globalResultCache[wordKey] = resultData; var keys = Object.keys(globalResultCache); if (keys.length > 2000) delete globalResultCache[keys[0]]; clearTimeout(saveTimeout); saveTimeout = setTimeout(function(){ GM_setValue('tm_dict_cache', globalResultCache); }, 1500); }
+            var cefrStaticCache = {};
+            function initCEFRStaticDict() {
+                var staticUrls = ["https://fastly.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json","https://cdn.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json"];
+                var idx = 0; var tryFetch = function() { if (idx >= staticUrls.length) return; fetch(staticUrls[idx++]).then(function(r){return r.json();}).then(function(data){ if (Array.isArray(data)) data.forEach(function(item){ if (item.word && item.cefr) cefrStaticCache[item.word.toLowerCase()] = item.cefr.toUpperCase(); }); }).catch(tryFetch); };
+                tryFetch();
+            }
+            async function fetchCEFR(word) {
+                var w = word.toLowerCase(); if (cefrStaticCache[w]) return cefrStaticCache[w];
+                const targetUrl = 'https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(w);
+                const proxies = [ targetUrl, 'https://corsproxy.io/?' + encodeURIComponent(targetUrl), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl) ];
+                const tryProxy = async (proxy) => { const res = await fetchWithTimeout(proxy, {}, 2500); if (!res.ok) throw new Error(); const text = await res.text(); var match = text.match(/(?:epp-xref|dxref)[^>]*>\s*([A-C][1-2])\s*<\/span>/i) || text.match(/title="CEFR[^>]*>\s*([A-C][1-2])\s*<\/span>/i); if (match && match[1]) { cefrStaticCache[w] = match[1].toUpperCase(); return cefrStaticCache[w]; } return null; };
+                try { return await Promise.any(proxies.map(p => tryProxy(p))); } catch(e) { return null; }
+            }
+            async function fetchTranslation(text) { try { const res = await fetchWithTimeout('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&q=' + encodeURIComponent(text), {}, 3500); if (!res.ok) throw new Error(); return await res.json(); } catch(e) { return [[['查询超时或网络错误']]]; } }
+            async function fetchPhonetics(text) { try { const res = await fetchWithTimeout('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(text), {}, 2500); if (!res.ok) return null; const data = await res.json(); if (data && data.length > 0) { const pObj = data[0].phonetics.find(p => p.text) || data[0]; return pObj.text || null; } return null; } catch(e) { return null; } }
+            async function fetchWordLevel(text) {
+                const targetUrl = 'https://dict.youdao.com/jsonapi?q=' + encodeURIComponent(text);
+                const proxies = [ 'https://corsproxy.io/?' + encodeURIComponent(targetUrl), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl), 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl) ];
+                const tryProxy = async (proxy) => { const res = await fetchWithTimeout(proxy, {}, 2000); if (!res.ok) throw new Error(); const data = await res.json(); var result = { stars: 0, tags: [] }; if (data.ec && data.ec.exam_type) result.tags = data.ec.exam_type; if (data.collins && data.collins.collins_entries && data.collins.collins_entries.length > 0) { var starStr = data.collins.collins_entries[0].star; if (starStr) { var parsedNum = parseInt(String(starStr).replace(/[^0-9]/g, ''), 10); result.stars = isNaN(parsedNum) ? 0 : parsedNum; } } return result; };
+                try { return await Promise.any(proxies.map(p => tryProxy(p))); } catch (e) { return { stars: 0, tags: [] }; }
+            }
+            var globalAudioPlayer = null; var currentPlayingBtn = null;
+            function initAudioPlayer() { if (!globalAudioPlayer) { globalAudioPlayer = document.createElement('audio'); globalAudioPlayer.style.display = 'none'; document.body.appendChild(globalAudioPlayer); } }
+            function playTTS(apiIndex, text, voice, btn) {
+                if (apiIndex >= ttsConfig.apis.length) { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); return; }
+                if (currentPlayingBtn && currentPlayingBtn !== btn) currentPlayingBtn.classList.remove('playing');
+                currentPlayingBtn = btn; btn.classList.add('playing'); var api = ttsConfig.apis[apiIndex]; var params = new URLSearchParams();
+                if (api.type === "read-aloud") { params.append("text", text); params.append("voiceName", voice); } else { params.append("t", text); params.append("v", voice); params.append("r", "0"); params.append("p", "0"); }
+                globalAudioPlayer.src = api.url + '?' + params.toString(); globalAudioPlayer.onended = function() { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); };
+                globalAudioPlayer.onerror = function() { playTTS(apiIndex + 1, text, voice, btn); }; var p = globalAudioPlayer.play(); if (p !== undefined) p.catch(function(){ playTTS(apiIndex + 1, text, voice, btn); });
+                }
+            function wrapTextNodesToWord(rootNode) {
+                var ignoreTags = new Set(['SCRIPT', 'STYLE', 'BUTTON', 'A']);
+                var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, { acceptNode: function(currentNode) { var parent = currentNode.parentNode; if (!parent || ignoreTags.has(parent.nodeName.toUpperCase()) || parent.closest('.tm-word') || parent.closest('.zh-para')) return NodeFilter.FILTER_REJECT; if (!currentNode.nodeValue.trim() || !/\b[a-zA-Z'-]+\b/.test(currentNode.nodeValue)) return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; } });
+                var nodesToWrap = []; let currNode; while ((currNode = walker.nextNode())) { nodesToWrap.push(currNode); }
+                nodesToWrap.forEach(function(textNode) {
+                    var text = textNode.nodeValue; var fragment = document.createDocumentFragment(); var lastIndex = 0;
+                    text.replace(/\b([a-zA-Z'-]+)\b/g, function(match, p1, offset) { if (offset > lastIndex) fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset))); var span = document.createElement('span'); span.className = 'tm-word'; span.textContent = match; fragment.appendChild(span); lastIndex = offset + match.length; return match; });
+                    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.substring(lastIndex))); if (fragment.childNodes.length > 0) textNode.parentNode.replaceChild(fragment, textNode);
+                });
+            }
+            function formatDictData(originalWord, data) {
+                var transData = data.transData; var ipaText = data.ipaText; var levelData = data.levelData; var cefrLevel = data.cefrLevel; var tagsHtml = '';
+                if (cefrLevel || (levelData && (levelData.stars > 0 || (levelData.tags && levelData.tags.length > 0)))) {
+                    tagsHtml += '<div class="dict-tags-row">'; if (levelData && levelData.stars > 0) tagsHtml += '<span class="dict-tag star-tag">' + '★'.repeat(levelData.stars) + '☆'.repeat(5 - levelData.stars) + '</span>'; if (cefrLevel) tagsHtml += '<span class="dict-tag cefr-' + cefrLevel + '">CEFR ' + cefrLevel + '</span>'; if (levelData && levelData.tags) levelData.tags.forEach(function(tag){ tagsHtml += '<span class="dict-tag">' + tag + '</span>'; }); tagsHtml += '</div>';
+                }
+                var basicTrans = (transData && transData[0] && transData[0][0]) ? transData[0][0][0] : '';
+                var html = '<div class="dict-header-row"><div class="dict-word-line"><span class="dict-head-word Casting">' + originalWord + '</span>' + (ipaText ? '<span class="dict-ipa">' + ipaText + '</span>' : '') + '<span class="dict-speaker-btn" data-word="' + originalWord.replace(/"/g, '&quot;') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span></div>' + tagsHtml + '<div class="dict-basic-trans">' + basicTrans + '</div></div>';
+                var dictEntries = transData ? transData[1] : null;
+                if (dictEntries && dictEntries.length > 0) {
+                    html += '<div class="dict-details">'; dictEntries.forEach(function(entry){ var pos = entry[0]; var displayDefs = entry[1].slice(0, 3); html += '<div class="dict-pos-block"><span class="dict-pos-tag">' + pos + '.</span><ul class="dict-def-list">'; displayDefs.forEach(function(def){ html += '<li class="dict-def-item">' + def + '</li>'; }); html += '</ul></div>'; }); html += '</div>';
+                } else if (!basicTrans) { html += '<div style="padding:5px; color:#666; font-size:13px;">无释义结果...</div>'; }
+                return html;
+            }
+            function setupTippyDelegate() {
+                tippy.delegate(document.body, { 
+                    target: '.tm-word', trigger: 'click', interactive: true, theme: 'light-border', placement: 'bottom', appendTo: function(){return document.body;}, maxWidth: 320,
+                    onShow: function(instance) {
+                        if (!document.body.classList.contains('dict-enabled')) return false;
+                        var word = instance.reference.innerText.trim(); var wordKey = word.toLowerCase();
+                        var renderContent = function(data) { if (instance.reference.innerText.trim() !== word) return; var contentDiv = document.createElement('div'); contentDiv.className = 'dict-popup'; contentDiv.innerHTML = formatDictData(word, data); ['mousedown', 'touchstart', 'click'].forEach(function(evt){ contentDiv.addEventListener(evt, function(e){e.stopPropagation();}, { capture: true }); }); var btn = contentDiv.querySelector('.dict-speaker-btn'); if (btn) { btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var text = btn.getAttribute('data-word'); if (!text || btn.classList.contains('playing')) return; playTTS(0, text.trim(), ttsConfig.voices[Math.floor(Math.random() * ttsConfig.voices.length)], btn); }); } instance.setContent(contentDiv); };
+                        if (globalResultCache[wordKey]) { renderContent(globalResultCache[wordKey]); } else {
+                            var loadingDiv = document.createElement('div'); loadingDiv.className = 'dict-popup'; loadingDiv.innerHTML = '<div class="dict-loading">极速查询中...</div>'; instance.setContent(loadingDiv);
+                            Promise.all([fetchTranslation(word), fetchPhonetics(word), fetchWordLevel(word), fetchCEFR(word)]).then(function(arr){ var resultData = { transData: arr[0], ipaText: arr[1], levelData: arr[2], cefrLevel: arr[3] }; saveToGlobalCache(wordKey, resultData); if (instance.state.isVisible) renderContent(resultData); });
+                        }
+                    }
+                });
+            }
+            setTimeout(function() { initAudioPlayer(); initCEFRStaticDict(); var container = document.getElementById('content-container'); if(container) wrapTextNodesToWord(container); setupTippyDelegate(); initCloudHighlights(); }, 500);
+        })();
+    </script>
+</body>
+</html>
