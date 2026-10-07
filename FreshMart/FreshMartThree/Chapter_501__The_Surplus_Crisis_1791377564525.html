@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chapter 501: The Surplus Crisis</title>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <style>
+        body { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; max-width: 800px; margin: 0 auto; padding: 50px 24px; font-size: 20px; line-height: 1.8; letter-spacing: 0.05em; background-color: #FFF7F8; color: #4A3B42; } h1 { text-align: left !important; font-size: 28px; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #F0D8DE; padding-bottom: 20px; color: #6E4A55; } p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
+        body { padding-top: 70px !important; transition: padding-top 0.3s cubic-bezier(0.4,0,0.2,1); }
+        body.bar-hidden { padding-top: 20px !important; }
+        .reader-bar { position: fixed; top: 0; left: 0; right: 0; min-height: 50px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 1px 8px rgba(0,0,0,0.08); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 5px; }
+        .reader-bar.hidden { transform: translateY(-100%); }
+        .reader-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .reader-btn { background: #E5E5EA; color: #1C1C1E; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+        .reader-btn:active { transform: scale(0.95); }
+        #content-container { transition: font-size 0.2s; }
+        .zh-para { transition: filter 0.3s ease, opacity 0.3s ease; }
+        .global-blur-enabled .zh-para { cursor: pointer; }
+        .global-blur-enabled .zh-para.blurred { filter: blur(0.35em); opacity: 0.5; user-select: none; }
+        .global-blur-enabled .zh-para.blurred:hover { filter: blur(0.2em); opacity: 0.7; }
+        body.highlights-enabled .tm-word.is-highlight { color: #FF3B30 !important; font-weight: 700; background-color: rgba(255, 59, 48, 0.05); border-radius: 3px; padding: 0 2px; }
+        .dict-enabled .tm-word { cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 3px; }
+        .dict-enabled .tm-word:hover, .dict-enabled .tm-word[aria-expanded="true"] { background-color: #E3F2FD; color: #1565C0 !important; }
+        .tippy-box[data-theme~='light-border'] { background-color: #fff; color: #333; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+        .tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before { border-top-color: #ccc; }
+        .tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: #ccc; }
+        .tippy-content { padding: 8px; }
+        .dict-popup { text-align: left; font-size: 14px; line-height: 1.4; max-width: 280px; min-width: 200px; color: #333; font-family: -apple-system, sans-serif; }
+        .dict-header-row { border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
+        .dict-word-line { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .dict-head-word { font-weight: bold; color: #D32F2F; font-size: 18px; }
+        .dict-ipa { font-family: sans-serif; color: #666; font-size: 13px; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
+        .dict-speaker-btn { display: inline-flex; cursor: pointer; color: #1976D2; padding: 2px; border-radius: 50%; transition: background 0.2s; }
+        .dict-speaker-btn:hover { background-color: rgba(25, 118, 210, 0.1); }
+        .dict-speaker-btn svg { width: 18px; height: 18px; pointer-events: none; }
+        .dict-speaker-btn.playing { color: #E91E63; animation: tm-pulse 1s infinite; }
+        .dict-tags-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;}
+        .dict-tag { background: #F0F4F8; color: #476582; font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #D9E2EC; font-weight: 500; }
+        .dict-tag.star-tag { color: #F59E0B; background: #FEF3C7; border-color: #FDE68A; letter-spacing: 1px; padding: 2px 4px; }
+        .dict-tag.cefr-A1 { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+        .dict-tag.cefr-A2 { background: #E0F2F1; color: #00695C; border-color: #B2DFDB; }
+        .dict-tag.cefr-B1 { background: #FFF8E1; color: #F57F17; border-color: #FFECB3; }
+        .dict-tag.cefr-B2 { background: #FFF3E0; color: #E65100; border-color: #FFE0B2; }
+        .dict-tag.cefr-C1 { background: #FCE4EC; color: #C2185B; border-color: #F8BBD0; }
+        .dict-tag.cefr-C2 { background: #F3E5F5; color: #7B1FA2; border-color: #E1BEE7; }
+        .dict-basic-trans { font-size: 14px; color: #444; margin-top: 4px; }
+        .dict-pos-block { margin-bottom: 4px; }
+        .dict-pos-tag { font-style: italic; color: #1976D2; font-weight: bold; font-size: 12px; margin-right: 4px; }
+        .dict-def-list { margin: 0; padding: 0; list-style: none; display: inline; }
+        .dict-def-item { display: inline; }
+        .dict-def-item::after { content: "; "; color: #999; }
+        .dict-def-item:last-child::after { content: ""; }
+        .dict-loading { color: #666; font-style: italic; font-size: 13px; padding: 5px; text-align: center; }
+        @keyframes tm-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body class="bar-hidden global-blur-enabled dict-enabled highlights-enabled">
+    <div class="reader-bar hidden" id="top-bar">
+        <div class="reader-controls">
+            <button class="reader-btn" onclick="adjustFont(-0.1)">A-</button>
+            <button class="reader-btn" onclick="adjustFont(0.1)">A+</button>
+            <button id="blur-btn" class="reader-btn" style="background:#AF52DE; color:white;" onclick="toggleBlur()">模糊: 开</button>
+            <button id="hl-btn" class="reader-btn" style="background:#FF3B30; color:white;" onclick="toggleHighlight()">高亮: 开</button>
+            <button id="dict-btn" class="reader-btn" style="background:#34C759; color:white;" onclick="toggleDict()">查词: 开</button>
+        </div>
+    </div>
+    <div id="content-container">
+    <h1 style="text-align: left !important;">Chapter 501: The Surplus Crisis</h1>
+    <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">发布时间：2026/10/7 20:52:43</div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">第五百零一章：余量危机</p>
+    <p>The following morning broke with crisp autumn light washing over the private dining salon. The imperial table was set with its usual lavish spread, but one seat was noticeably quiet. Miyetsuko, curled up lazily in an oversized cashmere knit, rested her chin in her hands, her fine brow furrowed with a touch of morning lethargy. Perhaps it was the cooler weather or simply a passing lack of appetite, but she merely took two sips of warm water and politely declined her usual morning share of the fresh dairy reserve.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">翌日清晨，清冽的秋光透过落地长窗，将私家早餐厅映照得一片敞亮。长桌上摆满了惯常的珍馐百味，然而有一席却罕见地安静。美悦子裹着一身宽松慵懒的纯羊绒毛衣，双手托着香腮，精致的眉尖微微蹙着，透着几分初醒的恹恹。或许是换季的凉意，又或是单纯犯了厌食的小脾气，她只小口抿了两下温白开，便温软地摇了摇头，推辞了今早属于自己的那份例行甘霖。</p>
+    <p>This slight omission, however, triggered an immediate domestic crisis for Chika. Under the strict biological balance of the household, her production was calibrated down to the milliliter to satisfy Fujiwara, Sayuri, Miyetsuko, and Rin in sequence. With one full adult portion left completely untouched, the delicate equilibrium collapsed.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">可这微不足道的“缺席”，却瞬间给千夏引爆了一场啼笑皆非的生理危机。在日积月累形成的奇妙家法秩序下，小奶牛每日清晨的产能早已被调校到了近乎分毫不差的黄金平衡——恰好够藤原痛饮大半、小百合与美悦子各自分润、最后留一小杯给小铃。如今美悦子这个主力“消费者”冷不丁罢工，原本平衡的排空机制瞬间宣告崩盘。</p>
+    <p>"Ah... nggh, it's so tight... it's practically bursting!" Chika wailed in genuine distress, leaning back against the velvet banquette with her silk dressing robe untied. Her newly refined, snow-white peaks were swollen hard as polished melons, overflowing with warmth and threatening to stretch her pale skin to its absolute limit. "Miyetsuko-nee, you're killing me! Do you know what happens to high-yield inventory when consumer demand drops by twenty-five percent?! It causes acute tissue inflation!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“哎呀……疼死我了……胀得要炸开了啦！”千夏委屈万分地靠在天鹅绒软榻上，真丝晨袍松垮垮地敞开着，急得直掉眼泪。那对经过顶级御医悉心调理、白璧无瑕的丰腴雪峰此刻胀得滚圆发硬，像两只熟透了的蜜瓜，沉甸甸地直往下坠，几乎要把娇嫩的雪肌撑到了极致。“美悦子姐姐，你这是要谋害亲妹啊！你知道消费端突然缩水百分之二十五，对高产值的库存会造成多大的生理通胀吗？！整个胸口都要被你憋爆了！”</p>
+    <p>With tears of spoiled indignation prickling her eyes, the little cow had no choice but to fetch a medical-grade electric breast pump crafted from frosted glass and rose gold. Sitting cross-legged on the cushions, she pressed the dual cups against her heavy assets, letting the rhythmic mechanical hum pull two steady, pressurized streams of rich white fluid into sterile crystal decanters.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">眼角挂着被娇惯出来的委屈泪花，这只小奶牛只得气呼呼地翻出了那台由磨砂玻璃与玫瑰金打造的特制医用吸乳仪。她盘腿坐在锦垫上，把双向吸罩对准了沉重的胸口。伴随着一阵阵轻柔而规律的机械嗡鸣声，两道浓稠雪白的热浆被源源不断地泵出，顺着导管注入无菌的水晶量壶之中。</p>
+    <p>Watching the decanters fill up with several hundred milliliters of warm, Michelin-grade imperial cream, Chika puffed her cheeks and waved a hand toward the door. "Take this decanter and bestow it upon the eunuch medical corps downstairs! Let those four sunglass-wearing old men drink it as a morning bonus. At least their surgical sacrifice won't go entirely unrewarded."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">看着两只水晶壶转眼间被好几百毫升温热醇厚的极品甘霖彻底灌满，千夏鼓起香腮，没好气地冲着门边的侍从挥了挥小手：“把这两壶全拿下去，赏给楼下理疗室的那帮太监御医喝吧！就当是给那四个戴墨镜的大叔发早间福利了，好歹没让他们白挨那一刀。”</p>
+    <p>Hearing this, Sayuri paused with her porcelain teacup halfway to her lips, raising an amused, teasing eyebrow.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">听到这话，端着骨瓷茶杯的小百合不由动作一顿，唇边泛起一抹大有深意的促狭轻笑。</p>
+    <p>"Oh, sweet sister, why create unnecessary operational waste?" Sayuri cooed smoothly, her voice rich with velvet mischief. "Decanting it into glass jugs is so sterile and cold. If you were suffering from engorgement, why didn't you simply summon the specialists up here and let them latch on directly? Their technique is world-class, and they would have emptied you in three minutes flat."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“哎呀呀，我的好妹妹，何必把事情搞得这么繁琐冷冰冰的呢？”小百合软糯糯地打趣起来，秋水眸子里满是恶作剧的光芒，“大费周章用吸奶器泵进玻璃壶里，多见外呀。既然刚才胀得那么难受，干嘛不干脆把楼下那四位大师传唤上来，让他们直接把嘴凑上去给妹妹吸吮排空呢？以他们名冠天下的专业口技，三分钟包管让你一身轻松呢。”</p>
+    <p>"Sayuri-nee is right from an efficiency standpoint," Miyetsuko murmured softly from the table, a bashful yet playful smirk gracing her delicate features. "Direct suction eliminates container sterilization and minimizes product oxidation. Since they are physically neutered, there is zero tactical breach of fidelity."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“从小百合姐的效率论来说，确实挑不出毛病呢，”美悦子倚在桌边，细声细语地轻喃着，温婉的眉宇间噙着一抹被彻底软化后的娇羞坏笑，“嘴对嘴直接吮吸，既省去了器皿消毒的工序，又能杜绝甘霖在空气里氧化。再者说了，那几位大夫在生理构造上早已被物理清零，战术上根本谈不上任何背叛的风险嘛。”</p>
+    <p>"Are you two completely out of your minds?!" Chika flared up in an instant, her face turning crimson from her collarbones to her ears as she clutched the pump against her chest like a shield. "That is completely out of the question! That breaks every sacred boundary in the imperial household!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“你们两个脑子全坏掉了吧？！”千夏瞬间像被踩了尾巴的猫儿一样炸了毛，两腮连同修长的天鹅颈一路烧成了红玛瑙，气急败坏地把吸奶器抱在胸前当盾牌使唤，“绝对不行！这成何体统！这根本就是把皇室家法的分寸全给踩在脚底下践踏了！”</p>
+    <p>She pointed a shaking, accusing finger at her fellow concubines, whining with furious righteousness. "When they perform the breast refinement, the oral technique is strictly a localized medical procedure! It's a scientific, thermal vibration treatment to brighten pigment! That is pure clinical aesthetics! But allowing strange men—even neutered ones—to wrap their mouths around my nipples just to chug milk like hungry piglets?! That completely crosses the line from clinical therapy into depraved indulgence! That privilege belongs strictly to the Emperor and you greedy gluttons!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">她那根白嫩的手指气呼呼地指着两位看热闹不嫌事大的姐姐，满脸正气凛然地娇嗔抗议道：“他们做美胸保养的时候，动用口技那是严格受控的医疗手法！那是为了用温控与舌尖微振来淡化色素的科学理疗！那叫纯粹的临床医学！可要是放任一帮大男人——哪怕是净了身的太监——像饿疯了的猪崽子一样把嘴凑在老娘身上大口大口地猛灌喝奶，那性质可就彻底变了！那叫丧失道德底线的放浪！能直接抱着老娘啃的特权，天底下除了主人和你们这帮贪吃的白眼狼，谁也休想染指分毫！”</p>
+    <p>Chika whipped her head around, glaring at Miyetsuko with a fiery, pouty grimace. "And this is all your fault, Miyetsuko-nee! If you had just eaten your breakfast like a proper, well-behaved house pet, my inventory wouldn't have backed up into a crisis! You have no idea how painful engorgement feels! Tomorrow morning, you are sitting right here and drinking a double portion, or I'm going to pour it straight down your collar!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">千夏猛地扭过头，鼓起粉嘟嘟的香腮，恶狠狠地瞪向了惹祸的美悦子：“归根结底，全怪美悦子姐姐你不按常理出牌！你今早要是乖乖像个被驯服的家猫一样把早点吃干净，老娘的库存至于堵成这副惨状吗？！你根本不知道胸口胀得像灌了铅有多难受！明儿一早，你必须乖乖坐在老娘跟前把双倍的份额全给我喝光，不然老娘直接顺着你的毛衣领子全给你灌进去！”</p>
+    <p>Miyetsuko hid her face in her oversized sleeves, giggling until her shoulders shook, completely surrendering to Chika's spoiled wrath. "I'm sorry, little sister... I promise I'll finish every drop tomorrow. Don't be mad."</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">美悦子把发烫的俏脸深深埋在宽大的毛衣袖子里，笑得双肩直颤，毫无脾气地顺从投降：“好啦好啦，姐姐知道错了还不行嘛……明天早上我保证一滴不剩全喝光，好妹妹快别生气了。”</p>
+    <p>Fujiwara, who had been sitting at the head of the table savoring his morning espresso while watching the squabble, threw his head back and let out a hearty, booming laugh. He reached out with one broad arm, pulling the fuming, half-unbuttoned little milk cow straight into his lap, casually taking one of the filled crystal carafes and swirling it like liquid silver.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">从头到尾坐在主位上端着浓缩咖啡看戏的藤原，终于忍不住仰头爆发出一阵酣畅淋漓的帝王大笑。他长臂一揽，不由分说地将气鼓鼓、睡袍半褪的小奶牛一把捞进怀里按在腿上，顺手端起其中一只温热沉甸的水晶量壶，惬意地晃了晃里面银白浓醇的浆液。</p>
+    <p>"My little cow truly understands the nuances of imperial hierarchy," Fujiwara grinned wickedly, planting a firm kiss on her pouty lips. "Medical maintenance is science; nursing at the fountain is sovereign ownership! Take the surplus down to the doctors. As for tomorrow... if Miyetsuko skips again, the Emperor will happily assume full responsibility and drain the reserve himself!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“本帝王的小奶牛，对这宫廷内外的尊卑分寸倒是拿捏得明明白白，”藤原恶趣味地坏笑着，低头在她红扑扑的小嘴上响亮地亲了一口，“医美护理那是严谨的科学；而直接伏在圣泉边畅饮，那是至高无上的君王主权！来人，把这两壶赏下去给太医们分了。至于明早嘛……要是美悦子还不开胃，老子亲自披挂上阵，把超额的余粮全部包圆了！”</p>    </div>
+    <script>
+        var STORAGE_KEY = 'bio_reader_prefs_' + location.pathname.replace(/[^a-zA-Z0-9]/g, '');
+        var prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { font: 1.0, dictEnabled: true, barHidden: true, highlightEnabled: true, blurEnabled: true };
+        var bar = document.getElementById('top-bar');
+        var content = document.getElementById('content-container');
+        var dictBtn = document.getElementById('dict-btn');
+        var hlBtn = document.getElementById('hl-btn');
+        var blurBtn = document.getElementById('blur-btn');
+        function applyPrefs() {
+            content.style.fontSize = prefs.font + 'em';
+            if (prefs.barHidden) { bar.classList.add('hidden'); document.body.classList.add('bar-hidden'); } else { bar.classList.remove('hidden'); document.body.classList.remove('bar-hidden'); }
+            if (prefs.dictEnabled) { document.body.classList.add('dict-enabled'); dictBtn.innerText = "查词: 开"; dictBtn.style.background = "#34C759"; dictBtn.style.color = "#fff"; } else { document.body.classList.remove('dict-enabled'); dictBtn.innerText = "查词: 关"; dictBtn.style.background = "#E5E5EA"; dictBtn.style.color = "#1C1C1E"; }
+            if (prefs.highlightEnabled) { document.body.classList.add('highlights-enabled'); hlBtn.innerText = "高亮: 开"; hlBtn.style.background = "#FF3B30"; hlBtn.style.color = "#fff"; } else { document.body.classList.remove('highlights-enabled'); hlBtn.innerText = "高亮: 关"; hlBtn.style.background = "#E5E5EA"; hlBtn.style.color = "#1C1C1E"; }
+            if (prefs.blurEnabled) { document.body.classList.add('global-blur-enabled'); blurBtn.innerText = "模糊: 开"; blurBtn.style.background = "#AF52DE"; blurBtn.style.color = "#fff"; document.querySelectorAll('.zh-para').forEach(function(el){el.classList.add('blurred');}); } else { document.body.classList.remove('global-blur-enabled'); blurBtn.innerText = "模糊: 关"; blurBtn.style.background = "#E5E5EA"; blurBtn.style.color = "#1C1C1E"; }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        }
+        document.addEventListener('dblclick', function(e) {
+            if(e.target.closest('#top-bar') || e.target.classList.contains('zh-para')) return;
+            prefs.barHidden = !prefs.barHidden; applyPrefs();
+        });
+        function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); }
+        function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); }
+        function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); }
+        function toggleBlur() { prefs.blurEnabled = !prefs.blurEnabled; applyPrefs(); }
+        window.addEventListener('DOMContentLoaded', function() {
+            applyPrefs(); var savedScroll = localStorage.getItem(STORAGE_KEY + '_scroll');
+            if (savedScroll) { setTimeout(function(){ window.scrollTo(0, parseFloat(savedScroll)); }, 150); }
+        });
+        var scrollTimer;
+        window.addEventListener('scroll', function() {
+            if (scrollTimer) clearTimeout(scrollTimer); scrollTimer = setTimeout(function(){ localStorage.setItem(STORAGE_KEY + '_scroll', window.scrollY); }, 300);
+        });
+        var highlightWords = new Set();
+        async function initCloudHighlights() {
+            var cacheKey = 'bio_remote_hl_words_v2'; var cached = localStorage.getItem(cacheKey); var now = Date.now();
+            if (cached) { try { var parsed = JSON.parse(cached); if (now - parsed.time < 24 * 60 * 60 * 1000 && Array.isArray(parsed.data)) { highlightWords = new Set(parsed.data); applyHighlightsToDOM(); return; } } catch(e){} }
+            try {
+                var urls = ['https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://ghproxy.net/https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://fastly.jsdelivr.net/gh/moodHappy/HelloWorld@master/Notes/one.txt'];
+                var text = ''; for (var i=0; i<urls.length; i++) { try { var res = await fetch(urls[i]); if (res.ok) { text = await res.text(); if (text && !text.includes('<html') && !text.includes('Cloudflare')) break; } } catch(err){} }
+                if (!text) throw new Error(); var arr = text.split('\n').map(function(w){return w.trim().toLowerCase();}).filter(function(w){return w;});
+                if (arr.length > 0) { highlightWords = new Set(arr); localStorage.setItem(cacheKey, JSON.stringify({data: arr, time: now})); applyHighlightsToDOM(); }
+            } catch(e){}
+        }
+        function applyHighlightsToDOM() {
+            if(highlightWords.size === 0) return;
+            document.querySelectorAll('.tm-word').forEach(function(span){ if(highlightWords.has(span.textContent.trim().toLowerCase())) span.classList.add('is-highlight'); });
+        }
+        var GM_getValue = function(key, def) { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; };
+        var GM_setValue = function(key, val) { localStorage.setItem(key, JSON.stringify(val)); };
+        (function() {
+            function fetchWithTimeout(url, options = {}, timeout = 3000) { const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeout); return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer)); }
+            var ttsConfig = { voices: ["en-US-AdamNeural", "en-US-AriaNeural", "en-US-AnaNeural", "en-US-JennyNeural", "en-US-GuyNeural"], apis: [ { url: "https://read-aloud-bay.vercel.app/api/synthesis", type: "read-aloud" }, { url: "https://libre-tts-nu.vercel.app/api/tts", type: "libre" } ] };
+            var globalResultCache = GM_getValue('tm_dict_cache', {}); var saveTimeout = null;
+            function saveToGlobalCache(wordKey, resultData) { globalResultCache[wordKey] = resultData; var keys = Object.keys(globalResultCache); if (keys.length > 2000) delete globalResultCache[keys[0]]; clearTimeout(saveTimeout); saveTimeout = setTimeout(function(){ GM_setValue('tm_dict_cache', globalResultCache); }, 1500); }
+            var cefrStaticCache = {};
+            function initCEFRStaticDict() {
+                var staticUrls = ["https://fastly.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json","https://cdn.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json"];
+                var idx = 0; var tryFetch = function() { if (idx >= staticUrls.length) return; fetch(staticUrls[idx++]).then(function(r){return r.json();}).then(function(data){ if (Array.isArray(data)) data.forEach(function(item){ if (item.word && item.cefr) cefrStaticCache[item.word.toLowerCase()] = item.cefr.toUpperCase(); }); }).catch(tryFetch); };
+                tryFetch();
+            }
+            async function fetchCEFR(word) {
+                var w = word.toLowerCase(); if (cefrStaticCache[w]) return cefrStaticCache[w];
+                const targetUrl = 'https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(w);
+                const proxies = [ targetUrl, 'https://corsproxy.io/?' + encodeURIComponent(targetUrl), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl) ];
+                const tryProxy = async (proxy) => { const res = await fetchWithTimeout(proxy, {}, 2500); if (!res.ok) throw new Error(); const text = await res.text(); var match = text.match(/(?:epp-xref|dxref)[^>]*>\s*([A-C][1-2])\s*<\/span>/i) || text.match(/title="CEFR[^>]*>\s*([A-C][1-2])\s*<\/span>/i); if (match && match[1]) { cefrStaticCache[w] = match[1].toUpperCase(); return cefrStaticCache[w]; } return null; };
+                try { return await Promise.any(proxies.map(p => tryProxy(p))); } catch(e) { return null; }
+            }
+            async function fetchTranslation(text) { try { const res = await fetchWithTimeout('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&q=' + encodeURIComponent(text), {}, 3500); if (!res.ok) throw new Error(); return await res.json(); } catch(e) { return [[['查询超时或网络错误']]]; } }
+            async function fetchPhonetics(text) { try { const res = await fetchWithTimeout('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(text), {}, 2500); if (!res.ok) return null; const data = await res.json(); if (data && data.length > 0) { const pObj = data[0].phonetics.find(p => p.text) || data[0]; return pObj.text || null; } return null; } catch(e) { return null; } }
+            async function fetchWordLevel(text) {
+                const targetUrl = 'https://dict.youdao.com/jsonapi?q=' + encodeURIComponent(text);
+                const proxies = [ 'https://corsproxy.io/?' + encodeURIComponent(targetUrl), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl), 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl) ];
+                const tryProxy = async (proxy) => { const res = await fetchWithTimeout(proxy, {}, 2000); if (!res.ok) throw new Error(); const data = await res.json(); var result = { stars: 0, tags: [] }; if (data.ec && data.ec.exam_type) result.tags = data.ec.exam_type; if (data.collins && data.collins.collins_entries && data.collins.collins_entries.length > 0) { var starStr = data.collins.collins_entries[0].star; if (starStr) { var parsedNum = parseInt(String(starStr).replace(/[^0-9]/g, ''), 10); result.stars = isNaN(parsedNum) ? 0 : parsedNum; } } return result; };
+                try { return await Promise.any(proxies.map(p => tryProxy(p))); } catch (e) { return { stars: 0, tags: [] }; }
+            }
+            var globalAudioPlayer = null; var currentPlayingBtn = null;
+            function initAudioPlayer() { if (!globalAudioPlayer) { globalAudioPlayer = document.createElement('audio'); globalAudioPlayer.style.display = 'none'; document.body.appendChild(globalAudioPlayer); } }
+            function playTTS(apiIndex, text, voice, btn) {
+                if (apiIndex >= ttsConfig.apis.length) { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); return; }
+                if (currentPlayingBtn && currentPlayingBtn !== btn) currentPlayingBtn.classList.remove('playing');
+                currentPlayingBtn = btn; btn.classList.add('playing'); var api = ttsConfig.apis[apiIndex]; var params = new URLSearchParams();
+                if (api.type === "read-aloud") { params.append("text", text); params.append("voiceName", voice); } else { params.append("t", text); params.append("v", voice); params.append("r", "0"); params.append("p", "0"); }
+                globalAudioPlayer.src = api.url + '?' + params.toString(); globalAudioPlayer.onended = function() { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); };
+                globalAudioPlayer.onerror = function() { playTTS(apiIndex + 1, text, voice, btn); }; var p = globalAudioPlayer.play(); if (p !== undefined) p.catch(function(){ playTTS(apiIndex + 1, text, voice, btn); });
+                }
+            function wrapTextNodesToWord(rootNode) {
+                var ignoreTags = new Set(['SCRIPT', 'STYLE', 'BUTTON', 'A']);
+                var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, { acceptNode: function(currentNode) { var parent = currentNode.parentNode; if (!parent || ignoreTags.has(parent.nodeName.toUpperCase()) || parent.closest('.tm-word') || parent.closest('.zh-para')) return NodeFilter.FILTER_REJECT; if (!currentNode.nodeValue.trim() || !/\b[a-zA-Z'-]+\b/.test(currentNode.nodeValue)) return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; } });
+                var nodesToWrap = []; let currNode; while ((currNode = walker.nextNode())) { nodesToWrap.push(currNode); }
+                nodesToWrap.forEach(function(textNode) {
+                    var text = textNode.nodeValue; var fragment = document.createDocumentFragment(); var lastIndex = 0;
+                    text.replace(/\b([a-zA-Z'-]+)\b/g, function(match, p1, offset) { if (offset > lastIndex) fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset))); var span = document.createElement('span'); span.className = 'tm-word'; span.textContent = match; fragment.appendChild(span); lastIndex = offset + match.length; return match; });
+                    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.substring(lastIndex))); if (fragment.childNodes.length > 0) textNode.parentNode.replaceChild(fragment, textNode);
+                });
+            }
+            function formatDictData(originalWord, data) {
+                var transData = data.transData; var ipaText = data.ipaText; var levelData = data.levelData; var cefrLevel = data.cefrLevel; var tagsHtml = '';
+                if (cefrLevel || (levelData && (levelData.stars > 0 || (levelData.tags && levelData.tags.length > 0)))) {
+                    tagsHtml += '<div class="dict-tags-row">'; if (levelData && levelData.stars > 0) tagsHtml += '<span class="dict-tag star-tag">' + '★'.repeat(levelData.stars) + '☆'.repeat(5 - levelData.stars) + '</span>'; if (cefrLevel) tagsHtml += '<span class="dict-tag cefr-' + cefrLevel + '">CEFR ' + cefrLevel + '</span>'; if (levelData && levelData.tags) levelData.tags.forEach(function(tag){ tagsHtml += '<span class="dict-tag">' + tag + '</span>'; }); tagsHtml += '</div>';
+                }
+                var basicTrans = (transData && transData[0] && transData[0][0]) ? transData[0][0][0] : '';
+                var html = '<div class="dict-header-row"><div class="dict-word-line"><span class="dict-head-word Casting">' + originalWord + '</span>' + (ipaText ? '<span class="dict-ipa">' + ipaText + '</span>' : '') + '<span class="dict-speaker-btn" data-word="' + originalWord.replace(/"/g, '&quot;') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span></div>' + tagsHtml + '<div class="dict-basic-trans">' + basicTrans + '</div></div>';
+                var dictEntries = transData ? transData[1] : null;
+                if (dictEntries && dictEntries.length > 0) {
+                    html += '<div class="dict-details">'; dictEntries.forEach(function(entry){ var pos = entry[0]; var displayDefs = entry[1].slice(0, 3); html += '<div class="dict-pos-block"><span class="dict-pos-tag">' + pos + '.</span><ul class="dict-def-list">'; displayDefs.forEach(function(def){ html += '<li class="dict-def-item">' + def + '</li>'; }); html += '</ul></div>'; }); html += '</div>';
+                } else if (!basicTrans) { html += '<div style="padding:5px; color:#666; font-size:13px;">无释义结果...</div>'; }
+                return html;
+            }
+            function setupTippyDelegate() {
+                tippy.delegate(document.body, { 
+                    target: '.tm-word', trigger: 'click', interactive: true, theme: 'light-border', placement: 'bottom', appendTo: function(){return document.body;}, maxWidth: 320,
+                    onShow: function(instance) {
+                        if (!document.body.classList.contains('dict-enabled')) return false;
+                        var word = instance.reference.innerText.trim(); var wordKey = word.toLowerCase();
+                        var renderContent = function(data) { if (instance.reference.innerText.trim() !== word) return; var contentDiv = document.createElement('div'); contentDiv.className = 'dict-popup'; contentDiv.innerHTML = formatDictData(word, data); ['mousedown', 'touchstart', 'click'].forEach(function(evt){ contentDiv.addEventListener(evt, function(e){e.stopPropagation();}, { capture: true }); }); var btn = contentDiv.querySelector('.dict-speaker-btn'); if (btn) { btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var text = btn.getAttribute('data-word'); if (!text || btn.classList.contains('playing')) return; playTTS(0, text.trim(), ttsConfig.voices[Math.floor(Math.random() * ttsConfig.voices.length)], btn); }); } instance.setContent(contentDiv); };
+                        if (globalResultCache[wordKey]) { renderContent(globalResultCache[wordKey]); } else {
+                            var loadingDiv = document.createElement('div'); loadingDiv.className = 'dict-popup'; loadingDiv.innerHTML = '<div class="dict-loading">极速查询中...</div>'; instance.setContent(loadingDiv);
+                            Promise.all([fetchTranslation(word), fetchPhonetics(word), fetchWordLevel(word), fetchCEFR(word)]).then(function(arr){ var resultData = { transData: arr[0], ipaText: arr[1], levelData: arr[2], cefrLevel: arr[3] }; saveToGlobalCache(wordKey, resultData); if (instance.state.isVisible) renderContent(resultData); });
+                        }
+                    }
+                });
+            }
+            setTimeout(function() { initAudioPlayer(); initCEFRStaticDict(); var container = document.getElementById('content-container'); if(container) wrapTextNodesToWord(container); setupTippyDelegate(); initCloudHighlights(); }, 500);
+        })();
+    </script>
+</body>
+</html>
