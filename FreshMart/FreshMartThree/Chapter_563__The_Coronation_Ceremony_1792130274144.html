@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chapter 563: The Coronation Ceremony</title>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <style>
+        body { font-family: "Noto Serif SC", "Songti SC", STSong, "Microsoft YaHei", serif; max-width: 800px; margin: 0 auto; padding: 50px 24px; font-size: 20px; line-height: 1.8; letter-spacing: 0.05em; background-color: #F0F7F4; color: #2D4035; } h1 { text-align: left !important; font-size: 28px; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #CDE0D5; padding-bottom: 20px; color: #1A2E22; } p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
+        body { padding-top: 70px !important; transition: padding-top 0.3s cubic-bezier(0.4,0,0.2,1); }
+        body.bar-hidden { padding-top: 20px !important; }
+        .reader-bar { position: fixed; top: 0; left: 0; right: 0; min-height: 50px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 1px 8px rgba(0,0,0,0.08); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 5px; }
+        .reader-bar.hidden { transform: translateY(-100%); }
+        .reader-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .reader-btn { background: #E5E5EA; color: #1C1C1E; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.2s; }
+        .reader-btn:active { transform: scale(0.95); }
+        #content-container { transition: font-size 0.2s; }
+        .zh-para { transition: filter 0.3s ease, opacity 0.3s ease; }
+        .global-blur-enabled .zh-para { cursor: pointer; }
+        .global-blur-enabled .zh-para.blurred { filter: blur(0.35em); opacity: 0.5; user-select: none; }
+        .global-blur-enabled .zh-para.blurred:hover { filter: blur(0.2em); opacity: 0.7; }
+        body.highlights-enabled .tm-word.is-highlight { color: #FF3B30 !important; font-weight: 700; background-color: rgba(255, 59, 48, 0.05); border-radius: 3px; padding: 0 2px; }
+        .dict-enabled .tm-word { cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; border-radius: 3px; }
+        .dict-enabled .tm-word:hover, .dict-enabled .tm-word[aria-expanded="true"] { background-color: #E3F2FD; color: #1565C0 !important; }
+        .tippy-box[data-theme~='light-border'] { background-color: #fff; color: #333; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+        .tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before { border-top-color: #ccc; }
+        .tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before { border-bottom-color: #ccc; }
+        .tippy-content { padding: 8px; }
+        .dict-popup { text-align: left; font-size: 14px; line-height: 1.4; max-width: 280px; min-width: 200px; color: #333; font-family: -apple-system, sans-serif; }
+        .dict-header-row { border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
+        .dict-word-line { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .dict-head-word { font-weight: bold; color: #D32F2F; font-size: 18px; }
+        .dict-ipa { font-family: sans-serif; color: #666; font-size: 13px; background: #f0f0f0; padding: 0 4px; border-radius: 4px; }
+        .dict-speaker-btn { display: inline-flex; cursor: pointer; color: #1976D2; padding: 2px; border-radius: 50%; transition: background 0.2s; }
+        .dict-speaker-btn:hover { background-color: rgba(25, 118, 210, 0.1); }
+        .dict-speaker-btn svg { width: 18px; height: 18px; pointer-events: none; }
+        .dict-speaker-btn.playing { color: #E91E63; animation: tm-pulse 1s infinite; }
+        .dict-tags-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;}
+        .dict-tag { background: #F0F4F8; color: #476582; font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #D9E2EC; font-weight: 500; }
+        .dict-tag.star-tag { color: #F59E0B; background: #FEF3C7; border-color: #FDE68A; letter-spacing: 1px; padding: 2px 4px; }
+        .dict-tag.cefr-A1 { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+        .dict-tag.cefr-A2 { background: #E0F2F1; color: #00695C; border-color: #B2DFDB; }
+        .dict-tag.cefr-B1 { background: #FFF8E1; color: #F57F17; border-color: #FFECB3; }
+        .dict-tag.cefr-B2 { background: #FFF3E0; color: #E65100; border-color: #FFE0B2; }
+        .dict-tag.cefr-C1 { background: #FCE4EC; color: #C2185B; border-color: #F8BBD0; }
+        .dict-tag.cefr-C2 { background: #F3E5F5; color: #7B1FA2; border-color: #E1BEE7; }
+        .dict-basic-trans { font-size: 14px; color: #444; margin-top: 4px; }
+        .dict-pos-block { margin-bottom: 4px; }
+        .dict-pos-tag { font-style: italic; color: #1976D2; font-weight: bold; font-size: 12px; margin-right: 4px; }
+        .dict-def-list { margin: 0; padding: 0; list-style: none; display: inline; }
+        .dict-def-item { display: inline; }
+        .dict-def-item::after { content: "; "; color: #999; }
+        .dict-def-item:last-child::after { content: ""; }
+        .dict-loading { color: #666; font-style: italic; font-size: 13px; padding: 5px; text-align: center; }
+        @keyframes tm-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body class="bar-hidden global-blur-enabled dict-enabled highlights-enabled">
+    <div class="reader-bar hidden" id="top-bar">
+        <div class="reader-controls">
+            <button class="reader-btn" onclick="adjustFont(-0.1)">A-</button>
+            <button class="reader-btn" onclick="adjustFont(0.1)">A+</button>
+            <button id="blur-btn" class="reader-btn" style="background:#AF52DE; color:white;" onclick="toggleBlur()">模糊: 开</button>
+            <button id="hl-btn" class="reader-btn" style="background:#FF3B30; color:white;" onclick="toggleHighlight()">高亮: 开</button>
+            <button id="dict-btn" class="reader-btn" style="background:#34C759; color:white;" onclick="toggleDict()">查词: 开</button>
+        </div>
+    </div>
+    <div id="content-container">
+    <h1 style="text-align: left !important;">Chapter 563: The Coronation Ceremony</h1>
+    <div style="text-align: left !important; margin-top: -0.2em; margin-bottom: 1.5em; font-size: 0.85em; color: #999; opacity: 0.8; font-family: -apple-system, sans-serif;">发布时间：2026/10/16 13:57:52</div>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">第五百六十三章：登基大典</p>
+    <p>The grand coronation of the Succubus Queen was less of a solemn political transition and more of an apocalyptic, dimension-wide orgy. The obsidian cathedral of the underworld was packed to the brim with the highest-ranking succubus nobility, all of whom apparently considered a few strips of spiked leather and strategically placed spider silk to be formal court attire. Rivers of pink, aphrodisiac-laced wine flowed freely, turning the royal event into an absolute den of iniquity.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">魅魔女王的盛大登基大典，与其说是一场庄严肃穆的政治权力交接，不如说是一场极具毁灭性、席卷全次元的末日狂欢淫乱派对。地狱的黑曜石大教堂里挤满了最高阶的魅魔贵族，而她们显然都将几根带刺的皮条和几缕精心布置的蜘蛛丝视作最正式的宫廷礼服。掺着催情剂的粉红色酒水如河流般肆意流淌，将这场皇家盛典彻底变成了一个荒淫无度的大淫窟。</p>
+    <p>As the only male entity in the entire dimension—and the self-proclaimed "Demon King Consort"—Emperor Fujiwara received a welcome that defied the very laws of physics. The moment he stepped onto the bone-carved red carpet, hundreds of voluptuous, winged duchesses and demon countesses practically mobbed him. They lunged forward, offering their plush, heart-shaped tails and impossibly heavy breasts as diplomatic tributes, screaming in demonic frenzy for a chance to be "colonized" by the human tyrant.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">作为整个维度中唯一的一名雄性生物——以及自封的“魅魔王夫”——藤原大帝受到了一场完全违背物理学定律的热烈欢迎。就在他踏上白骨雕刻的红地毯的那一瞬间，数以百计身材火辣、长着翅膀的女公爵和恶魔女伯爵几乎是发疯般地将他团团围住。她们如饿虎扑食般涌上前，将那毛茸茸的心形尾巴和沉重得不可思议的巨乳作为外交贡品高高捧上，用恶魔的狂热尖叫着，乞求能得到这位人类暴君的亲自“殖民”。</p>
+    <p>"Boss, your pants are going to be completely torn off before we even reach the appetizer course!" Chika screamed, desperately clinging to Fujiwara's arm while fending off a horny demon marchioness who was trying to lick her imported milk carton. "This isn't a coronation! This is a buffet, and you are the main course! They look like they want to suck your soul directly out of your zipper!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“老板，咱们还没挨到开胃菜环节，你的裤子就要被她们给彻底撕烂啦！”千夏尖叫着，死死抱住藤原的胳膊，同时拼命击退一个正试图舔她那盒进口牛奶的发情恶魔女侯爵。“这哪里是登基大典！这根本就是自助餐，而你就是主菜！她们那眼神，简直像是要把你的灵魂直接从裤拉链里给吸干一样！”</p>
+    <p>Sayuri, standing flawlessly in the chaos with her plump Tang-dynasty curves radiating maternal dominance, gracefully raised her velvet folding fan.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">在混乱中依然保持着完美仪态的小百合，那丰腴的盛唐曲线散发着绝对的母性威压。她优雅地举起丝绒折扇。</p>
+    <p>"Do not panic, little cow. This is a highly lucrative seller's market," the Wise Empress purred smoothly, already setting up a makeshift tollbooth on the red carpet. "Attention, ladies of the underworld! Anyone who wishes to touch the Consort's imperial scepter must pay a minimum diplomatic fee of ten pure gold ingots! Line up orderly! VIP deep-throat sessions will be auctioned off after the Queen's speech!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“别慌，小奶牛。这可是一个利润极高的绝对卖方市场，”这位贤后软糯地娇笑着，竟然已经开始在红地毯上设立起了一个简易的临时收费站。“地狱的女士们，请注意了！任何想要触摸王夫殿下皇家法杖的人，都必须缴纳至少十块纯金锭的外交最低手续费！请有序排队！VIP级别的深喉体验券将在女王致辞后进行公开拍卖！”</p>
+    <p>Miyetsuko, kneeling perfectly on the burning obsidian floor, was furiously taking notes in a small ledger, her exquisite face flushed with aristocratic shock.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">极其完美地跪在燃烧的黑曜石地板上的美悦子，正满脸通红地在一个小本子上疯狂记着笔记，那张精致的小脸上写满了贵族式的震撼。</p>
+    <p>"Fascinating... So the traditional demonic curtsy involves bending completely forward, touching one's ankles, and presenting the abyssal cavern directly to the monarch," the fallen princess murmured sweetly. "I must immediately integrate this high-level etiquette into our daily morning greetings in the human realm!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“太迷人了……原来恶魔传统请安礼仪的核心，就是完全向前弯下腰、双手抓住脚踝，将最深邃的深渊洞穴直接毫无保留地展现在君王面前，”没落公主甜甜地呢喃着，“奴婢必须立刻将这项高级宫廷礼仪，完美融合进咱们人界每天的晨昏定省之中！”</p>
+    <p>Meanwhile, completely oblivious to the massive geopolitical orgy happening at the base of the stairs, Queen Rin sat on the colossal Skull Throne. The blind little succubus was happily chewing on a demonic cookie, using her glowing Ruby Scepter of Absolute Agony to scratch an itch on her back.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">与此同时，对阶梯下方正在发生的这场极其宏大的地缘政治级淫乱派对浑然不觉的女王小铃，正端坐在那张巨大的骷髅王座上。这只瞎眼的小魅魔正开心地嚼着一块恶魔饼干，手里还拿着那把象征着至高权力的“绝对痛苦红宝石权杖”，正拿它在自己后背上挠着痒痒。</p>
+    <p>"Um... hello, my loyal subjects? Rin wants to officially start the ceremony!" the new Queen chirped brightly, her milky eyes wide with sweet, terrifying innocence. "For my first royal decree, everyone has to give Master a big, squishy hug! But whoever breaks Master's pelvis gets thrown into the lava pit! Okay, let the royal banging commence!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“唔……我忠诚的臣民们听得见吗？小铃宣布登基大典现在正式开始啦！”新任女王甜丝丝地欢呼道，空灵的盲眼里满是甜美而极其恐怖的纯洁。“小铃的第一道皇家圣旨就是：大家都要去给主人一个超级大、超级软绵绵的抱抱！但是，谁要是把主人的骨盆给坐碎了，谁就会被直接扔进岩浆坑里哦！好啦，皇家大乱交现在开始！”</p>
+    <p>The grand cathedral instantly erupted into a deafening, unified chorus of lustful demonic shrieks. Fujiwara didn't even attempt to run. The tyrant simply threw his arms wide open, laughing like a mad god as a tidal wave of impossibly beautiful, horny succubi crashed over him.</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">宏伟的大教堂瞬间爆发出一阵震耳欲聋、整齐划一的恶魔发情尖叫。藤原连跑都不打算跑。这位暴君直接张开双臂，像个疯狂的神明一样大笑着，任由那股由美得不可思议、发情到极点的魅魔们组成的滔天巨浪将他彻底淹没。</p>
+    <p>"The Emperor accepts your diplomatic tributes!" Fujiwara roared triumphantly from beneath a mountain of heavy breasts and plush tails. "Sayuri, keep collecting the gold! Miyetsuko, keep taking notes! I am going to personally establish bilateral relations with every single duchess in this room!"</p>
+    <p class="zh-para blurred" onclick="if(document.body.classList.contains('global-blur-enabled')) this.classList.toggle('blurred')">“皇帝陛下正式接受你们的外交贡品！”藤原在一座由沉甸甸的巨乳和毛茸茸的尾巴堆成的大山底下得意洋洋地狂吼道，“小百合，继续收金子！美悦子，继续记笔记！朕今天非要亲自和这大厅里的每一位女公爵建立最深入的双边建交关系不可！”</p>    </div>
+    <script>
+        var STORAGE_KEY = 'bio_reader_prefs_' + location.pathname.replace(/[^a-zA-Z0-9]/g, '');
+        var prefs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { font: 1.0, dictEnabled: true, barHidden: true, highlightEnabled: true, blurEnabled: true };
+        var bar = document.getElementById('top-bar');
+        var content = document.getElementById('content-container');
+        var dictBtn = document.getElementById('dict-btn');
+        var hlBtn = document.getElementById('hl-btn');
+        var blurBtn = document.getElementById('blur-btn');
+        function applyPrefs() {
+            content.style.fontSize = prefs.font + 'em';
+            if (prefs.barHidden) { bar.classList.add('hidden'); document.body.classList.add('bar-hidden'); } else { bar.classList.remove('hidden'); document.body.classList.remove('bar-hidden'); }
+            if (prefs.dictEnabled) { document.body.classList.add('dict-enabled'); dictBtn.innerText = "查词: 开"; dictBtn.style.background = "#34C759"; dictBtn.style.color = "#fff"; } else { document.body.classList.remove('dict-enabled'); dictBtn.innerText = "查词: 关"; dictBtn.style.background = "#E5E5EA"; dictBtn.style.color = "#1C1C1E"; }
+            if (prefs.highlightEnabled) { document.body.classList.add('highlights-enabled'); hlBtn.innerText = "高亮: 开"; hlBtn.style.background = "#FF3B30"; hlBtn.style.color = "#fff"; } else { document.body.classList.remove('highlights-enabled'); hlBtn.innerText = "高亮: 关"; hlBtn.style.background = "#E5E5EA"; hlBtn.style.color = "#1C1C1E"; }
+            if (prefs.blurEnabled) { document.body.classList.add('global-blur-enabled'); blurBtn.innerText = "模糊: 开"; blurBtn.style.background = "#AF52DE"; blurBtn.style.color = "#fff"; document.querySelectorAll('.zh-para').forEach(function(el){el.classList.add('blurred');}); } else { document.body.classList.remove('global-blur-enabled'); blurBtn.innerText = "模糊: 关"; blurBtn.style.background = "#E5E5EA"; blurBtn.style.color = "#1C1C1E"; }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        }
+        document.addEventListener('dblclick', function(e) {
+            if(e.target.closest('#top-bar') || e.target.classList.contains('zh-para')) return;
+            prefs.barHidden = !prefs.barHidden; applyPrefs();
+        });
+        function adjustFont(delta) { prefs.font = Math.max(0.6, Math.min(2.0, prefs.font + delta)); applyPrefs(); }
+        function toggleDict() { prefs.dictEnabled = !prefs.dictEnabled; applyPrefs(); }
+        function toggleHighlight() { prefs.highlightEnabled = !prefs.highlightEnabled; applyPrefs(); }
+        function toggleBlur() { prefs.blurEnabled = !prefs.blurEnabled; applyPrefs(); }
+        window.addEventListener('DOMContentLoaded', function() {
+            applyPrefs(); var savedScroll = localStorage.getItem(STORAGE_KEY + '_scroll');
+            if (savedScroll) { setTimeout(function(){ window.scrollTo(0, parseFloat(savedScroll)); }, 150); }
+        });
+        var scrollTimer;
+        window.addEventListener('scroll', function() {
+            if (scrollTimer) clearTimeout(scrollTimer); scrollTimer = setTimeout(function(){ localStorage.setItem(STORAGE_KEY + '_scroll', window.scrollY); }, 300);
+        });
+        var highlightWords = new Set();
+        async function initCloudHighlights() {
+            var cacheKey = 'bio_remote_hl_words_v2'; var cached = localStorage.getItem(cacheKey); var now = Date.now();
+            if (cached) { try { var parsed = JSON.parse(cached); if (now - parsed.time < 24 * 60 * 60 * 1000 && Array.isArray(parsed.data)) { highlightWords = new Set(parsed.data); applyHighlightsToDOM(); return; } } catch(e){} }
+            try {
+                var urls = ['https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://ghproxy.net/https://raw.githubusercontent.com/moodHappy/HelloWorld/refs/heads/master/Notes/one.txt','https://fastly.jsdelivr.net/gh/moodHappy/HelloWorld@master/Notes/one.txt'];
+                var text = ''; for (var i=0; i<urls.length; i++) { try { var res = await fetch(urls[i]); if (res.ok) { text = await res.text(); if (text && !text.includes('<html') && !text.includes('Cloudflare')) break; } } catch(err){} }
+                if (!text) throw new Error(); var arr = text.split('\n').map(function(w){return w.trim().toLowerCase();}).filter(function(w){return w;});
+                if (arr.length > 0) { highlightWords = new Set(arr); localStorage.setItem(cacheKey, JSON.stringify({data: arr, time: now})); applyHighlightsToDOM(); }
+            } catch(e){}
+        }
+        function applyHighlightsToDOM() {
+            if(highlightWords.size === 0) return;
+            document.querySelectorAll('.tm-word').forEach(function(span){ if(highlightWords.has(span.textContent.trim().toLowerCase())) span.classList.add('is-highlight'); });
+        }
+        var GM_getValue = function(key, def) { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; };
+        var GM_setValue = function(key, val) { localStorage.setItem(key, JSON.stringify(val)); };
+        (function() {
+            function fetchWithTimeout(url, options = {}, timeout = 3000) { const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeout); return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer)); }
+            var ttsConfig = { voices: ["en-US-AdamNeural", "en-US-AriaNeural", "en-US-AnaNeural", "en-US-JennyNeural", "en-US-GuyNeural"], apis: [ { url: "https://read-aloud-bay.vercel.app/api/synthesis", type: "read-aloud" }, { url: "https://libre-tts-nu.vercel.app/api/tts", type: "libre" } ] };
+            var globalResultCache = GM_getValue('tm_dict_cache', {}); var saveTimeout = null;
+            function saveToGlobalCache(wordKey, resultData) { globalResultCache[wordKey] = resultData; var keys = Object.keys(globalResultCache); if (keys.length > 2000) delete globalResultCache[keys[0]]; clearTimeout(saveTimeout); saveTimeout = setTimeout(function(){ GM_setValue('tm_dict_cache', globalResultCache); }, 1500); }
+            var cefrStaticCache = {};
+            function initCEFRStaticDict() {
+                var staticUrls = ["https://fastly.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json","https://cdn.jsdelivr.net/gh/winterdl/oxford-5000-vocabulary-audio-definition@main/data/oxford_5000.json"];
+                var idx = 0; var tryFetch = function() { if (idx >= staticUrls.length) return; fetch(staticUrls[idx++]).then(function(r){return r.json();}).then(function(data){ if (Array.isArray(data)) data.forEach(function(item){ if (item.word && item.cefr) cefrStaticCache[item.word.toLowerCase()] = item.cefr.toUpperCase(); }); }).catch(tryFetch); };
+                tryFetch();
+            }
+            async function fetchCEFR(word) {
+                var w = word.toLowerCase(); if (cefrStaticCache[w]) return cefrStaticCache[w];
+                const targetUrl = 'https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(w);
+                const proxies = [ targetUrl, 'https://corsproxy.io/?' + encodeURIComponent(targetUrl), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl) ];
+                const tryProxy = async (proxy) => { const res = await fetchWithTimeout(proxy, {}, 2500); if (!res.ok) throw new Error(); const text = await res.text(); var match = text.match(/(?:epp-xref|dxref)[^>]*>\s*([A-C][1-2])\s*<\/span>/i) || text.match(/title="CEFR[^>]*>\s*([A-C][1-2])\s*<\/span>/i); if (match && match[1]) { cefrStaticCache[w] = match[1].toUpperCase(); return cefrStaticCache[w]; } return null; };
+                try { return await Promise.any(proxies.map(p => tryProxy(p))); } catch(e) { return null; }
+            }
+            async function fetchTranslation(text) { try { const res = await fetchWithTimeout('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&q=' + encodeURIComponent(text), {}, 3500); if (!res.ok) throw new Error(); return await res.json(); } catch(e) { return [[['查询超时或网络错误']]]; } }
+            async function fetchPhonetics(text) { try { const res = await fetchWithTimeout('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(text), {}, 2500); if (!res.ok) return null; const data = await res.json(); if (data && data.length > 0) { const pObj = data[0].phonetics.find(p => p.text) || data[0]; return pObj.text || null; } return null; } catch(e) { return null; } }
+            async function fetchWordLevel(text) {
+                const targetUrl = 'https://dict.youdao.com/jsonapi?q=' + encodeURIComponent(text);
+                const proxies = [ 'https://corsproxy.io/?' + encodeURIComponent(targetUrl), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl), 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl) ];
+                const tryProxy = async (proxy) => { const res = await fetchWithTimeout(proxy, {}, 2000); if (!res.ok) throw new Error(); const data = await res.json(); var result = { stars: 0, tags: [] }; if (data.ec && data.ec.exam_type) result.tags = data.ec.exam_type; if (data.collins && data.collins.collins_entries && data.collins.collins_entries.length > 0) { var starStr = data.collins.collins_entries[0].star; if (starStr) { var parsedNum = parseInt(String(starStr).replace(/[^0-9]/g, ''), 10); result.stars = isNaN(parsedNum) ? 0 : parsedNum; } } return result; };
+                try { return await Promise.any(proxies.map(p => tryProxy(p))); } catch (e) { return { stars: 0, tags: [] }; }
+            }
+            var globalAudioPlayer = null; var currentPlayingBtn = null;
+            function initAudioPlayer() { if (!globalAudioPlayer) { globalAudioPlayer = document.createElement('audio'); globalAudioPlayer.style.display = 'none'; document.body.appendChild(globalAudioPlayer); } }
+            function playTTS(apiIndex, text, voice, btn) {
+                if (apiIndex >= ttsConfig.apis.length) { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); return; }
+                if (currentPlayingBtn && currentPlayingBtn !== btn) currentPlayingBtn.classList.remove('playing');
+                currentPlayingBtn = btn; btn.classList.add('playing'); var api = ttsConfig.apis[apiIndex]; var params = new URLSearchParams();
+                if (api.type === "read-aloud") { params.append("text", text); params.append("voiceName", voice); } else { params.append("t", text); params.append("v", voice); params.append("r", "0"); params.append("p", "0"); }
+                globalAudioPlayer.src = api.url + '?' + params.toString(); globalAudioPlayer.onended = function() { if (currentPlayingBtn) currentPlayingBtn.classList.remove('playing'); };
+                globalAudioPlayer.onerror = function() { playTTS(apiIndex + 1, text, voice, btn); }; var p = globalAudioPlayer.play(); if (p !== undefined) p.catch(function(){ playTTS(apiIndex + 1, text, voice, btn); });
+                }
+            function wrapTextNodesToWord(rootNode) {
+                var ignoreTags = new Set(['SCRIPT', 'STYLE', 'BUTTON', 'A']);
+                var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, { acceptNode: function(currentNode) { var parent = currentNode.parentNode; if (!parent || ignoreTags.has(parent.nodeName.toUpperCase()) || parent.closest('.tm-word') || parent.closest('.zh-para')) return NodeFilter.FILTER_REJECT; if (!currentNode.nodeValue.trim() || !/\b[a-zA-Z'-]+\b/.test(currentNode.nodeValue)) return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; } });
+                var nodesToWrap = []; let currNode; while ((currNode = walker.nextNode())) { nodesToWrap.push(currNode); }
+                nodesToWrap.forEach(function(textNode) {
+                    var text = textNode.nodeValue; var fragment = document.createDocumentFragment(); var lastIndex = 0;
+                    text.replace(/\b([a-zA-Z'-]+)\b/g, function(match, p1, offset) { if (offset > lastIndex) fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset))); var span = document.createElement('span'); span.className = 'tm-word'; span.textContent = match; fragment.appendChild(span); lastIndex = offset + match.length; return match; });
+                    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.substring(lastIndex))); if (fragment.childNodes.length > 0) textNode.parentNode.replaceChild(fragment, textNode);
+                });
+            }
+            function formatDictData(originalWord, data) {
+                var transData = data.transData; var ipaText = data.ipaText; var levelData = data.levelData; var cefrLevel = data.cefrLevel; var tagsHtml = '';
+                if (cefrLevel || (levelData && (levelData.stars > 0 || (levelData.tags && levelData.tags.length > 0)))) {
+                    tagsHtml += '<div class="dict-tags-row">'; if (levelData && levelData.stars > 0) tagsHtml += '<span class="dict-tag star-tag">' + '★'.repeat(levelData.stars) + '☆'.repeat(5 - levelData.stars) + '</span>'; if (cefrLevel) tagsHtml += '<span class="dict-tag cefr-' + cefrLevel + '">CEFR ' + cefrLevel + '</span>'; if (levelData && levelData.tags) levelData.tags.forEach(function(tag){ tagsHtml += '<span class="dict-tag">' + tag + '</span>'; }); tagsHtml += '</div>';
+                }
+                var basicTrans = (transData && transData[0] && transData[0][0]) ? transData[0][0][0] : '';
+                var html = '<div class="dict-header-row"><div class="dict-word-line"><span class="dict-head-word Casting">' + originalWord + '</span>' + (ipaText ? '<span class="dict-ipa">' + ipaText + '</span>' : '') + '<span class="dict-speaker-btn" data-word="' + originalWord.replace(/"/g, '&quot;') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span></div>' + tagsHtml + '<div class="dict-basic-trans">' + basicTrans + '</div></div>';
+                var dictEntries = transData ? transData[1] : null;
+                if (dictEntries && dictEntries.length > 0) {
+                    html += '<div class="dict-details">'; dictEntries.forEach(function(entry){ var pos = entry[0]; var displayDefs = entry[1].slice(0, 3); html += '<div class="dict-pos-block"><span class="dict-pos-tag">' + pos + '.</span><ul class="dict-def-list">'; displayDefs.forEach(function(def){ html += '<li class="dict-def-item">' + def + '</li>'; }); html += '</ul></div>'; }); html += '</div>';
+                } else if (!basicTrans) { html += '<div style="padding:5px; color:#666; font-size:13px;">无释义结果...</div>'; }
+                return html;
+            }
+            function setupTippyDelegate() {
+                tippy.delegate(document.body, { 
+                    target: '.tm-word', trigger: 'click', interactive: true, theme: 'light-border', placement: 'bottom', appendTo: function(){return document.body;}, maxWidth: 320,
+                    onShow: function(instance) {
+                        if (!document.body.classList.contains('dict-enabled')) return false;
+                        var word = instance.reference.innerText.trim(); var wordKey = word.toLowerCase();
+                        var renderContent = function(data) { if (instance.reference.innerText.trim() !== word) return; var contentDiv = document.createElement('div'); contentDiv.className = 'dict-popup'; contentDiv.innerHTML = formatDictData(word, data); ['mousedown', 'touchstart', 'click'].forEach(function(evt){ contentDiv.addEventListener(evt, function(e){e.stopPropagation();}, { capture: true }); }); var btn = contentDiv.querySelector('.dict-speaker-btn'); if (btn) { btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); var text = btn.getAttribute('data-word'); if (!text || btn.classList.contains('playing')) return; playTTS(0, text.trim(), ttsConfig.voices[Math.floor(Math.random() * ttsConfig.voices.length)], btn); }); } instance.setContent(contentDiv); };
+                        if (globalResultCache[wordKey]) { renderContent(globalResultCache[wordKey]); } else {
+                            var loadingDiv = document.createElement('div'); loadingDiv.className = 'dict-popup'; loadingDiv.innerHTML = '<div class="dict-loading">极速查询中...</div>'; instance.setContent(loadingDiv);
+                            Promise.all([fetchTranslation(word), fetchPhonetics(word), fetchWordLevel(word), fetchCEFR(word)]).then(function(arr){ var resultData = { transData: arr[0], ipaText: arr[1], levelData: arr[2], cefrLevel: arr[3] }; saveToGlobalCache(wordKey, resultData); if (instance.state.isVisible) renderContent(resultData); });
+                        }
+                    }
+                });
+            }
+            setTimeout(function() { initAudioPlayer(); initCEFRStaticDict(); var container = document.getElementById('content-container'); if(container) wrapTextNodesToWord(container); setupTippyDelegate(); initCloudHighlights(); }, 500);
+        })();
+    </script>
+</body>
+</html>
